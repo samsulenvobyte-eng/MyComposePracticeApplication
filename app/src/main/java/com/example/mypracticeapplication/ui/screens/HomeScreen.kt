@@ -33,7 +33,8 @@ import androidx.compose.ui.unit.sp
 fun HomeScreen(
     onNavigateToProfile: () -> Unit,
     onNavigateToSettings: () -> Unit,
-    onNavigateToCanvas: () -> Unit = {}
+    onNavigateToCanvas: () -> Unit = {},
+    onNavigateToOffer: () -> Unit = {}
 ) {
     Box(
         modifier = Modifier
@@ -144,6 +145,25 @@ fun HomeScreen(
                     fontWeight = FontWeight.SemiBold
                 )
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Button(
+                onClick = onNavigateToOffer,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF43e97b),
+                    contentColor = Color.White
+                )
+            ) {
+                Text(
+                    text = "Offers",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
         }
     }
 }
@@ -154,6 +174,7 @@ private fun HomeScreenPreview() {
     HomeScreen(
         onNavigateToProfile = {},
         onNavigateToSettings = {},
-        onNavigateToCanvas = {}
+        onNavigateToCanvas = {},
+        onNavigateToOffer = {}
     )
 }

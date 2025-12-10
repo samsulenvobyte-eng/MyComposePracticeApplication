@@ -17,3 +17,6 @@ object SettingsRoute
 
 @Serializable
 object CanvasRoute
+
+@Serializable
+object OfferRoute

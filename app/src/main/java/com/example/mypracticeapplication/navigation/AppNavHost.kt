@@ -7,6 +7,7 @@ import androidx.navigation.compose.composable
 import com.example.mycomposablepractice.ui.screens.PremiumScreen
 import com.example.mypracticeapplication.ui.screens.CanvasScreen
 import com.example.mypracticeapplication.ui.screens.HomeScreen
+import com.example.mypracticeapplication.ui.screens.OfferScreen
 import com.example.mypracticeapplication.ui.screens.SettingsScreen
 
 @Composable
@@ -21,7 +22,8 @@ fun AppNavHost(
             HomeScreen(
                 onNavigateToProfile = { navController.navigate(ProfileRoute) },
                 onNavigateToSettings = { navController.navigate(SettingsRoute) },
-                onNavigateToCanvas = { navController.navigate(CanvasRoute) }
+                onNavigateToCanvas = { navController.navigate(CanvasRoute) },
+                onNavigateToOffer = { navController.navigate(OfferRoute) }
             )
         }
 
@@ -39,6 +41,12 @@ fun AppNavHost(
 
         composable<CanvasRoute> {
             CanvasScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable<OfferRoute> {
+            OfferScreen(
                 onNavigateBack = { navController.popBackStack() }
             )
         }
