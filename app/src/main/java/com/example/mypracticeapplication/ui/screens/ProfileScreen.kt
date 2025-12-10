@@ -47,11 +47,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.paint
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -68,85 +70,42 @@ enum class LineDirection {
     RightToLeft
 }
 private val BrandBlue = Color(0xFF3366FF)
-
 private val BrandBlueGradientStart = Color(0xFF0252FF)
-
 private val BrandBlueGradientEnd = Color(0xFF0348DE)
-
 private val TextBlack = Color(0xFF1A1A1A)
-
 private val TextGrey = Color(0xFF666666)
-
 private val DividerColor = Color(0xFFEEEEEE)
-
 private val StarYellow = Color(0xFFFFD54F)
-
 private val StarBg = Color(0xFFFFF8E1)
-
 private val BoxBg = Color(0xFFE8F0FE)
-
 private val FacebookBlue = Color(0xFF1877F2)
-
 private val InstagramPink = Color(0xFFE1306C)
-
 private val SnapchatYellow = Color(0xFFFFFC00)
-
-
-// --- 2. Architecture: States & Events ---
-
 enum class PlanType { Monthly, Yearly }
-
-
 data class PremiumUiState(
-
     val selectedPlan: PlanType = PlanType.Yearly,
-
     val monthlyPrice: String = "3.99",
-
     val yearlyPrice: String = "19.99"
-
 )
-
-
 sealed interface PremiumUiEvent {
-
     data object OnCloseClicked : PremiumUiEvent
-
     data class OnPlanSelected(val plan: PlanType) : PremiumUiEvent
-
     data object OnStartTrialClicked : PremiumUiEvent
-
 }
-
-
-// --- 3. Main Screen Composable ---
-
 @Composable
 
 fun PremiumScreen(
-
     onClose: () -> Unit = {},
-
     onNavigateToTrial: () -> Unit = {}
-
 ) {
-
     var uiState by remember { mutableStateOf(PremiumUiState()) }
 
-
-
     PremiumContent(
-
         state = uiState,
-
         onEvent = { event ->
-
             when (event) {
-
                 is PremiumUiEvent.OnCloseClicked -> onClose()
-
                 is PremiumUiEvent.OnStartTrialClicked -> onNavigateToTrial()
-
                 is PremiumUiEvent.OnPlanSelected -> uiState =
                     uiState.copy(selectedPlan = event.plan)
 
@@ -167,14 +126,15 @@ fun PremiumContent(
 ) {
     val scrollState = rememberScrollState()
 
-    Scaffold(
+    Scaffold(modifier = Modifier.fillMaxSize().systemBarsPadding(),
         containerColor = Color.White
     ) { paddingValues ->
 
         BoxWithConstraints(
             modifier = Modifier
+                .padding(paddingValues)
                 .fillMaxSize()
-                .systemBarsPadding()
+
         ) {
             val screenHeight = maxHeight
 
@@ -189,13 +149,13 @@ fun PremiumContent(
                 )
 
                 FeatureList()
+
                 Spacer(modifier = Modifier.height(20.dp))
 
                 Spacer(modifier = Modifier.weight(1f))
-
                 PurchaseOptions(state, onEvent)
-
                 Spacer(modifier = Modifier.weight(1f))
+
                 Spacer(modifier = Modifier.height(20.dp))
                 Footer(onEvent)
                 Spacer(modifier = Modifier.height(12.dp))
@@ -207,9 +167,7 @@ fun PremiumContent(
 @Composable
 
 private fun FeatureList() {
-
     Column(
-
         modifier = Modifier
             .padding(horizontal = 16.dp)
             .fillMaxWidth()
@@ -218,7 +176,6 @@ private fun FeatureList() {
                 shape = RoundedCornerShape(bottomStart = 8.dp, bottomEnd = 8.dp),
                 )
     ) {
-
         FeatureRow(R.drawable.ic_compress, "Advanced Compression")
         FeatureRow(R.drawable.ic_batch, "Batch Compression")
         FeatureRow(R.drawable.ic_target_size, "Target File Size")
@@ -226,65 +183,37 @@ private fun FeatureList() {
         FeatureRow(R.drawable.ic_batch_crop, "Batch Crop & Fit Photo")
         FeatureRow(R.drawable.ic_select_all, "Select All Photos at once")
         FeatureRow(R.drawable.ic_ad, "Ad-free Experience", showDivider = false)
-
     }
-
 }
-
-
 @Composable
-
 private fun PurchaseOptions(
     state: PremiumUiState,
     onEvent: (PremiumUiEvent) -> Unit
-
 ) {
     Column(
         modifier = Modifier.padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(13.dp)
-
     ) {
-
         PlanCard(
-
             title = "Monthly Plan",
-
             price = state.monthlyPrice,
-
             icon = Icons.Outlined.Inventory2,
-
             iconBgColor = BoxBg,
-
             iconTint = BrandBlue,
-
             isSelected = state.selectedPlan == PlanType.Monthly,
-
             onClick = { onEvent(PremiumUiEvent.OnPlanSelected(PlanType.Monthly)) }
-
         )
-
         Box(modifier = Modifier.fillMaxWidth()) {
-
             PlanCard(
-
                 title = "Yearly Plan",
-
                 price = state.yearlyPrice,
-
                 icon = Icons.Rounded.Star,
-
                 iconBgColor = StarBg,
-
                 iconTint = StarYellow,
-
                 isSelected = state.selectedPlan == PlanType.Yearly,
-
-                modifier = Modifier.padding(top = 10.dp),
-
+                modifier = Modifier.padding(top = 8.dp),
                 onClick = { onEvent(PremiumUiEvent.OnPlanSelected(PlanType.Yearly)) }
-
             )
-
             Badge60Percent(
 
                 modifier = Modifier
@@ -753,7 +682,7 @@ fun FeatureRow(@DrawableRes icon: Int, text: String, showDivider: Boolean = true
 fun PlanCard(
 
     title: String,
-    price: String,
+    price: String = "19.99",
     icon: ImageVector,
     iconBgColor: Color,
     iconTint: Color,
@@ -860,56 +789,43 @@ fun PlanCard(
                     fontWeight = FontWeight.Bold,
 
                     color = Color(0xFF111111)
-
                 )
-
             }
-
         }
-
     }
-
 }
 
 
 @Composable
 
-fun Badge60Percent(modifier: Modifier = Modifier) {
+fun Badge60Percent(modifier: Modifier = Modifier, offPercent: String = "60% OFF") {
 
     Surface(
-
-        color = BrandBlue,
-
+        // 1. Set this to Transparent so the image below is visible
+        color = Color.Transparent,
         shape = RoundedCornerShape(8.dp),
-
-        modifier = modifier
-
+        modifier = modifier.paint(
+            painter = painterResource(R.drawable.off_background),
+            contentScale = ContentScale.FillBounds // 2. Ensures image fills the shape
+        )
     ) {
-
-
         Text(
-
-            text = "60% OFF",
-
+            text = offPercent,
             color = Color.White,
             fontWeight = FontWeight.Bold,
             style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
-
+            modifier = Modifier.padding(horizontal = 8.dp ),
+            textAlign = TextAlign.Center
         )
     }
 }
 
 @Preview(showBackground = true, showSystemUi = true)
-
 @Composable
-
 fun PremiumScreenDesignPreview() {
 
     MyPracticeApplicationTheme {
-
         PremiumScreen(onClose = {}, onNavigateToTrial = {})
-
     }
 
 
