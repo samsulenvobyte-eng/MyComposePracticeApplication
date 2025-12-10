@@ -14,3 +14,6 @@ object ProfileRoute
 
 @Serializable
 object SettingsRoute
+
+@Serializable
+object CanvasRoute

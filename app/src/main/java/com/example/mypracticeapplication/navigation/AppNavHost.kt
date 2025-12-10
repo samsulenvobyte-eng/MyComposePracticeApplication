@@ -5,6 +5,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.example.mycomposablepractice.ui.screens.PremiumScreen
+import com.example.mypracticeapplication.ui.screens.CanvasScreen
 import com.example.mypracticeapplication.ui.screens.HomeScreen
 import com.example.mypracticeapplication.ui.screens.SettingsScreen
 
@@ -19,7 +20,8 @@ fun AppNavHost(
         composable<HomeRoute> {
             HomeScreen(
                 onNavigateToProfile = { navController.navigate(ProfileRoute) },
-                onNavigateToSettings = { navController.navigate(SettingsRoute) }
+                onNavigateToSettings = { navController.navigate(SettingsRoute) },
+                onNavigateToCanvas = { navController.navigate(CanvasRoute) }
             )
         }
 
@@ -32,6 +34,12 @@ fun AppNavHost(
 
         composable<SettingsRoute> {
             SettingsScreen(
+            )
+        }
+
+        composable<CanvasRoute> {
+            CanvasScreen(
+                onNavigateBack = { navController.popBackStack() }
             )
         }
     }

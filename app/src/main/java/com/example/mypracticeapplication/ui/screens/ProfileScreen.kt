@@ -1,80 +1,77 @@
 package com.example.mycomposablepractice.ui.screens
 
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-
 import androidx.compose.foundation.border
-
 import androidx.compose.foundation.clickable
-
-import androidx.compose.foundation.layout.*
-
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
-
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-
-import androidx.compose.foundation.shape.CircleShape
-
 import androidx.compose.foundation.shape.RoundedCornerShape
-
 import androidx.compose.foundation.verticalScroll
-
 import androidx.compose.material.icons.Icons
-
 import androidx.compose.material.icons.filled.Close
-
-import androidx.compose.material.icons.outlined.*
-
+import androidx.compose.material.icons.outlined.Inventory2
 import androidx.compose.material.icons.rounded.Star
-
-import androidx.compose.material3.*
-
-import androidx.compose.runtime.*
-
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.BiasAlignment
-
 import androidx.compose.ui.Modifier
-
 import androidx.compose.ui.draw.clip
-
 import androidx.compose.ui.draw.rotate
-
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
-
 import androidx.compose.ui.graphics.Brush
-
 import androidx.compose.ui.graphics.Color
-
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
-
 import androidx.compose.ui.text.font.FontWeight
-
 import androidx.compose.ui.text.style.TextAlign
-
 import androidx.compose.ui.tooling.preview.Preview
-
 import androidx.compose.ui.unit.Dp
-
 import androidx.compose.ui.unit.dp
-
 import androidx.compose.ui.unit.sp
-
 import androidx.compose.ui.zIndex
 import com.example.mypracticeapplication.R
 import com.example.mypracticeapplication.ui.theme.MyPracticeApplicationTheme
 
-
-// --- 1. Design System Constants ---
-
+enum class LineDirection {
+    LeftToRight,
+    RightToLeft
+}
 private val BrandBlue = Color(0xFF3366FF)
 
-private val BrandBlueGradientStart = Color(0xFF4A7DFF)
+private val BrandBlueGradientStart = Color(0xFF0252FF)
 
-private val BrandBlueGradientEnd = Color(0xFF2855E0)
+private val BrandBlueGradientEnd = Color(0xFF0348DE)
 
 private val TextBlack = Color(0xFF1A1A1A)
 
@@ -163,96 +160,49 @@ fun PremiumScreen(
 
 
 @Composable
-
 fun PremiumContent(
-
     state: PremiumUiState,
-
     onEvent: (PremiumUiEvent) -> Unit
 
 ) {
-
     val scrollState = rememberScrollState()
 
-
-
     Scaffold(
-
         containerColor = Color.White
-
     ) { paddingValues ->
 
         BoxWithConstraints(
-
             modifier = Modifier
-
                 .fillMaxSize()
-
                 .systemBarsPadding()
-
         ) {
-
             val screenHeight = maxHeight
 
-
-
             Column(
-
                 modifier = Modifier
                     .fillMaxSize()
-
                     .verticalScroll(scrollState),
-
-// horizontalAlignment = Alignment.CenterHorizontally
-
             ) {
 
-// 1. Header Section (Unlock PRO Access)
-
                 PremiumHeaderSection(
-
                     onClose = { onEvent(PremiumUiEvent.OnCloseClicked) }
-
                 )
 
-
-// 2. Feature List
-
                 FeatureList()
-
                 Spacer(modifier = Modifier.height(20.dp))
 
-// Flexible spacer to center PurchaseOptions between FeatureList and Footer
-
                 Spacer(modifier = Modifier.weight(1f))
-
-
-// 3. Plans Section
 
                 PurchaseOptions(state, onEvent)
 
-
-// Flexible spacer to center PurchaseOptions between FeatureList and Footer
-
                 Spacer(modifier = Modifier.weight(1f))
-
                 Spacer(modifier = Modifier.height(20.dp))
-
-// 4. CTA Button & Footer
-
                 Footer(onEvent)
-
-
-//Spacer(modifier = Modifier.height(12.dp))
-
+                Spacer(modifier = Modifier.height(12.dp))
             }
-
         }
-
     }
-
 }
-
 
 @Composable
 
@@ -261,35 +211,21 @@ private fun FeatureList() {
     Column(
 
         modifier = Modifier
-
             .padding(horizontal = 16.dp)
-
             .fillMaxWidth()
-
             .background(
-
                 Color(0xFFFAFAFA),
-
                 shape = RoundedCornerShape(bottomStart = 8.dp, bottomEnd = 8.dp),
-
                 )
-
-
     ) {
 
-        FeatureRow(Icons.Outlined.Tune, "Advanced Compression")
-
-        FeatureRow(Icons.Outlined.PhotoLibrary, "Batch Compression")
-
-        FeatureRow(Icons.Outlined.InsertDriveFile, "Target File Size")
-
-        FeatureRow(Icons.Outlined.AspectRatio, "Batch Resize & Convert")
-
-        FeatureRow(Icons.Outlined.CropRotate, "Batch Crop & Fit Photo")
-
-        FeatureRow(Icons.Outlined.SelectAll, "Select All Photos at once")
-
-        FeatureRow(Icons.Outlined.Block, "Ad-free Experience", showDivider = false)
+        FeatureRow(R.drawable.ic_compress, "Advanced Compression")
+        FeatureRow(R.drawable.ic_batch, "Batch Compression")
+        FeatureRow(R.drawable.ic_target_size, "Target File Size")
+        FeatureRow(R.drawable.ic_resize, "Batch Resize & Convert")
+        FeatureRow(R.drawable.ic_batch_crop, "Batch Crop & Fit Photo")
+        FeatureRow(R.drawable.ic_select_all, "Select All Photos at once")
+        FeatureRow(R.drawable.ic_ad, "Ad-free Experience", showDivider = false)
 
     }
 
@@ -299,23 +235,15 @@ private fun FeatureList() {
 @Composable
 
 private fun PurchaseOptions(
-
     state: PremiumUiState,
-
     onEvent: (PremiumUiEvent) -> Unit
 
 ) {
-
     Column(
-
         modifier = Modifier.padding(horizontal = 16.dp),
-
-
         verticalArrangement = Arrangement.spacedBy(13.dp)
 
     ) {
-
-// Monthly Plan
 
         PlanCard(
 
@@ -334,9 +262,6 @@ private fun PurchaseOptions(
             onClick = { onEvent(PremiumUiEvent.OnPlanSelected(PlanType.Monthly)) }
 
         )
-
-
-// Yearly Plan (With Badge)
 
         Box(modifier = Modifier.fillMaxWidth()) {
 
@@ -360,9 +285,6 @@ private fun PurchaseOptions(
 
             )
 
-
-// The "60% OFF" Badge
-
             Badge60Percent(
 
                 modifier = Modifier
@@ -372,9 +294,7 @@ private fun PurchaseOptions(
                     .padding(end = 24.dp)
 
                     .zIndex(1f)
-
             )
-
         }
 
     }
@@ -387,10 +307,7 @@ private fun PurchaseOptions(
 private fun Footer(onEvent: (PremiumUiEvent) -> Unit) {
 
     Column(
-
         modifier = Modifier.padding(horizontal = 16.dp),
-
-
         ) {
 
         Button(
@@ -409,7 +326,7 @@ private fun Footer(onEvent: (PremiumUiEvent) -> Unit) {
 
             Text(
 
-                modifier = Modifier.padding(vertical = 10.dp),
+                modifier = Modifier.padding(vertical = 8.dp),
 
                 text = "Start Free Trial",
 
@@ -420,36 +337,28 @@ private fun Footer(onEvent: (PremiumUiEvent) -> Unit) {
                 color = Color.White,
 
                 )
-
         }
 
-
-
         Spacer(modifier = Modifier.height(12.dp))
-
-
 
         Text(
 
             modifier = Modifier.fillMaxWidth(),
 
-            text = "Recurrent billing. Cancel anytime. You will be\ncharged after trial ends unless canceled.",
+            text = "Recurrent billing. Cancel anytime. You will be charged after trial ends unless canceled.",
 
-            style = MaterialTheme.typography.bodySmall,
+            style = MaterialTheme.typography.bodySmall.copy(
+                fontSize = 12.sp,
+                fontWeight = FontWeight.W500
+            ),
 
             color = TextGrey,
 
             textAlign = TextAlign.Center,
 
             )
-
     }
-
 }
-
-
-// --- 4. Detailed Component: Header ---
-
 @Composable
 
 fun PremiumHeaderSection(onClose: () -> Unit) {
@@ -464,57 +373,39 @@ fun PremiumHeaderSection(onClose: () -> Unit) {
 
             .background(
 
-                brush = Brush.verticalGradient(
+                brush = Brush.horizontalGradient(
 
-                    colors = listOf(BrandBlueGradientStart, BrandBlueGradientEnd)
-
+                    colorStops = arrayOf(
+                        0.6f to BrandBlueGradientStart,
+                        1.0f to BrandBlueGradientEnd
+                    )
                 ),
 
                 shape = RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp)
-
             )
-
     ) {
-
-
-        Column(modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp)
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 16.dp, bottom = 12.dp)
         ) {
-
-// Title
-
             Box(
-
-                modifier = Modifier.fillMaxWidth()
-
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
             ) {
-
-
                 IconButton(
-
                     onClick = onClose,
-
                     modifier = Modifier
                         .align(Alignment.TopStart)
                         .size(24.dp)
                 ) {
-
                     Icon(
-
                         Icons.Default.Close,
-
                         contentDescription = "Close",
-
                         tint = Color.White,
-
-                       // modifier = Modifier.size(24.dp)
-
                     )
-
                 }
-
-
                 Text(
                     text = "Unlock PRO Access",
                     color = Color.White,
@@ -529,15 +420,55 @@ fun PremiumHeaderSection(onClose: () -> Unit) {
 
 
 
-            Spacer(modifier = Modifier.height(height = 32.dp))
+            Spacer(modifier = Modifier.height(height = 18.dp))
 
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    // Optional: Constrain max width for tablets so they don't drift TOO far apart
-                    //.widthIn(max = 300.dp)
-                    //.height(100.dp) // Ensure the box has height for the vertical alignment to work
+
             ) {
+                DirectionalLine(
+                    modifier = Modifier.align(
+                        BiasAlignment(
+                            horizontalBias = 0.0f,
+                            verticalBias = 0.7f
+                        )
+                    ),
+                    direction = LineDirection.RightToLeft,
+                    fraction = 0.25f
+                )
+                DirectionalLine(
+                    modifier = Modifier.align(
+                        BiasAlignment(
+                            horizontalBias = 0.0f,
+                            verticalBias = 0.0f
+                        )
+                    ),
+                    direction = LineDirection.RightToLeft,
+                    fraction = 0.28f
+                )
+
+                DirectionalLine(
+                    modifier = Modifier.align(
+                        BiasAlignment(
+                            horizontalBias = 0.0f,
+                            verticalBias = 0.7f
+                        )
+                    ),
+                    direction = LineDirection.LeftToRight,
+                    fraction = 0.25f
+                )
+                DirectionalLine(
+                    modifier = Modifier.align(
+                        BiasAlignment(
+                            horizontalBias = 0.0f,
+                            verticalBias = 0.0f
+                        )
+                    ),
+                    direction = LineDirection.LeftToRight,
+                    fraction = 0.28f
+                )
+
 
                 Canvas(
                     modifier = Modifier
@@ -548,7 +479,7 @@ fun PremiumHeaderSection(onClose: () -> Unit) {
                 ) {
 
                     drawCircle(
-                        color = Color(0xFF3366FF),
+                        color = Color(0xFF145EFF),
                         radius = 40.dp.toPx(),
                         center = Offset(x = size.width / 2, y = 200f)
                     )
@@ -563,7 +494,7 @@ fun PremiumHeaderSection(onClose: () -> Unit) {
                 ) {
 
                     drawCircle(
-                        color = Color(0xFF3366FF),
+                        color = Color(0xFF145EFF),
                         radius = 40.dp.toPx(),
                         center = Offset(x = size.width / 2, y = 200f)
                     )
@@ -573,11 +504,12 @@ fun PremiumHeaderSection(onClose: () -> Unit) {
                 // 1. Facebook icon (Far Left)
                 // Horizontal Bias -0.9f puts it near the left edge (Start)
                 FloatingIcon(
-                    icon = Icons.Outlined.Facebook,
+                    image = R.drawable.facebook_image,
                     tint = Color.White,
                     bgColor = FacebookBlue,
                     size = 25.dp,
                     modifier = Modifier
+                        .padding(start = 16.dp)
                         .align(BiasAlignment(horizontalBias = -0.9f, verticalBias = 0f))
                         .offset(y = (-8).dp)
                         .rotate(-17.29f)
@@ -586,50 +518,49 @@ fun PremiumHeaderSection(onClose: () -> Unit) {
                 // 2. Photo Card 1 (Mid Left)
                 // Horizontal Bias -0.45f puts it roughly halfway between center and left edge
                 FloatingPhotoCard(
-                    bgColor = Color(0xFFD4A574),
+                    drawableRes = R.drawable.second_girl_image,
                     modifier = Modifier
                         .align(BiasAlignment(horizontalBias = -0.45f, verticalBias = 0f))
-                        .offset(y = (-12).dp)
+                        .offset(y = (-4).dp)
                         .rotate(10.59f)
                 )
 
                 // 3. Instagram icon (Dead Center)
                 // Standard Alignment.BottomCenter is effectively Bias(0f, 1f)
                 FloatingIcon(
-                    icon = Icons.Outlined.CameraAlt,
+                    image = R.drawable.instagram_image,
                     tint = Color.White,
                     bgColor = InstagramPink,
                     size = 29.dp,
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
+                        .rotate(26f)
                         .padding(bottom = 4.dp)
                 )
 
                 // 4. Photo Card 2 (Mid Right)
                 // Horizontal Bias 0.45f puts it roughly halfway between center and right edge
                 FloatingPhotoCard(
-                    bgColor = Color(0xFF8BC0E0),
+                    R.drawable.girl_image,
                     modifier = Modifier
                         .align(BiasAlignment(horizontalBias = 0.45f, verticalBias = 0f))
-                        .offset(y = (-12).dp)
+                        .offset(y = (-4).dp)
                         .rotate(-16.84f)
                 )
 
                 // 5. Notification/Bell icon (Far Right)
                 // Horizontal Bias 0.9f puts it near the right edge (End)
                 FloatingIcon(
-                    icon = Icons.Outlined.Notifications,
+                    image = R.drawable.snapchat_image,
                     tint = Color.Black,
                     bgColor = SnapchatYellow,
                     size = 25.dp,
                     modifier = Modifier
+                        .padding(end = 16.dp)
                         .align(BiasAlignment(horizontalBias = 0.9f, verticalBias = 0f))
                         .offset(y = (-8).dp)
                         .rotate(15.11f)
                 )
-
-
-
 
 
             }
@@ -644,11 +575,14 @@ fun PremiumHeaderSection(onClose: () -> Unit) {
 
 @Composable
 
-fun FloatingPhotoCard(bgColor: Color, modifier: Modifier = Modifier) {
+fun FloatingPhotoCard(
+    @DrawableRes drawableRes: Int = R.drawable.second_girl_image,
+    modifier: Modifier = Modifier
+) {
 
 
     Image(
-        painter = painterResource(R.drawable.ic_launcher_foreground),
+        painter = painterResource(drawableRes),
 
 
         contentDescription = null,
@@ -656,18 +590,69 @@ fun FloatingPhotoCard(bgColor: Color, modifier: Modifier = Modifier) {
         modifier = modifier
             .size(46.dp)
             .clip(RoundedCornerShape(8.dp))
-            .background(bgColor)
     )
 
 
 }
 
+@Composable
+fun DirectionalLine(
+    modifier: Modifier = Modifier,
+    direction: LineDirection = LineDirection.LeftToRight,
+    color: Color = Color(0xFF145EFF),
+    fraction: Float = 1.0f // Optional: 1.0f = full width, 0.5f = half width
+) {
+    Canvas(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(1.dp)
+    ) {
+        // Calculate the effective width based on the fraction
+        val lineLength = size.width * fraction
+
+        val startOffset: Offset
+        val endOffset: Offset
+
+        // 2. Determine coordinates based on direction
+        if (direction == LineDirection.LeftToRight) {
+            // Start at 0 (Left), draw towards Right
+            startOffset = Offset(0f, 0f)
+            endOffset = Offset(lineLength, 0f)
+        } else {
+            // Start at Width (Right), draw towards Left
+            startOffset = Offset(size.width, 0f)
+            endOffset = Offset(size.width - lineLength, 0f)
+        }
+
+        drawLine(
+            color = color,
+            start = startOffset,
+            end = endOffset,
+            strokeWidth = size.height
+        )
+    }
+}
+
+@Composable
+fun SimpleHorizontalLine(modifier: Modifier) {
+    Canvas(modifier = modifier.size(width = 100.dp, height = 1.dp)) {
+        // Draw a line from (0, 25) to (300, 25)
+        // Since y=25 for both, the line is horizontal
+        drawLine(
+            color = Color.Blue,
+            start = Offset(x = 50f, y = size.height / 2),
+            end = Offset(x = size.width, y = size.height / 2),
+            strokeWidth = 1.dp.toPx()
+        )
+    }
+}
 
 @Composable
 
 fun FloatingIcon(
 
-    icon: ImageVector,
+    @DrawableRes
+    image: Int,
 
     tint: Color,
 
@@ -678,31 +663,13 @@ fun FloatingIcon(
     modifier: Modifier = Modifier
 
 ) {
+    Image(
 
-    Box(
+        painter = painterResource(image),
+        contentDescription = null,
+        modifier = modifier.size(size)
 
-        modifier = modifier
-
-            .size(size)
-            .background(bgColor, CircleShape),
-
-        contentAlignment = Alignment.Center
-
-    ) {
-
-        Icon(
-
-            imageVector = icon,
-
-            contentDescription = null,
-
-            tint = tint,
-
-            modifier = Modifier.size(size * 0.55f)
-
-        )
-
-    }
+    )
 
 }
 
@@ -711,7 +678,7 @@ fun FloatingIcon(
 
 @Composable
 
-fun FeatureRow(icon: ImageVector, text: String, showDivider: Boolean = true) {
+fun FeatureRow(@DrawableRes icon: Int, text: String, showDivider: Boolean = true) {
 
     Column(
 
@@ -736,7 +703,7 @@ fun FeatureRow(icon: ImageVector, text: String, showDivider: Boolean = true) {
 
             Icon(
 
-                imageVector = icon,
+                painter = painterResource(icon),
 
                 contentDescription = null,
 
@@ -786,21 +753,13 @@ fun FeatureRow(icon: ImageVector, text: String, showDivider: Boolean = true) {
 fun PlanCard(
 
     title: String,
-
     price: String,
-
     icon: ImageVector,
-
     iconBgColor: Color,
-
     iconTint: Color,
-
     isSelected: Boolean,
-
     modifier: Modifier = Modifier,
-
     onClick: () -> Unit
-
 ) {
 
     val borderColor = if (isSelected) BrandBlue else Color(0xFFE0E0E0)
@@ -810,17 +769,8 @@ fun PlanCard(
 
 
     Card(
-
         shape = RoundedCornerShape(8.dp),
-
         colors = CardDefaults.cardColors(containerColor = Color.White),
-
-        elevation = CardDefaults.cardElevation(
-
-            defaultElevation = if (isSelected) 4.dp else 2.dp
-
-        ),
-
         modifier = modifier
 
             .fillMaxWidth()
@@ -843,30 +793,20 @@ fun PlanCard(
 
             modifier = Modifier
 
-                .padding(horizontal = 16.dp, vertical = 14.dp)
+                .padding(horizontal = 20.dp, vertical = 14.dp)
 
                 .fillMaxWidth(),
 
             verticalAlignment = Alignment.CenterVertically
 
         ) {
-
-// Icon Box
-
             Box(
-
                 modifier = Modifier
-
                     .size(24.dp)
-
                     .clip(RoundedCornerShape(4.dp))
-
                     .background(iconBgColor),
-
                 contentAlignment = Alignment.Center
-
             ) {
-
                 Icon(
 
                     imageVector = icon,
@@ -880,30 +820,15 @@ fun PlanCard(
                 )
 
             }
-
-
-
             Spacer(modifier = Modifier.width(12.dp))
-
-
-// Title
-
             Text(
-
                 text = title,
-
                 fontSize = 14.sp,
-
-                fontWeight = FontWeight.Medium,
-
-                color = TextBlack,
-
+                letterSpacing = 1.2.sp,
+                fontWeight = FontWeight.W600,
+                color = Color(0xFF555555),
                 modifier = Modifier.weight(1f)
-
             )
-
-
-// Price
 
             Row(
 
@@ -917,11 +842,12 @@ fun PlanCard(
 
                     fontSize = 12.sp,
 
-                    fontWeight = FontWeight.Medium,
+                    fontWeight = FontWeight.SemiBold,
 
-                    color = TextGrey,
+                    color = Color(0xFF333333),
 
-                    modifier = Modifier.padding(bottom = 3.dp, end = 8.dp)
+                    modifier = Modifier.padding(end = 8.dp),
+                    textAlign = TextAlign.Center
 
                 )
 
@@ -933,7 +859,7 @@ fun PlanCard(
 
                     fontWeight = FontWeight.Bold,
 
-                    color = TextBlack
+                    color = Color(0xFF111111)
 
                 )
 
@@ -956,32 +882,23 @@ fun Badge60Percent(modifier: Modifier = Modifier) {
 
         shape = RoundedCornerShape(8.dp),
 
-        shadowElevation = 2.dp,
-
         modifier = modifier
 
     ) {
+
 
         Text(
 
             text = "60% OFF",
 
             color = Color.White,
-
-            fontSize = 9.sp,
-
             fontWeight = FontWeight.Bold,
-
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+            style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
 
         )
-
     }
-
 }
-
-
-// --- Preview ---
 
 @Preview(showBackground = true, showSystemUi = true)
 

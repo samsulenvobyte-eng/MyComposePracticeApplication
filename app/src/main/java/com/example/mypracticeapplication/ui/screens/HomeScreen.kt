@@ -32,7 +32,8 @@ import androidx.compose.ui.unit.sp
 @Composable
 fun HomeScreen(
     onNavigateToProfile: () -> Unit,
-    onNavigateToSettings: () -> Unit
+    onNavigateToSettings: () -> Unit,
+    onNavigateToCanvas: () -> Unit = {}
 ) {
     Box(
         modifier = Modifier
@@ -124,6 +125,25 @@ fun HomeScreen(
                     fontWeight = FontWeight.SemiBold
                 )
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Button(
+                onClick = onNavigateToCanvas,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFFf093fb),
+                    contentColor = Color.White
+                )
+            ) {
+                Text(
+                    text = "Canvas Examples",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
         }
     }
 }
@@ -133,6 +153,7 @@ fun HomeScreen(
 private fun HomeScreenPreview() {
     HomeScreen(
         onNavigateToProfile = {},
-        onNavigateToSettings = {}
+        onNavigateToSettings = {},
+        onNavigateToCanvas = {}
     )
 }
