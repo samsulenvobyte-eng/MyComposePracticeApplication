@@ -47,11 +47,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.draw.paint
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
@@ -72,8 +76,8 @@ enum class LineDirection {
 }
 
 private val BrandBlue = Color(0xFF3366FF)
-private val BrandBlueGradientStart = Color(0xFF0252FF)
-private val BrandBlueGradientEnd = Color(0xFF0348DE)
+private val BrandBlueGradientStart = Color(0xFFF554FF)
+private val BrandBlueGradientEnd = Color(0xFF434AFF)
 private val TextBlack = Color(0xFF1A1A1A)
 private val TextGrey = Color(0xFF666666)
 private val DividerColor = Color(0xFFEEEEEE)
@@ -210,7 +214,7 @@ private fun PurchaseOptions(
             title = "Monthly Plan",
             price = state.monthlyPrice,
             icon = R.drawable.ic_box_monthly,
-            iconBgColor = BoxBg,
+            iconBgColor = Color(0x1AF554FF),
             isSelected = state.selectedPlan == PlanType.Monthly,
             onClick = { onEvent(PremiumUiEvent.OnPlanSelected(PlanType.Monthly)) }
         )
@@ -242,6 +246,11 @@ private fun PurchaseOptions(
 
 private fun Footer(onEvent: (PremiumUiEvent) -> Unit) {
 
+
+    val gradient = Brush.horizontalGradient(
+        colors = listOf(Color(0xFFF554FF), Color(0xFF434AFF))
+    )
+
     Column(
         modifier = Modifier.padding(horizontal = 16.dp),
     ) {
@@ -249,9 +258,15 @@ private fun Footer(onEvent: (PremiumUiEvent) -> Unit) {
         Button(
             onClick = { onEvent(PremiumUiEvent.OnStartTrialClicked) },
             modifier = Modifier
-                .fillMaxWidth(),
+                .fillMaxWidth()
+                .background(brush = gradient, shape = RoundedCornerShape(50))
+
+            ,
             shape = RoundedCornerShape(30.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = BrandBlue)
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color.Transparent,
+                contentColor = Color.White
+            ),
         ) {
             Text(
                 modifier = Modifier.padding(vertical = 8.dp),
@@ -259,7 +274,7 @@ private fun Footer(onEvent: (PremiumUiEvent) -> Unit) {
                 fontSize = 17.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = Color.White,
-                )
+            )
         }
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -287,6 +302,15 @@ private fun Footer(onEvent: (PremiumUiEvent) -> Unit) {
 
 fun PremiumHeaderSection(onClose: () -> Unit, modifier: Modifier = Modifier) {
 
+    val gradient45 = Brush.linearGradient(
+        colors = listOf(
+            Color(0xFFF554FF), // Blue
+            Color(0xFF434AFF)  // Red
+        ),
+        start = Offset(0f, 0f), // Top-Left
+        end = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY) // Bottom-Right
+    )
+
     Box(
 
         modifier = modifier
@@ -297,13 +321,7 @@ fun PremiumHeaderSection(onClose: () -> Unit, modifier: Modifier = Modifier) {
 
             .background(
 
-                brush = Brush.horizontalGradient(
-
-                    colorStops = arrayOf(
-                        0.6f to BrandBlueGradientStart,
-                        1.0f to BrandBlueGradientEnd
-                    )
-                ),
+                brush = gradient45,
 
                 shape = RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp)
             )
@@ -340,7 +358,7 @@ fun PremiumHeaderSection(onClose: () -> Unit, modifier: Modifier = Modifier) {
                 )
             }
 
-            Spacer(modifier = Modifier.height(height = 18.dp))
+            Spacer(modifier = Modifier.height(height = 19.dp))
 
             Box(
                 modifier = Modifier
@@ -354,6 +372,7 @@ fun PremiumHeaderSection(onClose: () -> Unit, modifier: Modifier = Modifier) {
                             verticalBias = 0.7f
                         )
                     ),
+                    color = Color(0xFF1861FF),
                     direction = LineDirection.RightToLeft,
                     fraction = 0.25f
                 )
@@ -364,6 +383,7 @@ fun PremiumHeaderSection(onClose: () -> Unit, modifier: Modifier = Modifier) {
                             verticalBias = 0.0f
                         )
                     ),
+                    color = Color(0xFF1861FF),
                     direction = LineDirection.RightToLeft,
                     fraction = 0.28f
                 )
@@ -375,6 +395,7 @@ fun PremiumHeaderSection(onClose: () -> Unit, modifier: Modifier = Modifier) {
                             verticalBias = 0.7f
                         )
                     ),
+                    color = Color(0xFFF554FF),
                     direction = LineDirection.LeftToRight,
                     fraction = 0.25f
                 )
@@ -385,38 +406,13 @@ fun PremiumHeaderSection(onClose: () -> Unit, modifier: Modifier = Modifier) {
                             verticalBias = 0.0f
                         )
                     ),
+                    color = Color(0xFFF554FF),
                     direction = LineDirection.LeftToRight,
                     fraction = 0.28f
                 )
-                Canvas(
-                    modifier = Modifier
-                        .size(60.dp)
-                        .align(BiasAlignment(horizontalBias = 0.55f, verticalBias = 0f))
-                ) {
-
-                    drawCircle(
-                        color = Color(0xFF145EFF),
-                        radius = 40.dp.toPx(),
-                        center = Offset(x = size.width / 2, y = 200f)
-                    )
-                }
-                Canvas(
-                    modifier = Modifier
-                        .size(69.dp)
-                        .align(BiasAlignment(horizontalBias = -0.55f, verticalBias = 0f))
-                ) {
-
-                    drawCircle(
-                        color = Color(0xFF145EFF),
-                        radius = 40.dp.toPx(),
-                        center = Offset(x = size.width / 2, y = 200f)
-                    )
-                }
 
                 FloatingIcon(
                     image = R.drawable.facebook_image,
-                    tint = Color.White,
-                    bgColor = FacebookBlue,
                     size = 25.dp,
                     modifier = Modifier
                         .padding(start = 16.dp)
@@ -428,6 +424,7 @@ fun PremiumHeaderSection(onClose: () -> Unit, modifier: Modifier = Modifier) {
                 FloatingPhotoCard(
                     drawableRes = R.drawable.second_girl_image,
                     modifier = Modifier
+                        .padding(bottom = 8.dp)
                         .align(BiasAlignment(horizontalBias = -0.45f, verticalBias = 0f))
                         .offset(y = (-4).dp)
                         .rotate(10.59f)
@@ -435,17 +432,16 @@ fun PremiumHeaderSection(onClose: () -> Unit, modifier: Modifier = Modifier) {
 
                 FloatingIcon(
                     image = R.drawable.instagram_image,
-                    tint = Color.White,
-                    bgColor = InstagramPink,
                     size = 29.dp,
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .rotate(26f)
-                        .padding(bottom = 4.dp)
+                        .padding()
                 )
                 FloatingPhotoCard(
 
                     modifier = Modifier
+                        .padding(bottom = 2.dp)
                         .align(BiasAlignment(horizontalBias = 0.45f, verticalBias = 0f))
                         .offset(y = (-4).dp)
                         .rotate(-16.84f),
@@ -454,8 +450,6 @@ fun PremiumHeaderSection(onClose: () -> Unit, modifier: Modifier = Modifier) {
 
                 FloatingIcon(
                     image = R.drawable.snapchat_image,
-                    tint = Color.Black,
-                    bgColor = SnapchatYellow,
                     size = 25.dp,
                     modifier = Modifier
                         .padding(end = 16.dp)
@@ -495,7 +489,7 @@ fun DirectionalLine(
     Canvas(
         modifier = modifier
             .fillMaxWidth()
-            .height(1.dp)
+            .height(0.4.dp)
     ) {
         // Calculate the effective width based on the fraction
         val lineLength = size.width * fraction
@@ -526,8 +520,6 @@ fun DirectionalLine(
 fun FloatingIcon(
     @DrawableRes
     image: Int,
-    tint: Color,
-    bgColor: Color,
     size: Dp,
     modifier: Modifier = Modifier
 ) {
@@ -548,6 +540,9 @@ fun FeatureRow(
     showDivider: Boolean = true
 ) {
 
+    val gradient = Brush.verticalGradient(
+        colors = listOf(Color(0xFFF554FF), Color(0xFF434AFF))
+    )
     Column(
         modifier = modifier
             .padding(horizontal = 16.dp)
@@ -564,8 +559,17 @@ fun FeatureRow(
             Icon(
                 painter = painterResource(icon),
                 contentDescription = null,
-                tint = BrandBlue,
-                modifier = Modifier.size(20.dp)
+                modifier = Modifier
+                    .size(20.dp)
+                    .graphicsLayer(alpha = 0.99f)
+                    .drawWithCache {
+                        onDrawWithContent {
+                            // 4. Draw the actual icon
+                            drawContent()
+                            // 5. Draw the gradient ON TOP, keeping only the overlapping parts (SrcIn)
+                            drawRect(gradient, blendMode = BlendMode.SrcIn)
+                        }
+                    }
             )
 
             Spacer(modifier = Modifier.width(16.dp))
@@ -598,6 +602,10 @@ fun PlanCard(
     @DrawableRes icon: Int = R.drawable.ic_star,
     onClick: () -> Unit = {}
 ) {
+
+    val gradient = Brush.verticalGradient(
+        colors = listOf(Color(0xFFF554FF), Color(0xFF434AFF))
+    )
     val borderColor = if (isSelected) BrandBlue else Color(0xFFE0E0E0)
     val borderWidth = if (isSelected) 2.dp else 1.dp
 
@@ -608,7 +616,7 @@ fun PlanCard(
             .fillMaxWidth()
             .border(
                 width = borderWidth,
-                color = borderColor,
+                brush = if (isSelected) gradient else SolidColor(borderColor),
                 shape = RoundedCornerShape(8.dp)
             )
             .clickable { onClick() }
@@ -636,7 +644,7 @@ fun PlanCard(
 
                     painter = painterResource(icon),
                     contentDescription = null,
-                    tint = Color.Unspecified,
+                    tint = Color(0xFFF554FF),
                     modifier = Modifier.size(15.dp)
 
                 )
@@ -683,8 +691,12 @@ fun PlanCard(
 
 fun Badge60Percent(modifier: Modifier = Modifier, offPercent: String = "60% OFF") {
 
-    Surface(
-        color = Color.Transparent,
+
+    val gradient = Brush.verticalGradient(
+        colors = listOf(Color(0xFFF554FF), Color(0xFF434AFF)))
+
+                Surface(
+                    color = Color.Transparent,
         shape = RoundedCornerShape(8.dp),
         modifier = modifier.paint(
             painter = painterResource(R.drawable.off_background),

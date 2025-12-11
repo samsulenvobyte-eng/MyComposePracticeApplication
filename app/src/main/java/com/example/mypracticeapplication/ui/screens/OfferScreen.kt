@@ -78,8 +78,8 @@ fun OfferScreenContent(modifier: Modifier = Modifier, onFreeTrialClicked: () -> 
 
     val gradient = Brush.verticalGradient(
         colors = listOf(
-            Color(0xFF0252FF),
-            Color(0xFF013199),
+            Color(0xFFF554FF),
+            Color(0xFF434AFF),
         )
 
     )
@@ -158,7 +158,7 @@ fun OfferScreenContent(modifier: Modifier = Modifier, onFreeTrialClicked: () -> 
                             modifier
                                 .height(1.dp)
                                 .padding(start = 36.dp),
-                            color = Color(0xFF0752B8)
+                            color = Color(0x2CB4B4B4)
                         )
                     }
                 }
@@ -231,14 +231,19 @@ private fun bottomElements(onFreeTrialClicked: () -> Unit) {
 
 
         ) {
+            val gradient = Brush.horizontalGradient(
+
+                colors = listOf(Color(0xFFF554FF),Color(0xFF0252FF))
+            )
+
+
             Text(
                 "Start Free Trial",
                 modifier = Modifier.padding(vertical = 8.dp),
-                style = MaterialTheme.typography.bodyMedium.copy(
+                style = MaterialTheme.typography.bodyMedium.copy(brush = gradient,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.SemiBold
-                ),
-                color = Color(0xFF0252FF)
+                )
             )
 
         }
@@ -252,7 +257,7 @@ private fun bottomElements(onFreeTrialClicked: () -> Unit) {
                 fontSize = 12.sp,
                 fontWeight = FontWeight.W500
             ),
-            color = Color(0xFFBDBDBD),
+            color = Color(0xFFE0E0E0),
             modifier = Modifier
                 .align(Alignment.CenterHorizontally)
                 .padding(horizontal = 16.dp),
