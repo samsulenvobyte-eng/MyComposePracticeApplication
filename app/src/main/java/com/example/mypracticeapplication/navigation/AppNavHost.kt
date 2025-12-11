@@ -46,9 +46,7 @@ fun AppNavHost(
         }
 
         composable<OfferRoute> {
-            OfferScreen(
-                onNavigateBack = { navController.popBackStack() }
-            )
+            OfferScreen()
         }
     }
 }

@@ -118,7 +118,7 @@ fun BonusDialog(onDismiss: () -> Unit) {
     showBackground = true
 )
 @Composable
-fun BonusDialogPreview() {
+private fun BonusDialogPreview() {
     MyPracticeApplicationTheme {
         BonusDialog(onDismiss = {})
     }

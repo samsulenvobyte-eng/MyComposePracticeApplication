@@ -64,4 +64,6 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
     implementation("androidx.compose.material:material-icons-extended")
 
+
+    lintChecks("com.slack.lint.compose:compose-lint-checks:1.4.2")
 }
