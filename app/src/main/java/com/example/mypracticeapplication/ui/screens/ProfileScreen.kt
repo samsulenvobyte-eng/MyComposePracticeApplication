@@ -70,23 +70,18 @@ import androidx.core.view.WindowCompat
 import com.example.mypracticeapplication.R
 import com.example.mypracticeapplication.ui.theme.MyPracticeApplicationTheme
 
+//Todo: use foreach loop for feature list
+
 enum class LineDirection {
     LeftToRight,
     RightToLeft
 }
 
 private val BrandBlue = Color(0xFF3366FF)
-private val BrandBlueGradientStart = Color(0xFFF554FF)
-private val BrandBlueGradientEnd = Color(0xFF434AFF)
 private val TextBlack = Color(0xFF1A1A1A)
-private val TextGrey = Color(0xFF666666)
 private val DividerColor = Color(0xFFEEEEEE)
-private val StarYellow = Color(0xFFFFD54F)
 private val StarBg = Color(0xFFFFF8E1)
-private val BoxBg = Color(0xFFE8F0FE)
-private val FacebookBlue = Color(0xFF1877F2)
-private val InstagramPink = Color(0xFFE1306C)
-private val SnapchatYellow = Color(0xFFFFFC00)
+
 
 enum class PlanType { Monthly, Yearly }
 data class PremiumUiState(
@@ -119,13 +114,9 @@ fun PremiumScreen(
                 is PremiumUiEvent.OnStartTrialClicked -> onNavigateToTrial()
                 is PremiumUiEvent.OnPlanSelected -> uiState =
                     uiState.copy(selectedPlan = event.plan)
-
             }
-
         }
-
     )
-
 }
 
 
@@ -236,14 +227,11 @@ private fun PurchaseOptions(
                     .zIndex(1f)
             )
         }
-
     }
-
 }
 
 
 @Composable
-
 private fun Footer(onEvent: (PremiumUiEvent) -> Unit) {
 
 
@@ -259,9 +247,7 @@ private fun Footer(onEvent: (PremiumUiEvent) -> Unit) {
             onClick = { onEvent(PremiumUiEvent.OnStartTrialClicked) },
             modifier = Modifier
                 .fillMaxWidth()
-                .background(brush = gradient, shape = RoundedCornerShape(50))
-
-            ,
+                .background(brush = gradient, shape = RoundedCornerShape(50)),
             shape = RoundedCornerShape(30.dp),
             colors = ButtonDefaults.buttonColors(
                 containerColor = Color.Transparent,
@@ -299,28 +285,22 @@ private fun Footer(onEvent: (PremiumUiEvent) -> Unit) {
 }
 
 @Composable
-
 fun PremiumHeaderSection(onClose: () -> Unit, modifier: Modifier = Modifier) {
 
     val gradient45 = Brush.linearGradient(
         colors = listOf(
-            Color(0xFFF554FF), // Blue
-            Color(0xFF434AFF)  // Red
+            Color(0xFFF554FF),
+            Color(0xFF434AFF)
         ),
-        start = Offset(0f, 0f), // Top-Left
-        end = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY) // Bottom-Right
+        start = Offset(0f, 0f),
+        end = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)
     )
 
     Box(
-
         modifier = modifier
-
             .padding(start = 16.dp, end = 16.dp, top = 8.dp)
-
             .fillMaxWidth()
-
             .background(
-
                 brush = gradient45,
 
                 shape = RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp)
@@ -464,7 +444,6 @@ fun PremiumHeaderSection(onClose: () -> Unit, modifier: Modifier = Modifier) {
 
 
 @Composable
-
 fun FloatingPhotoCard(
     modifier: Modifier = Modifier,
     @DrawableRes drawableRes: Int = R.drawable.second_girl_image,
@@ -532,7 +511,6 @@ fun FloatingIcon(
 }
 
 @Composable
-
 fun FeatureRow(
     @DrawableRes icon: Int,
     text: String,
@@ -592,7 +570,6 @@ fun FeatureRow(
 }
 
 @Composable
-
 fun PlanCard(
     iconBgColor: Color,
     isSelected: Boolean,
@@ -678,7 +655,7 @@ fun PlanCard(
                 Text(
                     text = price,
                     fontSize = 20.sp,
-                    fontWeight = FontWeight.Black,
+                    fontWeight = FontWeight.Bold,
                     color = Color(0xFF111111)
                 )
             }
@@ -688,15 +665,15 @@ fun PlanCard(
 
 
 @Composable
-
 fun Badge60Percent(modifier: Modifier = Modifier, offPercent: String = "60% OFF") {
 
 
     val gradient = Brush.verticalGradient(
-        colors = listOf(Color(0xFFF554FF), Color(0xFF434AFF)))
+        colors = listOf(Color(0xFFF554FF), Color(0xFF434AFF))
+    )
 
-                Surface(
-                    color = Color.Transparent,
+    Surface(
+        color = Color.Transparent,
         shape = RoundedCornerShape(8.dp),
         modifier = modifier.paint(
             painter = painterResource(R.drawable.off_background),
@@ -714,7 +691,6 @@ fun Badge60Percent(modifier: Modifier = Modifier, offPercent: String = "60% OFF"
     }
 }
 
-
 @Composable
 fun StatusBarIcons(useDarkIcons: Boolean) {
     val view = LocalView.current
@@ -731,7 +707,6 @@ fun StatusBarIcons(useDarkIcons: Boolean) {
         }
     }
 }
-
 
 @Preview(
     showBackground = true, showSystemUi = true,

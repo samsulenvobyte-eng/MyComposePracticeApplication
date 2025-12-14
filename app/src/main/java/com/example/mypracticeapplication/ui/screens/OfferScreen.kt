@@ -4,7 +4,9 @@ import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
@@ -53,7 +55,7 @@ data class OfferFeature(
     val icon: Int, val title: String
 )
 
-val offerFeatures = listOf<OfferFeature>(
+val sampleFeatures = listOf(
     OfferFeature(R.drawable.ic_compress, "Advanced Compression"),
     OfferFeature(R.drawable.ic_batch, "Batch Compression"),
     OfferFeature(R.drawable.ic_target_size, "Compress by Target File Size"),
@@ -63,18 +65,23 @@ val offerFeatures = listOf<OfferFeature>(
     OfferFeature(R.drawable.ic_ad, "Ad-free Experience"),
 )
 
-
 @Composable
 fun OfferScreen() {
 
-    StatusBarIcons(false)
+    val featureList = sampleFeatures
 
-    OfferScreenContent()
+    StatusBarIcons(false)
+    OfferScreenContent(featureList = featureList, onFreeTrialClicked = {}, onBackClick = {})
 }
 
 
 @Composable
-fun OfferScreenContent(modifier: Modifier = Modifier, onFreeTrialClicked: () -> Unit = {}, onBackClick: () -> Unit = {}) {
+fun OfferScreenContent(
+    featureList: List<OfferFeature>,
+    modifier: Modifier = Modifier,
+    onFreeTrialClicked: () -> Unit = {},
+    onBackClick: () -> Unit = {}
+) {
 
     val gradient = Brush.verticalGradient(
         colors = listOf(
@@ -91,22 +98,7 @@ fun OfferScreenContent(modifier: Modifier = Modifier, onFreeTrialClicked: () -> 
             .safeDrawingPadding()
     ) {
 
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .align(Alignment.TopCenter)
-                .aspectRatio(1f)
-        ) {
-            Image(
-                modifier = Modifier
-                    .matchParentSize()
-                    .scale(1.3f),
-                imageVector = ImageVector.vectorResource(R.drawable.ic_compress),
-                colorFilter = ColorFilter.tint(Color.White),
-                contentDescription = null,
-                alpha = 0.08f
-            )
-        }
+        BackgroundLogo()
 
         Column(
             modifier = Modifier
@@ -116,63 +108,20 @@ fun OfferScreenContent(modifier: Modifier = Modifier, onFreeTrialClicked: () -> 
         ) {
 
             Spacer(modifier = Modifier.weight(1f))
-            Image(
-                imageVector = ImageVector.vectorResource(R.drawable.ic_premium),
-                contentDescription = null,
-                modifier = Modifier
-                    .size(74.dp)
-                    .align(Alignment.CenterHorizontally)
-            )
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Text(
-                "Try Premium for Free",
-                modifier = Modifier
-                    .align(Alignment.CenterHorizontally)
-                    .padding(16.dp),
-                color = Color(0xFFFFE120),
-                style = MaterialTheme.typography.bodyLarge.copy(
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.SemiBold
-                ),
-                textAlign = TextAlign.Center
-            )
+            HeadingLogoAndText()
 
             Spacer(modifier = Modifier.height(27.dp))
 
-            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(start = 62.dp, end = 38.dp)
-                ) {
-
-                    offerFeatures.forEach {
-
-                        Spacer(modifier = Modifier.height(13.dp))
-                        FeatureItem(it)
-                        Spacer(modifier = Modifier.height(14.dp))
-                        HorizontalDivider(
-                            modifier
-                                .height(1.dp)
-                                .padding(start = 36.dp),
-                            color = Color(0x2CB4B4B4)
-                        )
-                    }
-                }
-            }
+            Features(featureList)
 
             Spacer(modifier = Modifier.height(27.dp))
 
             Spacer(modifier = Modifier.weight(1f))
 
-            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
 
+            bottomElements(onFreeTrialClicked = onFreeTrialClicked)
 
-                bottomElements(onFreeTrialClicked  =onFreeTrialClicked)
-            }
 
         }
 
@@ -192,7 +141,77 @@ fun OfferScreenContent(modifier: Modifier = Modifier, onFreeTrialClicked: () -> 
 
 
         }
+    }
+}
 
+@Composable
+private fun Features(featureList: List<OfferFeature>) {
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 62.dp, end = 38.dp)
+    ) {
+
+        featureList.forEach {
+
+            Spacer(modifier = Modifier.height(13.dp))
+            FeatureItem(it)
+            Spacer(modifier = Modifier.height(14.dp))
+            HorizontalDivider(
+                modifier = Modifier
+                    .height(1.dp)
+                    .padding(start = 36.dp),
+                color = Color(0x2CB4B4B4)
+            )
+        }
+    }
+
+}
+
+@Composable
+private fun ColumnScope.HeadingLogoAndText() {
+    Image(
+        imageVector = ImageVector.vectorResource(R.drawable.ic_premium),
+        contentDescription = null,
+        modifier = Modifier
+            .size(74.dp)
+            .align(Alignment.CenterHorizontally)
+    )
+
+    Spacer(modifier = Modifier.height(16.dp))
+
+    Text(
+        "Try Premium for Free",
+        modifier = Modifier
+            .align(Alignment.CenterHorizontally)
+            .padding(16.dp),
+        color = Color(0xFFFFE120),
+        style = MaterialTheme.typography.bodyLarge.copy(
+            fontSize = 24.sp,
+            fontWeight = FontWeight.SemiBold
+        ),
+        textAlign = TextAlign.Center
+    )
+}
+
+@Composable
+private fun BoxScope.BackgroundLogo() {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .align(Alignment.TopCenter)
+            .aspectRatio(1f)
+    ) {
+        Image(
+            modifier = Modifier
+                .matchParentSize()
+                .scale(1.3f),
+            imageVector = ImageVector.vectorResource(R.drawable.ic_compress),
+            colorFilter = ColorFilter.tint(Color.White),
+            contentDescription = null,
+            alpha = 0.08f
+        )
     }
 }
 
@@ -233,14 +252,15 @@ private fun bottomElements(onFreeTrialClicked: () -> Unit) {
         ) {
             val gradient = Brush.horizontalGradient(
 
-                colors = listOf(Color(0xFFF554FF),Color(0xFF0252FF))
+                colors = listOf(Color(0xFFF554FF), Color(0xFF0252FF))
             )
 
 
             Text(
                 "Start Free Trial",
                 modifier = Modifier.padding(vertical = 8.dp),
-                style = MaterialTheme.typography.bodyMedium.copy(brush = gradient,
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    brush = gradient,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.SemiBold
                 )
@@ -303,7 +323,7 @@ private fun FeatureItem(feature: OfferFeature) {
 private fun OfferScreenPreview() {
 
     MyPracticeApplicationTheme() {
-        OfferScreenContent()
+        OfferScreenContent(sampleFeatures)
     }
 
 }
