@@ -6,6 +6,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.example.mycomposablepractice.ui.screens.PremiumScreen
 import com.example.mypracticeapplication.ui.screens.CanvasScreen
+import com.example.mypracticeapplication.ui.screens.CustomOnboardingScreen
 import com.example.mypracticeapplication.ui.screens.HomeScreen
 import com.example.mypracticeapplication.ui.screens.OfferScreen
 import com.example.mypracticeapplication.ui.screens.SettingsScreen
@@ -23,7 +24,8 @@ fun AppNavHost(
                 onNavigateToProfile = { navController.navigate(ProfileRoute) },
                 onNavigateToSettings = { navController.navigate(SettingsRoute) },
                 onNavigateToCanvas = { navController.navigate(CanvasRoute) },
-                onNavigateToOffer = { navController.navigate(OfferRoute) }
+                onNavigateToOffer = { navController.navigate(OfferRoute) },
+                onNavigateToCustomOnboarding = { navController.navigate(CustomOnboardingRoute) }
             )
         }
 
@@ -47,6 +49,12 @@ fun AppNavHost(
 
         composable<OfferRoute> {
             OfferScreen()
+        }
+
+        composable<CustomOnboardingRoute> {
+            CustomOnboardingScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
         }
     }
 }

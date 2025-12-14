@@ -10,7 +10,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material3.Button
@@ -34,7 +36,8 @@ fun HomeScreen(
     onNavigateToProfile: () -> Unit,
     onNavigateToSettings: () -> Unit,
     onNavigateToCanvas: () -> Unit = {},
-    onNavigateToOffer: () -> Unit = {}
+    onNavigateToOffer: () -> Unit = {},
+    onNavigateToCustomOnboarding: () -> Unit = {}
 ) {
     Box(
         modifier = Modifier
@@ -51,7 +54,7 @@ fun HomeScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(24.dp),
+                .padding(24.dp).verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
@@ -164,6 +167,25 @@ fun HomeScreen(
                     fontWeight = FontWeight.SemiBold
                 )
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Button(
+                onClick = onNavigateToCustomOnboarding,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFFff6b6b),
+                    contentColor = Color.White
+                )
+            ) {
+                Text(
+                    text = "Custom Onboarding",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
         }
     }
 }
@@ -175,6 +197,7 @@ private fun HomeScreenPreview() {
         onNavigateToProfile = {},
         onNavigateToSettings = {},
         onNavigateToCanvas = {},
-        onNavigateToOffer = {}
+        onNavigateToOffer = {},
+        onNavigateToCustomOnboarding = {}
     )
 }

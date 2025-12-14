@@ -20,3 +20,6 @@ object CanvasRoute
 
 @Serializable
 object OfferRoute
+
+@Serializable
+object CustomOnboardingRoute

@@ -259,9 +259,7 @@ private fun Footer(onEvent: (PremiumUiEvent) -> Unit) {
             onClick = { onEvent(PremiumUiEvent.OnStartTrialClicked) },
             modifier = Modifier
                 .fillMaxWidth()
-                .background(brush = gradient, shape = RoundedCornerShape(50))
-
-            ,
+                .background(brush = gradient, shape = RoundedCornerShape(50)),
             shape = RoundedCornerShape(30.dp),
             colors = ButtonDefaults.buttonColors(
                 containerColor = Color.Transparent,
@@ -693,10 +691,11 @@ fun Badge60Percent(modifier: Modifier = Modifier, offPercent: String = "60% OFF"
 
 
     val gradient = Brush.verticalGradient(
-        colors = listOf(Color(0xFFF554FF), Color(0xFF434AFF)))
+        colors = listOf(Color(0xFFF554FF), Color(0xFF434AFF))
+    )
 
-                Surface(
-                    color = Color.Transparent,
+    Surface(
+        color = Color.Transparent,
         shape = RoundedCornerShape(8.dp),
         modifier = modifier.paint(
             painter = painterResource(R.drawable.off_background),
