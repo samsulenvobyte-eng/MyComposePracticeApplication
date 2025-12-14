@@ -5,7 +5,10 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.example.mycomposablepractice.ui.screens.PremiumScreen
+import com.example.mypracticeapplication.ui.screens.BottomSheetScreen
 import com.example.mypracticeapplication.ui.screens.CanvasScreen
+import com.example.mypracticeapplication.ui.screens.CompressOnboardingScreen
+import com.example.mypracticeapplication.ui.screens.HealthOnboardingScreen
 import com.example.mypracticeapplication.ui.screens.HomeScreen
 import com.example.mypracticeapplication.ui.screens.OfferScreen
 import com.example.mypracticeapplication.ui.screens.SettingsScreen
@@ -23,7 +26,10 @@ fun AppNavHost(
                 onNavigateToProfile = { navController.navigate(ProfileRoute) },
                 onNavigateToSettings = { navController.navigate(SettingsRoute) },
                 onNavigateToCanvas = { navController.navigate(CanvasRoute) },
-                onNavigateToOffer = { navController.navigate(OfferRoute) }
+                onNavigateToOffer = { navController.navigate(OfferRoute) },
+                onNavigateToHealthOnboarding = { navController.navigate(HealthOnboardingRoute) },
+                onNavigateToBottomSheet = { navController.navigate(BottomSheetRoute) },
+                onNavigateToCompressOnboarding = { navController.navigate(CompressOnboardingRoute) }
             )
         }
 
@@ -47,6 +53,20 @@ fun AppNavHost(
 
         composable<OfferRoute> {
             OfferScreen()
+        }
+
+        composable<HealthOnboardingRoute> {
+            HealthOnboardingScreen()
+        }
+
+        composable<BottomSheetRoute> {
+            BottomSheetScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable<CompressOnboardingRoute> {
+            CompressOnboardingScreen()
         }
     }
 }

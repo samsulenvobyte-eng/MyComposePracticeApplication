@@ -20,3 +20,12 @@ object CanvasRoute
 
 @Serializable
 object OfferRoute
+
+@Serializable
+object HealthOnboardingRoute
+
+@Serializable
+object BottomSheetRoute
+
+@Serializable
+object CompressOnboardingRoute

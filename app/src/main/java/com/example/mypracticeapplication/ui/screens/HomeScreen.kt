@@ -34,7 +34,10 @@ fun HomeScreen(
     onNavigateToProfile: () -> Unit,
     onNavigateToSettings: () -> Unit,
     onNavigateToCanvas: () -> Unit = {},
-    onNavigateToOffer: () -> Unit = {}
+    onNavigateToOffer: () -> Unit = {},
+    onNavigateToHealthOnboarding: () -> Unit = {},
+    onNavigateToBottomSheet: () -> Unit = {},
+    onNavigateToCompressOnboarding: () -> Unit = {}
 ) {
     Box(
         modifier = Modifier
@@ -164,6 +167,63 @@ fun HomeScreen(
                     fontWeight = FontWeight.SemiBold
                 )
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Button(
+                onClick = onNavigateToHealthOnboarding,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFFFF6B6B),
+                    contentColor = Color.White
+                )
+            ) {
+                Text(
+                    text = "Health Onboarding",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Button(
+                onClick = onNavigateToBottomSheet,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF6366F1),
+                    contentColor = Color.White
+                )
+            ) {
+                Text(
+                    text = "Bottom Sheets",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Button(
+                onClick = onNavigateToCompressOnboarding,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFFE040A0),
+                    contentColor = Color.White
+                )
+            ) {
+                Text(
+                    text = "Compress Onboarding",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
         }
     }
 }
@@ -175,6 +235,9 @@ private fun HomeScreenPreview() {
         onNavigateToProfile = {},
         onNavigateToSettings = {},
         onNavigateToCanvas = {},
-        onNavigateToOffer = {}
+        onNavigateToOffer = {},
+        onNavigateToHealthOnboarding = {},
+        onNavigateToBottomSheet = {},
+        onNavigateToCompressOnboarding = {}
     )
 }
