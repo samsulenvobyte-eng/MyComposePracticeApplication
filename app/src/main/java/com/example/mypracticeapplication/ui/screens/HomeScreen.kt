@@ -37,7 +37,9 @@ fun HomeScreen(
     onNavigateToSettings: () -> Unit,
     onNavigateToCanvas: () -> Unit = {},
     onNavigateToOffer: () -> Unit = {},
-    onNavigateToCustomOnboarding: () -> Unit = {}
+    onNavigateToCustomOnboarding: () -> Unit = {},
+    onNavigateToExperiment: () -> Unit = {},
+    onNavigateToOnboardingV2: () -> Unit = {}
 ) {
     Box(
         modifier = Modifier
@@ -186,6 +188,44 @@ fun HomeScreen(
                     fontWeight = FontWeight.SemiBold
                 )
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Button(
+                onClick = onNavigateToExperiment,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF11998e),
+                    contentColor = Color.White
+                )
+            ) {
+                Text(
+                    text = "Experiment",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Button(
+                onClick = onNavigateToOnboardingV2,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFFF554FF),
+                    contentColor = Color.White
+                )
+            ) {
+                Text(
+                    text = "Onboarding V2",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
         }
     }
 }
@@ -198,6 +238,8 @@ private fun HomeScreenPreview() {
         onNavigateToSettings = {},
         onNavigateToCanvas = {},
         onNavigateToOffer = {},
-        onNavigateToCustomOnboarding = {}
+        onNavigateToCustomOnboarding = {},
+        onNavigateToExperiment = {},
+        onNavigateToOnboardingV2 = {}
     )
 }

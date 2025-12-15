@@ -7,8 +7,10 @@ import androidx.navigation.compose.composable
 import com.example.mycomposablepractice.ui.screens.PremiumScreen
 import com.example.mypracticeapplication.ui.screens.CanvasScreen
 import com.example.mypracticeapplication.ui.screens.CustomOnboardingScreen
+import com.example.mypracticeapplication.ui.screens.ExperimentScreen
 import com.example.mypracticeapplication.ui.screens.HomeScreen
 import com.example.mypracticeapplication.ui.screens.OfferScreen
+import com.example.mypracticeapplication.ui.screens.OnboardingV2Screen
 import com.example.mypracticeapplication.ui.screens.SettingsScreen
 
 @Composable
@@ -25,7 +27,9 @@ fun AppNavHost(
                 onNavigateToSettings = { navController.navigate(SettingsRoute) },
                 onNavigateToCanvas = { navController.navigate(CanvasRoute) },
                 onNavigateToOffer = { navController.navigate(OfferRoute) },
-                onNavigateToCustomOnboarding = { navController.navigate(CustomOnboardingRoute) }
+                onNavigateToCustomOnboarding = { navController.navigate(CustomOnboardingRoute) },
+                onNavigateToExperiment = { navController.navigate(ExperimentRoute) },
+                onNavigateToOnboardingV2 = { navController.navigate(OnboardingV2Route) }
             )
         }
 
@@ -54,6 +58,19 @@ fun AppNavHost(
         composable<CustomOnboardingRoute> {
             CustomOnboardingScreen(
                 onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable<ExperimentRoute> {
+            ExperimentScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable<OnboardingV2Route> {
+            OnboardingV2Screen(
+                onNavigateBack = { navController.popBackStack() },
+                onComplete = { navController.popBackStack() }
             )
         }
     }

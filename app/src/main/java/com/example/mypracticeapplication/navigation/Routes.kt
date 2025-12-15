@@ -23,3 +23,9 @@ object OfferRoute
 
 @Serializable
 object CustomOnboardingRoute
+
+@Serializable
+object ExperimentRoute
+
+@Serializable
+object OnboardingV2Route
