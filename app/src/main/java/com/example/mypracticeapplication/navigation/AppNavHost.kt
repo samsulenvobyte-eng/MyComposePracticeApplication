@@ -6,6 +6,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.example.mycomposablepractice.ui.screens.PremiumScreen
 import com.example.mypracticeapplication.ui.screens.CanvasScreen
+import com.example.mypracticeapplication.ui.screens.CompareScreen
 import com.example.mypracticeapplication.ui.screens.CustomOnboardingScreen
 import com.example.mypracticeapplication.ui.screens.ExperimentScreen
 import com.example.mypracticeapplication.ui.screens.HomeScreen
@@ -29,7 +30,8 @@ fun AppNavHost(
                 onNavigateToOffer = { navController.navigate(OfferRoute) },
                 onNavigateToCustomOnboarding = { navController.navigate(CustomOnboardingRoute) },
                 onNavigateToExperiment = { navController.navigate(ExperimentRoute) },
-                onNavigateToOnboardingV2 = { navController.navigate(OnboardingV2Route) }
+                onNavigateToOnboardingV2 = { navController.navigate(OnboardingV2Route) },
+                onNavigateToCompare = { navController.navigate(CompareRoute) }
             )
         }
 
@@ -71,6 +73,12 @@ fun AppNavHost(
             OnboardingV2Screen(
                 onNavigateBack = { navController.popBackStack() },
                 onComplete = { navController.popBackStack() }
+            )
+        }
+
+        composable<CompareRoute> {
+            CompareScreen(
+                onNavigateBack = { navController.popBackStack() }
             )
         }
     }

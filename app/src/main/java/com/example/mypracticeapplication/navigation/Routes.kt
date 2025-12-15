@@ -29,3 +29,6 @@ object ExperimentRoute
 
 @Serializable
 object OnboardingV2Route
+
+@Serializable
+object CompareRoute

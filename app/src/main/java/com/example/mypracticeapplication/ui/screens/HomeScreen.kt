@@ -39,7 +39,8 @@ fun HomeScreen(
     onNavigateToOffer: () -> Unit = {},
     onNavigateToCustomOnboarding: () -> Unit = {},
     onNavigateToExperiment: () -> Unit = {},
-    onNavigateToOnboardingV2: () -> Unit = {}
+    onNavigateToOnboardingV2: () -> Unit = {},
+    onNavigateToCompare: () -> Unit = {}
 ) {
     Box(
         modifier = Modifier
@@ -226,6 +227,25 @@ fun HomeScreen(
                     fontWeight = FontWeight.SemiBold
                 )
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Button(
+                onClick = onNavigateToCompare,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF5C6BC0),
+                    contentColor = Color.White
+                )
+            ) {
+                Text(
+                    text = "Compare",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
         }
     }
 }
@@ -240,6 +260,7 @@ private fun HomeScreenPreview() {
         onNavigateToOffer = {},
         onNavigateToCustomOnboarding = {},
         onNavigateToExperiment = {},
-        onNavigateToOnboardingV2 = {}
+        onNavigateToOnboardingV2 = {},
+        onNavigateToCompare = {}
     )
 }
