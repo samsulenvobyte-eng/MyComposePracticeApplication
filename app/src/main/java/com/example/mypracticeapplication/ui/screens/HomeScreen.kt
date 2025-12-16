@@ -10,8 +10,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
@@ -27,9 +31,18 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+
+data class NavButton(
+    val label: String,
+    val containerColor: Color,
+    val contentColor: Color,
+    val onClick: () -> Unit
+)
 
 @Composable
 fun HomeScreen(
@@ -43,6 +56,18 @@ fun HomeScreen(
     onNavigateToCompare: () -> Unit = {},
     onNavigateToViewBatchImage: () -> Unit = {}
 ) {
+    val navButtons = listOf(
+        NavButton("Profile", Color.White, Color(0xFF667eea), onNavigateToProfile),
+        NavButton("Settings", Color.White.copy(alpha = 0.2f), Color.White, onNavigateToSettings),
+        NavButton("Canvas", Color(0xFFf093fb), Color.White, onNavigateToCanvas),
+        NavButton("Offers", Color(0xFF43e97b), Color.White, onNavigateToOffer),
+        NavButton("Onboarding", Color(0xFFff6b6b), Color.White, onNavigateToCustomOnboarding),
+        NavButton("Experiment", Color(0xFF11998e), Color.White, onNavigateToExperiment),
+        NavButton("Onboarding V2", Color(0xFFF554FF), Color.White, onNavigateToOnboardingV2),
+        NavButton("Compare", Color(0xFF5C6BC0), Color.White, onNavigateToCompare),
+        NavButton("Batch Image", Color(0xFFFF7043), Color.White, onNavigateToViewBatchImage)
+    )
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -58,14 +83,16 @@ fun HomeScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(24.dp).verticalScroll(rememberScrollState()),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+                .padding(20.dp)
+                .verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            Spacer(modifier = Modifier.height(24.dp))
+
             // Icon container
             Box(
                 modifier = Modifier
-                    .size(120.dp)
+                    .size(80.dp)
                     .clip(CircleShape)
                     .background(Color.White.copy(alpha = 0.2f)),
                 contentAlignment = Alignment.Center
@@ -73,199 +100,70 @@ fun HomeScreen(
                 Icon(
                     imageVector = Icons.Default.Home,
                     contentDescription = "Home",
-                    modifier = Modifier.size(60.dp),
+                    modifier = Modifier.size(40.dp),
                     tint = Color.White
                 )
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             Text(
                 text = "Welcome Home",
-                fontSize = 32.sp,
+                fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.White
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(4.dp))
 
             Text(
                 text = "Navigation Demo App",
-                fontSize = 16.sp,
+                fontSize = 14.sp,
                 color = Color.White.copy(alpha = 0.8f)
             )
 
-            Spacer(modifier = Modifier.height(48.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
-            // Navigation buttons
-            Button(
-                onClick = onNavigateToProfile,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color.White,
-                    contentColor = Color(0xFF667eea)
-                )
+            // Navigation buttons in grid
+            Column(
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                Text(
-                    text = "Go to Profile",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
+                navButtons.chunked(2).forEach { rowButtons ->
+                    androidx.compose.foundation.layout.Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        rowButtons.forEach { button ->
+                            Button(
+                                onClick = button.onClick,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(44.dp),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = button.containerColor,
+                                    contentColor = button.contentColor
+                                )
+                            ) {
+                                Text(
+                                    text = button.label,
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+                        }
+                        // Add empty space if odd number of buttons in last row
+                        if (rowButtons.size == 1) {
+                            Spacer(modifier = Modifier.weight(1f))
+                        }
+                    }
+                }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Button(
-                onClick = onNavigateToSettings,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color.White.copy(alpha = 0.2f),
-                    contentColor = Color.White
-                )
-            ) {
-                Text(
-                    text = "Go to Settings",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Button(
-                onClick = onNavigateToCanvas,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFf093fb),
-                    contentColor = Color.White
-                )
-            ) {
-                Text(
-                    text = "Canvas Examples",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Button(
-                onClick = onNavigateToOffer,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF43e97b),
-                    contentColor = Color.White
-                )
-            ) {
-                Text(
-                    text = "Offers",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Button(
-                onClick = onNavigateToCustomOnboarding,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFff6b6b),
-                    contentColor = Color.White
-                )
-            ) {
-                Text(
-                    text = "Custom Onboarding",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Button(
-                onClick = onNavigateToExperiment,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF11998e),
-                    contentColor = Color.White
-                )
-            ) {
-                Text(
-                    text = "Experiment",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Button(
-                onClick = onNavigateToOnboardingV2,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFF554FF),
-                    contentColor = Color.White
-                )
-            ) {
-                Text(
-                    text = "Onboarding V2",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Button(
-                onClick = onNavigateToCompare,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF5C6BC0),
-                    contentColor = Color.White
-                )
-            ) {
-                Text(
-                    text = "Compare",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Button(
-                onClick = onNavigateToViewBatchImage,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFFF7043),
-                    contentColor = Color.White
-                )
-            ) {
-                Text(
-                    text = "View Batch Image",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
+            Spacer(modifier = Modifier.height(24.dp))
         }
     }
 }

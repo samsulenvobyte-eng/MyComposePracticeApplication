@@ -60,6 +60,8 @@ import com.example.mypracticeapplication.R
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
+//todo: fix weight mismanagement
+
 data class OnBoardingModel(
     @param:DrawableRes val image: Int,
     val title: AnnotatedString,
@@ -451,7 +453,7 @@ private fun TextContent(
     }
 }
 
-@Preview(showBackground = true, device = "spec:parent=pixel_4,orientation=landscape")
+@Preview(showBackground = true, device = "id:pixel_4")
 @Composable
 private fun CustomOnboardingScreenPreview() {
     CustomOnboardingScreen()
