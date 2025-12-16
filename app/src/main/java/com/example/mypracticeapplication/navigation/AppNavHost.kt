@@ -13,6 +13,7 @@ import com.example.mypracticeapplication.ui.screens.HomeScreen
 import com.example.mypracticeapplication.ui.screens.OfferScreen
 import com.example.mypracticeapplication.ui.screens.OnboardingV2Screen
 import com.example.mypracticeapplication.ui.screens.SettingsScreen
+import com.example.mypracticeapplication.ui.screens.ViewBatchImageScreen
 
 @Composable
 fun AppNavHost(
@@ -31,7 +32,8 @@ fun AppNavHost(
                 onNavigateToCustomOnboarding = { navController.navigate(CustomOnboardingRoute) },
                 onNavigateToExperiment = { navController.navigate(ExperimentRoute) },
                 onNavigateToOnboardingV2 = { navController.navigate(OnboardingV2Route) },
-                onNavigateToCompare = { navController.navigate(CompareRoute) }
+                onNavigateToCompare = { navController.navigate(CompareRoute) },
+                onNavigateToViewBatchImage = { navController.navigate(ViewBatchImageRoute) }
             )
         }
 
@@ -78,6 +80,12 @@ fun AppNavHost(
 
         composable<CompareRoute> {
             CompareScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable<ViewBatchImageRoute> {
+            ViewBatchImageScreen(
                 onNavigateBack = { navController.popBackStack() }
             )
         }

@@ -40,7 +40,8 @@ fun HomeScreen(
     onNavigateToCustomOnboarding: () -> Unit = {},
     onNavigateToExperiment: () -> Unit = {},
     onNavigateToOnboardingV2: () -> Unit = {},
-    onNavigateToCompare: () -> Unit = {}
+    onNavigateToCompare: () -> Unit = {},
+    onNavigateToViewBatchImage: () -> Unit = {}
 ) {
     Box(
         modifier = Modifier
@@ -246,6 +247,25 @@ fun HomeScreen(
                     fontWeight = FontWeight.SemiBold
                 )
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Button(
+                onClick = onNavigateToViewBatchImage,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFFFF7043),
+                    contentColor = Color.White
+                )
+            ) {
+                Text(
+                    text = "View Batch Image",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
         }
     }
 }
@@ -261,6 +281,7 @@ private fun HomeScreenPreview() {
         onNavigateToCustomOnboarding = {},
         onNavigateToExperiment = {},
         onNavigateToOnboardingV2 = {},
-        onNavigateToCompare = {}
+        onNavigateToCompare = {},
+        onNavigateToViewBatchImage = {}
     )
 }

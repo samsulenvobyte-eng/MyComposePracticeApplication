@@ -32,3 +32,6 @@ object OnboardingV2Route
 
 @Serializable
 object CompareRoute
+
+@Serializable
+object ViewBatchImageRoute
