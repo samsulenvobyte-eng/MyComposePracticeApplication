@@ -69,8 +69,7 @@ val sampleFeatures = listOf(
 fun OfferScreen() {
 
     val featureList = sampleFeatures
-
-    StatusBarIcons(false)
+    
     OfferScreenContent(featureList = featureList, onFreeTrialClicked = {}, onBackClick = {})
 }
 
@@ -82,6 +81,8 @@ fun OfferScreenContent(
     onFreeTrialClicked: () -> Unit = {},
     onBackClick: () -> Unit = {}
 ) {
+
+    StatusBarIcons(false)
 
     val gradient = Brush.verticalGradient(
         colors = listOf(

@@ -4,7 +4,6 @@ import android.content.res.Configuration
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -35,7 +34,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
@@ -52,7 +50,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
@@ -61,6 +58,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 //todo: fix weight mismanagement
+//todo: Make the screen scrollable for bigger fonts
 
 data class OnBoardingModel(
     @param:DrawableRes val image: Int,
@@ -77,7 +75,7 @@ val brush = Brush.linearGradient(
     start = Offset(0f, 0f),
     end = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)
 )
-val onBoardingList = listOf<OnBoardingModel>(
+val onBoardingList = listOf(
     OnBoardingModel(
         R.drawable.img_slider_foreground,
         buildAnnotatedString {
@@ -128,44 +126,65 @@ val onBoardingList = listOf<OnBoardingModel>(
 )
 
 
+
 @Composable
-fun CustomOnboardingScreen(
-    modifier: Modifier = Modifier,
-    onNavigateBack: () -> Unit = {}
-) {
+fun CustomOnboardingScreen() {
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
     val pageCount = onBoardingList.size
     val state = rememberPagerState(pageCount = { pageCount })
-    val image = onBoardingList.get(state.currentPage).image
     val title = onBoardingList.get(state.currentPage).title
     val subtitle = onBoardingList.get(state.currentPage).subtitle
     val buttonText = onBoardingList.get(state.currentPage).buttonText
-    val scrope = rememberCoroutineScope()
+    val scope = rememberCoroutineScope()
 
+    OnBoardingScreenContent(
+        isLandscape,
+        title,
+        subtitle,
+        buttonText,
+        state,
+        pageCount,
+        buttonClick = {
+            scope.launch {
+                if (state.currentPage < state.pageCount - 1) {
+                    state.animateScrollToPage(state.currentPage + 1)
+                }
+            }
+        })
+}
+@Composable
+fun OnBoardingScreenContent(
+    isLandscape: Boolean,
+    title: AnnotatedString,
+    subtitle: String,
+    buttonText: String,
+    state: PagerState,
+    pageCount: Int,
+    buttonClick: () -> Unit
+) {
 
     if (isLandscape) {
-        LandscapeMode(state, pageCount, image, title, subtitle, buttonText, scrope)
+        LandscapeMode(state, pageCount, title, subtitle, buttonText, buttonClick)
 
     } else {
 
-        PortraitMode(state, pageCount, image, title, subtitle, buttonText, scrope)
+        PortraitMode(state, pageCount, title, subtitle, buttonText, buttonClick)
     }
-
-
 }
+
 
 @Composable
 fun LandscapeMode(
     state: PagerState,
     pageCount: Int,
-    image: Int,
     title: AnnotatedString,
     subtitle: String,
     buttonText: String,
-    scrope: CoroutineScope,
+    buttonClick: () -> Unit,
     modifier: Modifier = Modifier
+
 ) {
 
     Row(
@@ -186,7 +205,6 @@ fun LandscapeMode(
                     .width(400.dp)
                     .fillMaxHeight()
                     .padding(contentPadding)
-                    .clip(RoundedCornerShape(8.dp))
                     .background(color = Color(0xFFFEF1FF), shape = RoundedCornerShape(8.dp)),
                 contentAlignment = Alignment.Center
             ) {
@@ -209,8 +227,6 @@ fun LandscapeMode(
                         .padding(16.dp),
                     contentDescription = null
                 )
-
-
             }
         }
 
@@ -222,8 +238,7 @@ fun LandscapeMode(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
-            repeat(pageCount) { it ->
-                5
+            repeat(pageCount) {
                 val color = if (state.currentPage == it) Color(0xFFF554FF) else Color(0xFFE1EBFF)
                 val height = if (state.currentPage == it) 27.dp else 8.dp
 
@@ -268,7 +283,7 @@ fun LandscapeMode(
             Spacer(modifier = Modifier.weight(1f))
 
             Button(
-                onClick = { scrope.launch { state.animateScrollToPage(state.currentPage + 1) } },
+                onClick = buttonClick,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(start = 16.dp, end = 16.dp)
@@ -281,15 +296,10 @@ fun LandscapeMode(
                 Text(
                     text = buttonText, modifier = Modifier.padding(vertical = 8.dp),
                     style = MaterialTheme.typography.bodyLarge
-
                 )
             }
             Spacer(modifier = Modifier.height(55.dp))
-
-
         }
-
-
     }
 
 }
@@ -298,12 +308,12 @@ fun LandscapeMode(
 fun PortraitMode(
     state: PagerState,
     pageCount: Int,
-    image: Int,
     title: AnnotatedString,
     subtitle: String,
     buttonText: String,
-    scrope: CoroutineScope,
+    buttonClick: () -> Unit,
     modifier: Modifier = Modifier
+
 ) {
 
     Column(
@@ -325,7 +335,6 @@ fun PortraitMode(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(contentPadding)
-                    .clip(RoundedCornerShape(8.dp))
                     .background(color = Color(0xFFFEF1FF), shape = RoundedCornerShape(8.dp)),
                 contentAlignment = Alignment.Center
             ) {
@@ -340,29 +349,17 @@ fun PortraitMode(
                     alpha = 0.09f
                 )
 
-
-                Box(
+                Image(
+                    painter = painterResource(pageImage),
                     modifier = Modifier
                         .fillMaxSize()
+                        .align(Alignment.Center)
+                        .padding(16.dp),
 
-
-                ) {
-
-                    Image(
-                        painter = painterResource(pageImage),
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .align(Alignment.Center)
-                            .padding(16.dp),
-
-                        contentDescription = null
-                    )
-                }
+                    contentDescription = null
+                )
             }
-
         }
-
-
 
         TextContent(
             modifier = Modifier
@@ -375,7 +372,7 @@ fun PortraitMode(
         )
 
         Button(
-            onClick = { scrope.launch { state.animateScrollToPage(state.currentPage + 1) } },
+            onClick = buttonClick,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(start = 16.dp, end = 16.dp)
@@ -392,11 +389,8 @@ fun PortraitMode(
             )
         }
         Spacer(modifier = Modifier.height(16.dp))
-
     }
-
 }
-
 @Composable
 private fun TextContent(
     title: AnnotatedString,

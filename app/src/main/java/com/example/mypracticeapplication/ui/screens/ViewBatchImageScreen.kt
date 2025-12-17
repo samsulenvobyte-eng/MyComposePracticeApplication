@@ -100,7 +100,7 @@ fun ViewBatchImageScreenContent(
     imageMetaData: List<BatchImageMetaData>,
     modifier: Modifier = Modifier,
     onNavigateBack: () -> Unit = {},
-    ) {
+) {
 
     Scaffold(
         topBar = {
@@ -164,57 +164,67 @@ fun ViewBatchImageScreenContent(
                     }
                 }
 
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier
-                        .padding(end = 16.dp)
-                        .size(35.dp)
-                        .clip(CircleShape)
-                        .background(color = Color(0x99585858).copy(alpha = 0.6f))
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = ripple(color = Color.White),
-                            onClick = {
-                                scope.launch { state.animateScrollToPage(state.currentPage + 1) }
-                            })
-                        .align(Alignment.CenterEnd)
-                ) {
-                    Icon(
-                        imageVector = ImageVector.vectorResource(R.drawable.ic_next),
-                        modifier = Modifier.size(14.dp), // This fits nicely inside the 25dp Box
-                        tint = Color.White,
-                        contentDescription = null
-                    )
+                val showNextButton = state.currentPage < state.pageCount - 1
+                val showPreviousButton = state.currentPage > 0
+
+                if(showNextButton){
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .padding(end = 16.dp)
+                            .size(35.dp)
+                            .clip(CircleShape)
+                            .background(color = Color(0x99585858).copy(alpha = 0.6f))
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = ripple(color = Color.White),
+                                onClick = {
+                                    scope.launch { state.animateScrollToPage(state.currentPage + 1) }
+                                })
+                            .align(Alignment.CenterEnd)
+                    ) {
+                        Icon(
+                            imageVector = ImageVector.vectorResource(R.drawable.ic_next),
+                            modifier = Modifier.size(14.dp),
+                            tint = Color.White,
+                            contentDescription = null
+                        )
+                    }
                 }
 
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier
-                        .padding(start = 16.dp)
-                        .size(35.dp)
-                        .clip(CircleShape)
-                        .background(color = Color(0x99585858).copy(alpha = 0.6f))
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = ripple(color = Color.White),
-                            onClick = {
-                                scope.launch { state.animateScrollToPage(state.currentPage - 1) }
-                            })
-                        .align(Alignment.CenterStart)
-                ) {
-                    Icon(
-                        imageVector = ImageVector.vectorResource(R.drawable.ic_back),
-                        modifier = Modifier.size(14.dp),
-                        tint = Color.White,
-                        contentDescription = null
-                    )
+                if(showPreviousButton){
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .padding(start = 16.dp)
+                            .size(35.dp)
+                            .clip(CircleShape)
+                            .background(color = Color(0x99585858).copy(alpha = 0.6f))
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = ripple(color = Color.White),
+                                onClick = {
+                                    scope.launch { state.animateScrollToPage(state.currentPage - 1) }
+                                })
+                            .align(Alignment.CenterStart)
+                    ) {
+                        Icon(
+                            imageVector = ImageVector.vectorResource(R.drawable.ic_back),
+                            modifier = Modifier.size(14.dp),
+                            tint = Color.White,
+                            contentDescription = null
+                        )
+                    }
                 }
+
+
             }
 
             BottomMetaData(uri, size, resolution, index)
         }
     }
 }
+
 @Composable
 private fun BottomMetaData(
     uri: String,

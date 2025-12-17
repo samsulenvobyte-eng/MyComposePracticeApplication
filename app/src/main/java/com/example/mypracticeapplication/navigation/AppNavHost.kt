@@ -60,9 +60,7 @@ fun AppNavHost(
         }
 
         composable<CustomOnboardingRoute> {
-            CustomOnboardingScreen(
-                onNavigateBack = { navController.popBackStack() }
-            )
+            CustomOnboardingScreen()
         }
 
         composable<ExperimentRoute> {
