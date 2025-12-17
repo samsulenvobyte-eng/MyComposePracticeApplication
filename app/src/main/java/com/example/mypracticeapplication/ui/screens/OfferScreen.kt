@@ -3,6 +3,7 @@ package com.example.mypracticeapplication.ui.screens
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
@@ -131,16 +132,11 @@ fun OfferScreenContent(
                 .align(Alignment.TopEnd)
                 .padding(top = 16.dp, end = 16.dp)
         ) {
-
             Icon(
                 imageVector = ImageVector.vectorResource(R.drawable.ic_close),
                 contentDescription = null,
                 tint = Color.Unspecified,
-
-
                 )
-
-
         }
     }
 }
@@ -203,6 +199,7 @@ private fun BoxScope.BackgroundLogo() {
             .fillMaxWidth()
             .align(Alignment.TopCenter)
             .aspectRatio(1f)
+
     ) {
         Image(
             modifier = Modifier

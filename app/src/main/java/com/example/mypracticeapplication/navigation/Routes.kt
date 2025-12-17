@@ -35,3 +35,6 @@ object CompareRoute
 
 @Serializable
 object ViewBatchImageRoute
+
+@Serializable
+object ResultRoute

@@ -13,6 +13,7 @@ import com.example.mypracticeapplication.ui.screens.HomeScreen
 import com.example.mypracticeapplication.ui.screens.OfferScreen
 import com.example.mypracticeapplication.ui.screens.OnboardingV2Screen
 import com.example.mypracticeapplication.ui.screens.SettingsScreen
+import com.example.mypracticeapplication.ui.screens.ResultScreen
 import com.example.mypracticeapplication.ui.screens.ViewBatchImageScreen
 
 @Composable
@@ -33,7 +34,8 @@ fun AppNavHost(
                 onNavigateToExperiment = { navController.navigate(ExperimentRoute) },
                 onNavigateToOnboardingV2 = { navController.navigate(OnboardingV2Route) },
                 onNavigateToCompare = { navController.navigate(CompareRoute) },
-                onNavigateToViewBatchImage = { navController.navigate(ViewBatchImageRoute) }
+                onNavigateToViewBatchImage = { navController.navigate(ViewBatchImageRoute) },
+                onNavigateToResult = { navController.navigate(ResultRoute) }
             )
         }
 
@@ -60,7 +62,9 @@ fun AppNavHost(
         }
 
         composable<CustomOnboardingRoute> {
-            CustomOnboardingScreen()
+            CustomOnboardingScreen(
+                onNavigateToResult = { navController.navigate(ResultRoute) }
+            )
         }
 
         composable<ExperimentRoute> {
@@ -84,6 +88,12 @@ fun AppNavHost(
 
         composable<ViewBatchImageRoute> {
             ViewBatchImageScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable<ResultRoute> {
+            ResultScreen(
                 onNavigateBack = { navController.popBackStack() }
             )
         }

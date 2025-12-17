@@ -71,6 +71,7 @@ import com.example.mypracticeapplication.R
 import com.example.mypracticeapplication.ui.theme.MyPracticeApplicationTheme
 
 //Todo: use foreach loop for feature list
+//Todo: remove purchase button ripple effect
 
 enum class LineDirection {
     LeftToRight,

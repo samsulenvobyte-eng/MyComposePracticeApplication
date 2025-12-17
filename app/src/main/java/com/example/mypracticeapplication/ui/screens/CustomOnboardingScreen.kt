@@ -128,15 +128,17 @@ val onBoardingList = listOf(
 
 
 @Composable
-fun CustomOnboardingScreen() {
+fun CustomOnboardingScreen(
+    onNavigateToResult: () -> Unit = {}
+) {
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
     val pageCount = onBoardingList.size
     val state = rememberPagerState(pageCount = { pageCount })
-    val title = onBoardingList.get(state.currentPage).title
-    val subtitle = onBoardingList.get(state.currentPage).subtitle
-    val buttonText = onBoardingList.get(state.currentPage).buttonText
+    val title = onBoardingList[state.currentPage].title
+    val subtitle = onBoardingList[state.currentPage].subtitle
+    val buttonText = onBoardingList[state.currentPage].buttonText
     val scope = rememberCoroutineScope()
 
     OnBoardingScreenContent(
@@ -150,6 +152,8 @@ fun CustomOnboardingScreen() {
             scope.launch {
                 if (state.currentPage < state.pageCount - 1) {
                     state.animateScrollToPage(state.currentPage + 1)
+                } else {
+                    onNavigateToResult()
                 }
             }
         })

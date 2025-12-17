@@ -54,7 +54,8 @@ fun HomeScreen(
     onNavigateToExperiment: () -> Unit = {},
     onNavigateToOnboardingV2: () -> Unit = {},
     onNavigateToCompare: () -> Unit = {},
-    onNavigateToViewBatchImage: () -> Unit = {}
+    onNavigateToViewBatchImage: () -> Unit = {},
+    onNavigateToResult: () -> Unit = {}
 ) {
     val navButtons = listOf(
         NavButton("Profile", Color.White, Color(0xFF667eea), onNavigateToProfile),
@@ -65,7 +66,8 @@ fun HomeScreen(
         NavButton("Experiment", Color(0xFF11998e), Color.White, onNavigateToExperiment),
         NavButton("Onboarding V2", Color(0xFFF554FF), Color.White, onNavigateToOnboardingV2),
         NavButton("Compare", Color(0xFF5C6BC0), Color.White, onNavigateToCompare),
-        NavButton("Batch Image", Color(0xFFFF7043), Color.White, onNavigateToViewBatchImage)
+        NavButton("Batch Image", Color(0xFFFF7043), Color.White, onNavigateToViewBatchImage),
+        NavButton("Result", Color(0xFF00BCD4), Color.White, onNavigateToResult)
     )
 
     Box(
@@ -180,6 +182,7 @@ private fun HomeScreenPreview() {
         onNavigateToExperiment = {},
         onNavigateToOnboardingV2 = {},
         onNavigateToCompare = {},
-        onNavigateToViewBatchImage = {}
+        onNavigateToViewBatchImage = {},
+        onNavigateToResult = {}
     )
 }
