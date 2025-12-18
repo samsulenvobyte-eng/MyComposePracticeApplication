@@ -38,3 +38,6 @@ object ViewBatchImageRoute
 
 @Serializable
 object ResultRoute
+
+@Serializable
+object FitPhotoRoute

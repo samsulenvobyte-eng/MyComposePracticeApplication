@@ -15,6 +15,7 @@ import com.example.mypracticeapplication.ui.screens.OnboardingV2Screen
 import com.example.mypracticeapplication.ui.screens.SettingsScreen
 import com.example.mypracticeapplication.ui.screens.ResultScreen
 import com.example.mypracticeapplication.ui.screens.ViewBatchImageScreen
+import com.example.mypracticeapplication.ui.screens.FitPhotoScreen
 
 @Composable
 fun AppNavHost(
@@ -35,7 +36,8 @@ fun AppNavHost(
                 onNavigateToOnboardingV2 = { navController.navigate(OnboardingV2Route) },
                 onNavigateToCompare = { navController.navigate(CompareRoute) },
                 onNavigateToViewBatchImage = { navController.navigate(ViewBatchImageRoute) },
-                onNavigateToResult = { navController.navigate(ResultRoute) }
+                onNavigateToResult = { navController.navigate(ResultRoute) },
+                onNavigateToFitPhoto = { navController.navigate(FitPhotoRoute) }
             )
         }
 
@@ -94,6 +96,12 @@ fun AppNavHost(
 
         composable<ResultRoute> {
             ResultScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable<FitPhotoRoute> {
+            FitPhotoScreen(
                 onNavigateBack = { navController.popBackStack() }
             )
         }
