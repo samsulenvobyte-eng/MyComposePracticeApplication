@@ -100,7 +100,7 @@ fun BottomBarItem(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier
             .clickable(onClick = onClick)
-            .padding(vertical = 8.dp)
+            .padding(top = 9.dp, bottom = 10.dp)
     ) {
         Box(modifier = Modifier.size(24.dp)) {
             Icon(

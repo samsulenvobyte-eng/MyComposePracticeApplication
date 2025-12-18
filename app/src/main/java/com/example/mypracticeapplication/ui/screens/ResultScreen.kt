@@ -1,5 +1,7 @@
 package com.example.mypracticeapplication.ui.screens
 
+import androidx.annotation.DrawableRes
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -16,86 +18,146 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.autofill.ContentType
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.focus.focusModifier
+import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.layout.ModifierLocalBeyondBoundsLayout
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.vectorResource
-import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import com.example.mypracticeapplication.R
-import com.example.mypracticeapplication.ui.components.BottomNavDestination
 import com.example.mypracticeapplication.ui.components.GradientBottomBar
+
+//Note: Shorten the image title
+//Note: Will top progress alway have gradient?
+//Note: Bigger allow icon:
+//Note: click effect on the edit image item icon buttons
+
+
+enum class ResultStatus {
+    Success,
+    Failed
+}
+
+@Immutable
+data class ResultDataModel(
+    @param:DrawableRes val image: Int,
+    val title: String,
+    val originalSize: String,
+    val afterSize: String,
+    val resolution: String,
+    val status: ResultStatus = ResultStatus.Success
+)
+
+val sampleResultData = listOf(
+    ResultDataModel(
+        R.drawable.img_compare_screen,
+        "pexel-scott-web-2...3445654644561.jpg",
+        "6.34 MB",
+        "456 KB",
+        "480×864"
+    ), ResultDataModel(
+        R.drawable.img_sample_2,
+        "pexel-dfsdfsdf...3445654644561.jpg",
+        "6.34 MB",
+        "456 KB",
+        "480×864"
+    ), ResultDataModel(
+        R.drawable.img_compare_screen,
+        "pexel-scottdf644561.jpg",
+        "6.34 MB",
+        "456 KB",
+        "480×864"
+    ), ResultDataModel(
+        R.drawable.img_sample_2,
+        "pexel-scott-web-2...3445654644561.jpg",
+        "6.34 MB",
+        "456 KB",
+        "480×864"
+    )
+)
+
+val verticalGradient = Brush.verticalGradient(
+    colors = listOf(
+        Color(0xFFF554FF),
+        Color(0xFF434AFF),
+    )
+
+)
+val horizontalGradient = Brush.horizontalGradient(
+    colors = listOf(
+        Color(0xFFF554FF),
+        Color(0xFF434AFF),
+    )
+
+)
 
 @Composable
 fun ResultScreen(
     onNavigateBack: () -> Unit = {}
 ) {
     val savedInfoText = "Saved 97%"
-    ResultScreenContent(savedInfoText = savedInfoText)
+    val resultDataList = sampleResultData
+
+
+
+    ResultScreenContent(savedInfoText = savedInfoText, resultDataList = resultDataList)
 }
 
 @Composable
-fun ResultScreenContent(savedInfoText: String, modifier: Modifier = Modifier) {
-    val context = LocalContext.current
-
+fun ResultScreenContent(
+    savedInfoText: String,
+    modifier: Modifier = Modifier,
+    resultDataList: List<ResultDataModel>
+) {
     Scaffold(
         modifier
             .fillMaxSize()
+            .background(color = Color.White)
             .safeDrawingPadding(),
         bottomBar = {
-            GradientBottomBar(
-                onItemClick = { destination ->
-                    val message = when (destination) {
-                        BottomNavDestination.Home -> "Home"
-                        BottomNavDestination.Compare -> "Compare"
-                        BottomNavDestination.Replace -> "Replace"
-                        BottomNavDestination.Share -> "Share"
-                    }
-                    android.widget.Toast.makeText(
-                        context,
-                        "Clicked: $message",
-                        android.widget.Toast.LENGTH_SHORT
-                    ).show()
-                }
-            )
-        }) { paddingValues ->
+
+
+            GradientBottomBar { }
+
+        })
+
+
+    { paddingValues ->
 
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
                 .background(color = Color.White)
+                .verticalScroll(rememberScrollState())
         ) {
 
             Spacer(modifier = Modifier.height(13.dp))
-
-
-
-
 
             HeadingContent(savedInfoText)
 
@@ -104,17 +166,17 @@ fun ResultScreenContent(savedInfoText: String, modifier: Modifier = Modifier) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
+                    .padding(start = 18.dp, end = 16.dp)
             ) {
 
 
                 Image(
                     imageVector = ImageVector.vectorResource(R.drawable.ic_folder),
                     modifier = Modifier
-                        .padding(start = 2.dp)
                         .size(24.dp)
-                        .background(Color.Blue, shape = RoundedCornerShape(4.dp))
-                        .padding(4.dp),
+                        .background(brush = verticalGradient, shape = RoundedCornerShape(4.dp))
+                        .padding(4.dp)
+                        .align(Alignment.CenterVertically),
                     contentDescription = null,
                     contentScale = ContentScale.Fit
                 )
@@ -124,7 +186,7 @@ fun ResultScreenContent(savedInfoText: String, modifier: Modifier = Modifier) {
                 Text(
                     "Saved at Internal Storage/Pictures/\nImageCompressor",
                     color = Color(0xFF333333),
-                    style = MaterialTheme.typography.bodySmall.copy(lineHeight = 1.em)
+                    style = MaterialTheme.typography.bodyMedium
                 )
             }
             Spacer(modifier = Modifier.height(16.dp))
@@ -137,27 +199,34 @@ fun ResultScreenContent(savedInfoText: String, modifier: Modifier = Modifier) {
                 "Edited Images",
                 modifier = Modifier.padding(horizontal = 16.dp),
                 style = MaterialTheme.typography.bodyMedium.copy(
+                    fontSize = 16.sp,
                     fontWeight = FontWeight.SemiBold,
                     lineHeight = 1.29.em
-                )
+                ),
+                color = Color(0xFF212121)
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
-                    .background(color = Color.White, shape = RoundedCornerShape(8.dp))
-                    .border(
-                        width = 1.dp,
-                        color = Color(0xFFEEEEEE),
-                        shape = RoundedCornerShape(8.dp)
-                    )
+            Column() {
 
-            ) {
+                resultDataList.forEach {
 
-                EditedImageItem()
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp)
+                            .background(color = Color.White, shape = RoundedCornerShape(8.dp))
+                            .border(
+                                width = 1.dp,
+                                color = Color(0xFFEEEEEE),
+                                shape = RoundedCornerShape(8.dp)
+                            )
+                    ) {
+                        EditedImageItem(resultDataModel = it)
+                    }
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
 
 
             }
@@ -168,7 +237,14 @@ fun ResultScreenContent(savedInfoText: String, modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun EditedImageItem() {
+private fun EditedImageItem(resultDataModel: ResultDataModel) {
+
+    val statusIcon = when (resultDataModel.status) {
+
+        ResultStatus.Success -> ImageVector.vectorResource(R.drawable.ic_thick_tick)
+        ResultStatus.Failed -> ImageVector.vectorResource(R.drawable.ic_close)
+    }
+
     Row(modifier = Modifier.fillMaxWidth()) {
 
         Box(
@@ -178,36 +254,36 @@ private fun EditedImageItem() {
         ) {
 
             Image(
-                painter = painterResource(R.drawable.img_compare_screen),
+                painter = painterResource(resultDataModel.image),
                 contentDescription = null,
                 modifier = Modifier
-
-                    .size(54.dp)
-
                     .clip(shape = RoundedCornerShape(6.dp)),
                 contentScale = ContentScale.Crop
             )
+
             Box(
                 modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .offset(x = 6.dp, y = 3.dp)
                     .size(15.dp)
-                    .clip(RoundedCornerShape(50))
-                    .background(Color(0xFF4CAF50)),
-                contentAlignment = Alignment.Center
+                    .offset(x = 5.dp, y = 2.dp)
+                    .background(brush = verticalGradient, shape = CircleShape)
+                    .align(alignment = Alignment.BottomEnd)
+
             ) {
+
                 Icon(
-                    imageVector = ImageVector.vectorResource(R.drawable.ic_thick_tick),
-                    contentDescription = "Selected",
-                    modifier = Modifier.size(6.dp),
+                    imageVector = statusIcon,
+                    modifier = Modifier
+                        .size(6.dp)
+                        .align(Alignment.Center),
+                    contentDescription = null,
                     tint = Color.White
+
                 )
             }
+
         }
 
-        //todo: Add status icon
-
-        Spacer(modifier = Modifier.width(8.dp))
+        Spacer(modifier = Modifier.width(13.dp))
 
         Column(
             modifier = Modifier
@@ -216,11 +292,12 @@ private fun EditedImageItem() {
         ) {
 
             Text(
-                text = "pexel-scott-web-2...3445654644561.jpg",
+                text = resultDataModel.title,
                 style = MaterialTheme.typography.bodySmall.copy(
                     fontWeight = FontWeight.W600,
                     lineHeight = 1.em
-                )
+                ),
+                color = Color(0xFF212121)
             )
 
             Spacer(modifier = Modifier.height(4.dp))
@@ -232,12 +309,13 @@ private fun EditedImageItem() {
                     Row(modifier = Modifier) {
 
                         Text(
-                            text = "6.1 MB",
+                            text = resultDataModel.originalSize,
                             style = MaterialTheme.typography.bodySmall.copy(
                                 fontSize = 10.sp,
                                 lineHeight = 1.em,
                                 fontWeight = FontWeight.W400
-                            )
+                            ),
+                            color = Color(0xFF424242)
                         )
 
                         Spacer(modifier = Modifier.width(4.dp))
@@ -247,32 +325,33 @@ private fun EditedImageItem() {
                             tint = Color.Unspecified,
                             contentDescription = null,
                             modifier = Modifier
-                                .size(8.dp)
+                                .size(10.dp)
                                 .align(Alignment.CenterVertically)
-
                         )
+
                         Spacer(modifier = Modifier.width(4.dp))
 
                         Text(
-                            text = "3.1 MB",
+                            text = resultDataModel.afterSize,
                             style = MaterialTheme.typography.bodySmall.copy(
                                 fontSize = 10.sp,
                                 lineHeight = 1.em,
-                                fontWeight = FontWeight.W600
-                            )
-                        )
+                                fontWeight = FontWeight.W600, brush = verticalGradient
+                            ),
 
+                            )
                     }
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(6.dp))
                     Text(
-                        text = "480×864",
+                        text = resultDataModel.resolution,
                         style = MaterialTheme.typography.bodySmall.copy(
                             fontSize = 10.sp,
                             lineHeight = 1.em,
                             fontWeight = FontWeight.W500
 
-                        )
+                        ),
+                        color = Color(0xFF757575)
                     )
                 }
 
@@ -288,11 +367,21 @@ private fun EditedImageItem() {
                     Icon(
                         imageVector = ImageVector.vectorResource(R.drawable.ic_compare),
                         modifier = Modifier
-                            .size(20.dp)
-                            .align(alignment = Alignment.Center),
+                            .size(22.dp)
+                            .align(alignment = Alignment.Center)
+                            .graphicsLayer(alpha = 0.99f)
+                            .drawWithCache {
+                                onDrawWithContent {
+                                    drawContent() // Draws the icon first
+                                    drawRect(
+                                        brush = verticalGradient,
+                                        blendMode = BlendMode.SrcAtop // Only draws where the icon is
+                                    )
+                                }
+                            },
 
                         contentDescription = null,
-                        tint = Color.Black
+                        tint = Color.Unspecified
                     )
                 }
 
@@ -340,9 +429,17 @@ private fun CompressStats() {
                 .padding(16.dp)
         ) {
 
-            CompressionSizeStat()
+            CompressionSizeStat(
+                progressTitle = "Original",
+                progress = 1f,
+                gradient = horizontalGradient
+            )
             Spacer(modifier = Modifier.height(16.dp))
-            CompressionSizeStat()
+            CompressionSizeStat(
+                "Compressed",
+                progress = 0.4f,
+                gradient = SolidColor(Color(0xFF00B154))
+            )
         }
 
 
@@ -350,61 +447,109 @@ private fun CompressStats() {
 }
 
 @Composable
-private fun CompressionSizeStat() {
-    Row(modifier = Modifier.fillMaxWidth()) {
+private fun CompressionSizeStat(
+    progressTitle: String,
+    modifier: Modifier = Modifier,
+    progress: Float,
+    gradient: Brush
+) {
+
+
+    Row(modifier = modifier.fillMaxWidth()) {
         Text(
-            text = "Original", style = MaterialTheme.typography.bodySmall.copy(
+            text = progressTitle, style = MaterialTheme.typography.bodyMedium.copy(
                 fontWeight = FontWeight.W500
-            )
+            ),
+            color = Color(0xFF212121)
         )
 
         Spacer(modifier = Modifier.weight(1f))
 
         Text(
-            text = "15.34 MB", style = MaterialTheme.typography.bodySmall.copy(
-                fontSize = 10.sp,
-                fontWeight = FontWeight.W500
+            text = "15.34 MB",
+            style = MaterialTheme.typography.bodySmall.copy(
+                fontWeight = FontWeight.W600, brush = verticalGradient
             )
         )
     }
     Spacer(modifier = Modifier.height(4.dp))
-    LinearProgressIndicator(
-        progress = { 0.4f },
-        modifier = Modifier.fillMaxWidth(),
-    )
+
+    GradientLinearProgress(progress, gradient = gradient)
+
+}
+
+@Composable
+fun GradientLinearProgress(
+    progress: Float,
+    modifier: Modifier = Modifier,
+    height: Dp = 4.dp, gradient: Brush
+) {
+    Canvas(
+        modifier = modifier
+            .height(height)
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(4.dp))
+    ) {
+        val progressWidth = size.width * progress.coerceIn(0f, 1f)
+
+        drawRoundRect(
+            color = Color.LightGray.copy(alpha = 0.3f),
+            cornerRadius = CornerRadius(size.height / 2)
+        )
+        drawRoundRect(
+            brush = gradient,
+            size = Size(progressWidth, size.height),
+            cornerRadius = CornerRadius(size.height / 2)
+        )
+    }
 }
 
 @Composable
 private fun HeadingContent(savedInfoText: String) {
-    Box(modifier = Modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier.align(Alignment.Center),
-            verticalAlignment = Alignment.CenterVertically
-        )
-        {
-            Text(
-                text = savedInfoText,
-                style = MaterialTheme.typography.bodyLarge.copy(
-                    fontSize = 21.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
-            )
-            Spacer(modifier = Modifier.width(9.dp))
-            Icon(
-                imageVector = ImageVector.vectorResource(R.drawable.ic_tick),
-                contentDescription = null,
-                tint = Color.Green,
-                modifier = Modifier.align(Alignment.CenterVertically)
-            )
-        }
 
-        IconButton(
-            onClick = {}, modifier = Modifier
-                .padding(start = 6.dp)
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 16.dp)
+    ) {
+
+        Box(modifier = Modifier.fillMaxWidth()) {
+            Row(
+                modifier = Modifier.align(Alignment.Center),
+                verticalAlignment = Alignment.CenterVertically
+            )
+            {
+                Text(
+                    text = savedInfoText,
+                    style = MaterialTheme.typography.bodyLarge.copy(
+                        fontSize = 21.sp,
+                        fontWeight = FontWeight.SemiBold
+                    ),
+                    color = Color(0xFF212121)
+                )
+                Spacer(modifier = Modifier.width(9.dp))
+
+                Icon(
+                    imageVector = ImageVector.vectorResource(R.drawable.ic_tick),
+                    contentDescription = null,
+                    tint = Color.Unspecified,
+                    modifier = Modifier.align(Alignment.CenterVertically)
+                )
+            }
+        }
+        Box(
+            modifier = Modifier
+                .size(24.dp)
+                .clip(shape = CircleShape)
+                .clickable(onClick = {})
                 .align(Alignment.CenterStart)
+
         ) {
             Icon(
                 imageVector = ImageVector.vectorResource(R.drawable.ic_close),
+                modifier = Modifier
+                    .size(14.dp)
+                    .align(Alignment.Center),
                 contentDescription = null,
                 tint = Color.Black,
             )
@@ -416,5 +561,5 @@ private fun HeadingContent(savedInfoText: String) {
 @Preview(showBackground = true, device = "id:pixel_4")
 @Composable
 private fun ResultScreenPreview() {
-    ResultScreenContent("Saved 97%")
+    ResultScreenContent("Saved 97%", resultDataList = sampleResultData)
 }

@@ -584,7 +584,7 @@ fun PlanCard(
     val gradient = Brush.verticalGradient(
         colors = listOf(Color(0xFFF554FF), Color(0xFF434AFF))
     )
-    val borderColor = if (isSelected) BrandBlue else Color(0xFFE0E0E0)
+    val borderColor = if (isSelected) BrandBlue else Color(0xFFE0E0E0) // Todo: why am I using if statement here?
     val borderWidth = if (isSelected) 2.dp else 1.dp
 
     Card(
