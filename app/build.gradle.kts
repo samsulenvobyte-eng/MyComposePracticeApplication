@@ -63,8 +63,7 @@ dependencies {
     implementation("androidx.exifinterface:exifinterface:1.3.7")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
     implementation("androidx.compose.material:material-icons-extended")
-
     implementation("androidx.compose.foundation:foundation:1.10.0")
-
     lintChecks("com.slack.lint.compose:compose-lint-checks:1.4.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-collections-immutable:0.4.0")
 }

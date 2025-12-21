@@ -16,6 +16,7 @@ import com.example.mypracticeapplication.ui.screens.SettingsScreen
 import com.example.mypracticeapplication.ui.screens.ResultScreen
 import com.example.mypracticeapplication.ui.screens.ViewBatchImageScreen
 import com.example.mypracticeapplication.ui.screens.FitPhotoScreen
+import com.example.mypracticeapplication.ui.screens.BatchCropScreen
 
 @Composable
 fun AppNavHost(
@@ -37,7 +38,8 @@ fun AppNavHost(
                 onNavigateToCompare = { navController.navigate(CompareRoute) },
                 onNavigateToViewBatchImage = { navController.navigate(ViewBatchImageRoute) },
                 onNavigateToResult = { navController.navigate(ResultRoute) },
-                onNavigateToFitPhoto = { navController.navigate(FitPhotoRoute) }
+                onNavigateToFitPhoto = { navController.navigate(FitPhotoRoute) },
+                onNavigateToBatchCrop = { navController.navigate(BatchCropRoute) }
             )
         }
 
@@ -102,6 +104,12 @@ fun AppNavHost(
 
         composable<FitPhotoRoute> {
             FitPhotoScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable<BatchCropRoute> {
+            BatchCropScreen(
                 onNavigateBack = { navController.popBackStack() }
             )
         }

@@ -41,3 +41,6 @@ object ResultRoute
 
 @Serializable
 object FitPhotoRoute
+
+@Serializable
+object BatchCropRoute
