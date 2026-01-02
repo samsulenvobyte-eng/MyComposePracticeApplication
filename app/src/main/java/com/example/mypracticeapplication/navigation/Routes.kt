@@ -41,3 +41,48 @@ object ResultRoute
 
 @Serializable
 object FitPhotoRoute
+
+@Serializable
+object ComposeTestLapRoute
+
+@Serializable
+object StateLabRoute
+
+@Serializable
+object ListStateDemoRoute
+
+@Serializable
+object StateMechanicsLabRoute
+
+@Serializable
+object ComposeLabRoute
+
+@Serializable
+object SideEffectApisRoute
+
+@Serializable
+object LaunchedEffectExampleRoute
+
+@Serializable
+object DisposableEffectExampleRoute
+
+@Serializable
+object PracticeRoute
+
+@Serializable
+object UiArchitectureRoute
+
+@Serializable
+object Level1Route
+
+@Serializable
+object Level2Route
+
+@Serializable
+object Level3Route
+
+@Serializable
+object LibraryRoute
+
+@Serializable
+object ZoomImageRoute

@@ -1,4 +1,4 @@
-package com.example.mypracticeapplication.ui.screens
+package com.example.mypracticeapplication.ui.screens.settings
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background

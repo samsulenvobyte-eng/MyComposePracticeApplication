@@ -1,4 +1,4 @@
-package com.example.mypracticeapplication.ui.screens
+package com.example.mypracticeapplication.ui.screens.experiment
 
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
@@ -45,7 +45,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.mycomposablepractice.ui.screens.StatusBarIcons
+import com.example.mypracticeapplication.ui.screens.settings.StatusBarIcons
 import com.example.mypracticeapplication.R
 import com.example.mypracticeapplication.ui.theme.MyPracticeApplicationTheme
 

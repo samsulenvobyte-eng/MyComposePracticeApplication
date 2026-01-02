@@ -1,4 +1,4 @@
-package com.example.mypracticeapplication.ui.screens
+package com.example.mypracticeapplication.ui.screens.experiment
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box

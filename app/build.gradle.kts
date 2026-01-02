@@ -67,4 +67,7 @@ dependencies {
     implementation("androidx.compose.foundation:foundation:1.10.0")
 
     lintChecks("com.slack.lint.compose:compose-lint-checks:1.4.2")
+
+    // ZoomImage library for gesture zoom viewing
+    implementation("io.github.panpf.zoomimage:zoomimage-compose:1.1.0")
 }

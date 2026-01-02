@@ -1,35 +1,45 @@
-package com.example.mypracticeapplication.ui.screens
+package com.example.mypracticeapplication.ui.screens.home
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Collections
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Widgets
+import androidx.compose.material.icons.outlined.Collections
+import androidx.compose.material.icons.outlined.Widgets
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -44,6 +54,12 @@ data class NavButton(
     val onClick: () -> Unit
 )
 
+data class BottomNavItem(
+    val label: String,
+    val selectedIcon: ImageVector,
+    val unselectedIcon: ImageVector
+)
+
 @Composable
 fun HomeScreen(
     onNavigateToProfile: () -> Unit,
@@ -56,7 +72,101 @@ fun HomeScreen(
     onNavigateToCompare: () -> Unit = {},
     onNavigateToViewBatchImage: () -> Unit = {},
     onNavigateToResult: () -> Unit = {},
-    onNavigateToFitPhoto: () -> Unit = {}
+    onNavigateToFitPhoto: () -> Unit = {},
+    onNavigateToComposeTestLap: () -> Unit = {},
+    onNavigateToComposeLab: () -> Unit = {},
+    onNavigateToSideEffectApis: () -> Unit = {},
+    onNavigateToPractice: () -> Unit = {},
+    onNavigateToLibrary: () -> Unit = {}
+) {
+    var selectedTabIndex by rememberSaveable { mutableIntStateOf(0) }
+
+    val bottomNavItems = listOf(
+        BottomNavItem("UI", Icons.Filled.Widgets, Icons.Outlined.Widgets),
+        BottomNavItem("Library", Icons.Filled.Collections, Icons.Outlined.Collections)
+    )
+
+    Scaffold(
+        bottomBar = {
+            NavigationBar(
+                containerColor = Color(0xFF1a1a2e),
+                contentColor = Color.White
+            ) {
+                bottomNavItems.forEachIndexed { index, item ->
+                    NavigationBarItem(
+                        selected = selectedTabIndex == index,
+                        onClick = {
+                            if (index == 1) {
+                                // Navigate to Library screen
+                                onNavigateToLibrary()
+                            } else {
+                                selectedTabIndex = index
+                            }
+                        },
+                        icon = {
+                            Icon(
+                                imageVector = if (selectedTabIndex == index) item.selectedIcon else item.unselectedIcon,
+                                contentDescription = item.label
+                            )
+                        },
+                        label = {
+                            Text(
+                                text = item.label,
+                                fontWeight = if (selectedTabIndex == index) FontWeight.Bold else FontWeight.Normal
+                            )
+                        },
+                        colors = NavigationBarItemDefaults.colors(
+                            selectedIconColor = Color(0xFF00d4ff),
+                            selectedTextColor = Color(0xFF00d4ff),
+                            unselectedIconColor = Color.White.copy(alpha = 0.6f),
+                            unselectedTextColor = Color.White.copy(alpha = 0.6f),
+                            indicatorColor = Color(0xFF00d4ff).copy(alpha = 0.2f)
+                        )
+                    )
+                }
+            }
+        }
+    ) { paddingValues ->
+        // UI Content (current home screen content)
+        UIContent(
+            modifier = Modifier.padding(paddingValues),
+            onNavigateToProfile = onNavigateToProfile,
+            onNavigateToSettings = onNavigateToSettings,
+            onNavigateToCanvas = onNavigateToCanvas,
+            onNavigateToOffer = onNavigateToOffer,
+            onNavigateToCustomOnboarding = onNavigateToCustomOnboarding,
+            onNavigateToExperiment = onNavigateToExperiment,
+            onNavigateToOnboardingV2 = onNavigateToOnboardingV2,
+            onNavigateToCompare = onNavigateToCompare,
+            onNavigateToViewBatchImage = onNavigateToViewBatchImage,
+            onNavigateToResult = onNavigateToResult,
+            onNavigateToFitPhoto = onNavigateToFitPhoto,
+            onNavigateToComposeTestLap = onNavigateToComposeTestLap,
+            onNavigateToComposeLab = onNavigateToComposeLab,
+            onNavigateToSideEffectApis = onNavigateToSideEffectApis,
+            onNavigateToPractice = onNavigateToPractice
+        )
+    }
+}
+
+@Composable
+private fun UIContent(
+    modifier: Modifier = Modifier,
+    onNavigateToProfile: () -> Unit,
+    onNavigateToSettings: () -> Unit,
+    onNavigateToCanvas: () -> Unit,
+    onNavigateToOffer: () -> Unit,
+    onNavigateToCustomOnboarding: () -> Unit,
+    onNavigateToExperiment: () -> Unit,
+    onNavigateToOnboardingV2: () -> Unit,
+    onNavigateToCompare: () -> Unit,
+    onNavigateToViewBatchImage: () -> Unit,
+    onNavigateToResult: () -> Unit,
+    onNavigateToFitPhoto: () -> Unit,
+    onNavigateToComposeTestLap: () -> Unit,
+    onNavigateToComposeLab: () -> Unit,
+    onNavigateToSideEffectApis: () -> Unit,
+    onNavigateToPractice: () -> Unit
 ) {
     val navButtons = listOf(
         NavButton("Profile", Color.White, Color(0xFF667eea), onNavigateToProfile),
@@ -69,11 +179,15 @@ fun HomeScreen(
         NavButton("Compare", Color(0xFF5C6BC0), Color.White, onNavigateToCompare),
         NavButton("Batch Image", Color(0xFFFF7043), Color.White, onNavigateToViewBatchImage),
         NavButton("Result", Color(0xFF00BCD4), Color.White, onNavigateToResult),
-        NavButton("Fit Photo", Color(0xFF9C27B0), Color.White, onNavigateToFitPhoto)
+        NavButton("Fit Photo", Color(0xFF9C27B0), Color.White, onNavigateToFitPhoto),
+        NavButton("Test Lap", Color(0xFF4CAF50), Color.White, onNavigateToComposeTestLap),
+        NavButton("Compose Lab", Color(0xFF6200EE), Color.White, onNavigateToComposeLab),
+        NavButton("Side Effects", Color(0xFFFF5722), Color.White, onNavigateToSideEffectApis),
+        NavButton("Practice", Color(0xFF3F51B5), Color.White, onNavigateToPractice)
     )
 
     Box(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
             .background(
                 brush = Brush.verticalGradient(
@@ -133,7 +247,7 @@ fun HomeScreen(
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 navButtons.chunked(2).forEach { rowButtons ->
-                    androidx.compose.foundation.layout.Row(
+                    Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
@@ -186,6 +300,11 @@ private fun HomeScreenPreview() {
         onNavigateToCompare = {},
         onNavigateToViewBatchImage = {},
         onNavigateToResult = {},
-        onNavigateToFitPhoto = {}
+        onNavigateToFitPhoto = {},
+        onNavigateToComposeTestLap = {},
+        onNavigateToComposeLab = {},
+        onNavigateToSideEffectApis = {},
+        onNavigateToPractice = {},
+        onNavigateToLibrary = {}
     )
 }

@@ -1,4 +1,4 @@
-package com.example.mypracticeapplication.ui.screens
+package com.example.mypracticeapplication.ui.screens.image
 
 import android.content.res.Configuration
 import androidx.annotation.DrawableRes
