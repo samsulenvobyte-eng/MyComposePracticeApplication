@@ -82,7 +82,13 @@ object Level2Route
 object Level3Route
 
 @Serializable
+object Level4Route
+
+@Serializable
 object LibraryRoute
 
 @Serializable
 object ZoomImageRoute
+
+@Serializable
+object AnimationRoute

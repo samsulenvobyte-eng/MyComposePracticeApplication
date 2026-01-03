@@ -26,7 +26,8 @@ import androidx.compose.ui.unit.sp
 fun UiArchitectureScreen(
     onNavigateToLevel1: () -> Unit = {},
     onNavigateToLevel2: () -> Unit = {},
-    onNavigateToLevel3: () -> Unit = {}
+    onNavigateToLevel3: () -> Unit = {},
+    onNavigateToLevel4: () -> Unit = {}
 ) {
     Column(
         modifier = Modifier
@@ -97,6 +98,26 @@ fun UiArchitectureScreen(
         ) {
             Text(
                 text = "Level 3 🍕",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Button(
+            onClick = onNavigateToLevel4,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(50.dp),
+            shape = RoundedCornerShape(12.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color(0xFF6366F1),
+                contentColor = Color.White
+            )
+        ) {
+            Text(
+                text = "Level 4 📋 Events",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.SemiBold
             )

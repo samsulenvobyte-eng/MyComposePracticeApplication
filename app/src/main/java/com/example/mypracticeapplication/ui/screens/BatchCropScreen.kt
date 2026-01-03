@@ -46,6 +46,8 @@ import com.example.mypracticeapplication.ui.components.GradientTopBar
 import com.example.mypracticeapplication.ui.components.PagerNavigator
 import com.example.mypracticeapplication.ui.components.SocailMediaAspectRatioSelector
 import com.example.mypracticeapplication.ui.components.SocialAspectRatio
+import com.example.mypracticeapplication.ui.screens.image.sampleImageMetaData
+import com.example.mypracticeapplication.ui.screens.image.verticalGradient
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.Job

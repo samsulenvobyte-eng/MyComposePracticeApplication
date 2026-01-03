@@ -31,10 +31,12 @@ import com.example.mypracticeapplication.ui.screens.practice.UiArchitectureScree
 import com.example.mypracticeapplication.ui.screens.practice.ui_architecture.Level1Screen
 import com.example.mypracticeapplication.ui.screens.practice.ui_architecture.Level2Screen
 import com.example.mypracticeapplication.ui.screens.practice.ui_architecture.Level3Screen
+import com.example.mypracticeapplication.ui.screens.practice.ui_architecture.Level4Screen
 import com.example.mypracticeapplication.ui.screens.practice.ui_architecture.Level1UiState
 import com.example.mypracticeapplication.ui.screens.practice.ui_architecture.Level1ViewModel
 import com.example.mypracticeapplication.ui.screens.library.LibraryScreen
 import com.example.mypracticeapplication.ui.screens.library.ZoomImageScreen
+import com.example.mypracticeapplication.ui.screens.animation.AnimationScreen
 
 
 @Composable
@@ -62,7 +64,8 @@ fun AppNavHost(
                 onNavigateToComposeLab = { navController.navigate(ComposeLabRoute) },
                 onNavigateToSideEffectApis = { navController.navigate(SideEffectApisRoute) },
                 onNavigateToPractice = { navController.navigate(PracticeRoute) },
-                onNavigateToLibrary = { navController.navigate(LibraryRoute) }
+                onNavigateToLibrary = { navController.navigate(LibraryRoute) },
+                onNavigateToAnimation = { navController.navigate(AnimationRoute) }
             )
         }
 
@@ -190,7 +193,8 @@ fun AppNavHost(
             UiArchitectureScreen(
                 onNavigateToLevel1 = { navController.navigate(Level1Route) },
                 onNavigateToLevel2 = { navController.navigate(Level2Route) },
-                onNavigateToLevel3 = { navController.navigate(Level3Route) }
+                onNavigateToLevel3 = { navController.navigate(Level3Route) },
+                onNavigateToLevel4 = { navController.navigate(Level4Route) }
             )
         }
 
@@ -206,6 +210,10 @@ fun AppNavHost(
             Level3Screen()
         }
 
+        composable<Level4Route> {
+            Level4Screen()
+        }
+
         composable<LibraryRoute> {
             LibraryScreen(
                 onNavigateToZoomImage = { navController.navigate(ZoomImageRoute) }
@@ -214,6 +222,12 @@ fun AppNavHost(
 
         composable<ZoomImageRoute> {
             ZoomImageScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable<AnimationRoute> {
+            AnimationScreen(
                 onNavigateBack = { navController.popBackStack() }
             )
         }

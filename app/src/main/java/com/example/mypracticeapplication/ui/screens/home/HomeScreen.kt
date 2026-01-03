@@ -77,7 +77,8 @@ fun HomeScreen(
     onNavigateToComposeLab: () -> Unit = {},
     onNavigateToSideEffectApis: () -> Unit = {},
     onNavigateToPractice: () -> Unit = {},
-    onNavigateToLibrary: () -> Unit = {}
+    onNavigateToLibrary: () -> Unit = {},
+    onNavigateToAnimation: () -> Unit = {}
 ) {
     var selectedTabIndex by rememberSaveable { mutableIntStateOf(0) }
 
@@ -144,7 +145,8 @@ fun HomeScreen(
             onNavigateToComposeTestLap = onNavigateToComposeTestLap,
             onNavigateToComposeLab = onNavigateToComposeLab,
             onNavigateToSideEffectApis = onNavigateToSideEffectApis,
-            onNavigateToPractice = onNavigateToPractice
+            onNavigateToPractice = onNavigateToPractice,
+            onNavigateToAnimation = onNavigateToAnimation
         )
     }
 }
@@ -166,7 +168,8 @@ private fun UIContent(
     onNavigateToComposeTestLap: () -> Unit,
     onNavigateToComposeLab: () -> Unit,
     onNavigateToSideEffectApis: () -> Unit,
-    onNavigateToPractice: () -> Unit
+    onNavigateToPractice: () -> Unit,
+    onNavigateToAnimation: () -> Unit
 ) {
     val navButtons = listOf(
         NavButton("Profile", Color.White, Color(0xFF667eea), onNavigateToProfile),
@@ -183,7 +186,8 @@ private fun UIContent(
         NavButton("Test Lap", Color(0xFF4CAF50), Color.White, onNavigateToComposeTestLap),
         NavButton("Compose Lab", Color(0xFF6200EE), Color.White, onNavigateToComposeLab),
         NavButton("Side Effects", Color(0xFFFF5722), Color.White, onNavigateToSideEffectApis),
-        NavButton("Practice", Color(0xFF3F51B5), Color.White, onNavigateToPractice)
+        NavButton("Practice", Color(0xFF3F51B5), Color.White, onNavigateToPractice),
+        NavButton("Animation", Color(0xFFFF6B6B), Color.White, onNavigateToAnimation)
     )
 
     Box(
@@ -305,6 +309,7 @@ private fun HomeScreenPreview() {
         onNavigateToComposeLab = {},
         onNavigateToSideEffectApis = {},
         onNavigateToPractice = {},
-        onNavigateToLibrary = {}
+        onNavigateToLibrary = {},
+        onNavigateToAnimation = {}
     )
 }

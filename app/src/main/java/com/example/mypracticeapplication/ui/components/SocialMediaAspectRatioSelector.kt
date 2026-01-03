@@ -32,7 +32,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.mypracticeapplication.R
-import com.example.mypracticeapplication.ui.screens.verticalGradient
+import com.example.mypracticeapplication.ui.screens.image.verticalGradient
 import kotlinx.collections.immutable.ImmutableList
 
 sealed class SocialAspectRatio(
@@ -103,8 +103,8 @@ fun SocailMediaAspectRatioSelector(
 @Composable
 fun AspectRatioItem(
     socialAspectRatio: SocialAspectRatio,
-    isSelected: Boolean = false,
     modifier: Modifier = Modifier,
+    isSelected: Boolean = false,
     onClick: () -> Unit
 ) {
     Column(modifier = modifier) {

@@ -28,7 +28,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.mypracticeapplication.R
-import com.example.mypracticeapplication.ui.screens.BatchImageMetaData
+import com.example.mypracticeapplication.ui.screens.image.BatchImageMetaData
 
 @Composable
 fun PagerNavigator(
