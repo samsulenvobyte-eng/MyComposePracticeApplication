@@ -32,6 +32,7 @@ import com.example.mypracticeapplication.ui.screens.practice.ui_architecture.Lev
 import com.example.mypracticeapplication.ui.screens.practice.ui_architecture.Level2Screen
 import com.example.mypracticeapplication.ui.screens.practice.ui_architecture.Level3Screen
 import com.example.mypracticeapplication.ui.screens.practice.ui_architecture.Level4Screen
+import com.example.mypracticeapplication.ui.screens.practice.ui_architecture.SelfPracticeScreen
 import com.example.mypracticeapplication.ui.screens.practice.ui_architecture.Level1UiState
 import com.example.mypracticeapplication.ui.screens.practice.ui_architecture.Level1ViewModel
 import com.example.mypracticeapplication.ui.screens.library.LibraryScreen
@@ -194,7 +195,8 @@ fun AppNavHost(
                 onNavigateToLevel1 = { navController.navigate(Level1Route) },
                 onNavigateToLevel2 = { navController.navigate(Level2Route) },
                 onNavigateToLevel3 = { navController.navigate(Level3Route) },
-                onNavigateToLevel4 = { navController.navigate(Level4Route) }
+                onNavigateToLevel4 = { navController.navigate(Level4Route) },
+                onNavigateToSelfPractice = { navController.navigate(SelfPracticeRoute) }
             )
         }
 
@@ -212,6 +214,10 @@ fun AppNavHost(
 
         composable<Level4Route> {
             Level4Screen()
+        }
+
+        composable<SelfPracticeRoute> {
+            SelfPracticeScreen()
         }
 
         composable<LibraryRoute> {

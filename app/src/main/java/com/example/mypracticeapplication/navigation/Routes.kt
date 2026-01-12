@@ -92,3 +92,6 @@ object ZoomImageRoute
 
 @Serializable
 object AnimationRoute
+
+@Serializable
+object SelfPracticeRoute

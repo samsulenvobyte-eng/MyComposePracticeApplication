@@ -27,7 +27,8 @@ fun UiArchitectureScreen(
     onNavigateToLevel1: () -> Unit = {},
     onNavigateToLevel2: () -> Unit = {},
     onNavigateToLevel3: () -> Unit = {},
-    onNavigateToLevel4: () -> Unit = {}
+    onNavigateToLevel4: () -> Unit = {},
+    onNavigateToSelfPractice: () -> Unit = {}
 ) {
     Column(
         modifier = Modifier
@@ -118,6 +119,26 @@ fun UiArchitectureScreen(
         ) {
             Text(
                 text = "Level 4 📋 Events",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Button(
+            onClick = onNavigateToSelfPractice,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(50.dp),
+            shape = RoundedCornerShape(12.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color(0xFF9C27B0),
+                contentColor = Color.White
+            )
+        ) {
+            Text(
+                text = "Self Practice 🎯",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.SemiBold
             )
