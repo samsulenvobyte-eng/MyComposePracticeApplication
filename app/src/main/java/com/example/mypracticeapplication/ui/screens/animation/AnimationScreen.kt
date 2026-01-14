@@ -50,6 +50,7 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -97,11 +98,13 @@ private val AccentColor = Color(0xFFFFE66D)
 
 @Composable
 fun AnimationScreen(
-    onNavigateBack: () -> Unit = {}
+    onNavigateBack: () -> Unit = {},
+    onNavigateToOnBoardingAnimation: () -> Unit = {}
 ) {
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .systemBarsPadding()
             .background(MaterialTheme.colorScheme.background)
     ) {
         // Header
@@ -134,6 +137,15 @@ fun AnimationScreen(
 //
             // 7️⃣ Link/Unlink Icon Animation with Canvas
             LinkUnlinkDemo()
+
+            // Navigate to OnBoarding Animation Screen
+            Button(
+                onClick = onNavigateToOnBoardingAnimation,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(containerColor = SecondaryColor)
+            ) {
+                Text("Go to OnBoarding Animation")
+            }
 
             Spacer(modifier = Modifier.height(24.dp))
         }

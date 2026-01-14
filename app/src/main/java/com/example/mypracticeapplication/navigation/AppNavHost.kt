@@ -38,6 +38,7 @@ import com.example.mypracticeapplication.ui.screens.practice.ui_architecture.Lev
 import com.example.mypracticeapplication.ui.screens.library.LibraryScreen
 import com.example.mypracticeapplication.ui.screens.library.ZoomImageScreen
 import com.example.mypracticeapplication.ui.screens.animation.AnimationScreen
+import com.example.mypracticeapplication.ui.screens.animation.OnBoardingAnimationScreen
 
 
 @Composable
@@ -234,6 +235,13 @@ fun AppNavHost(
 
         composable<AnimationRoute> {
             AnimationScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToOnBoardingAnimation = { navController.navigate(OnBoardingAnimationRoute) }
+            )
+        }
+
+        composable<OnBoardingAnimationRoute> {
+            OnBoardingAnimationScreen(
                 onNavigateBack = { navController.popBackStack() }
             )
         }
