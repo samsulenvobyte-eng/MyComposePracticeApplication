@@ -33,11 +33,16 @@ import com.example.mypracticeapplication.ui.screens.practice.ui_architecture.Lev
 import com.example.mypracticeapplication.ui.screens.practice.ui_architecture.Level3Screen
 import com.example.mypracticeapplication.ui.screens.practice.ui_architecture.Level4Screen
 import com.example.mypracticeapplication.ui.screens.practice.ui_architecture.SelfPracticeScreen
+import com.example.mypracticeapplication.ui.screens.practice.ui_architecture.SharedFlowScreen
 import com.example.mypracticeapplication.ui.screens.practice.ui_architecture.Level1UiState
 import com.example.mypracticeapplication.ui.screens.practice.ui_architecture.Level1ViewModel
 import com.example.mypracticeapplication.ui.screens.library.LibraryScreen
 import com.example.mypracticeapplication.ui.screens.library.ZoomImageScreen
 import com.example.mypracticeapplication.ui.screens.animation.AnimationScreen
+import com.example.mypracticeapplication.ui.screens.animation.AnimatedGraphsScreen
+import com.example.mypracticeapplication.ui.screens.animation.MapsScreen
+import com.example.mypracticeapplication.ui.screens.animation.AnimationTypeScreen
+import com.example.mypracticeapplication.ui.screens.practice.CoroutineScreen
 
 
 @Composable
@@ -66,7 +71,8 @@ fun AppNavHost(
                 onNavigateToSideEffectApis = { navController.navigate(SideEffectApisRoute) },
                 onNavigateToPractice = { navController.navigate(PracticeRoute) },
                 onNavigateToLibrary = { navController.navigate(LibraryRoute) },
-                onNavigateToAnimation = { navController.navigate(AnimationRoute) }
+                onNavigateToAnimation = { navController.navigate(AnimationRoute) },
+                onNavigateToCoroutine = { navController.navigate(CoroutineRoute) }
             )
         }
 
@@ -196,7 +202,8 @@ fun AppNavHost(
                 onNavigateToLevel2 = { navController.navigate(Level2Route) },
                 onNavigateToLevel3 = { navController.navigate(Level3Route) },
                 onNavigateToLevel4 = { navController.navigate(Level4Route) },
-                onNavigateToSelfPractice = { navController.navigate(SelfPracticeRoute) }
+                onNavigateToSelfPractice = { navController.navigate(SelfPracticeRoute) },
+                onNavigateToSharedFlow = { navController.navigate(SharedFlowRoute) }
             )
         }
 
@@ -220,6 +227,10 @@ fun AppNavHost(
             SelfPracticeScreen()
         }
 
+        composable<SharedFlowRoute> {
+            SharedFlowScreen()
+        }
+
         composable<LibraryRoute> {
             LibraryScreen(
                 onNavigateToZoomImage = { navController.navigate(ZoomImageRoute) }
@@ -234,6 +245,33 @@ fun AppNavHost(
 
         composable<AnimationRoute> {
             AnimationScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToGraphs = { navController.navigate(AnimatedGraphsRoute) },
+                onNavigateToMaps = { navController.navigate(MapsRoute) },
+                onNavigateToAnimationType = { navController.navigate(AnimationTypeRoute) }
+            )
+        }
+
+        composable<AnimatedGraphsRoute> {
+            AnimatedGraphsScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable<MapsRoute> {
+            MapsScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable<AnimationTypeRoute> {
+            AnimationTypeScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable<CoroutineRoute> {
+            CoroutineScreen(
                 onNavigateBack = { navController.popBackStack() }
             )
         }

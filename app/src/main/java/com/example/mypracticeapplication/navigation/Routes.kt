@@ -95,3 +95,18 @@ object AnimationRoute
 
 @Serializable
 object SelfPracticeRoute
+
+@Serializable
+object SharedFlowRoute
+
+@Serializable
+object AnimatedGraphsRoute
+
+@Serializable
+object MapsRoute
+
+@Serializable
+object AnimationTypeRoute
+
+@Serializable
+object CoroutineRoute

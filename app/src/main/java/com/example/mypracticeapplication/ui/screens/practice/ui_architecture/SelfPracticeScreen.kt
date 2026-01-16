@@ -37,13 +37,16 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
+data class ToastMessageEvent(val message: String)
 
 data class UiStateSelfPractice(
     val name: String = "", val email: String = "", val message: String = "",
@@ -70,6 +73,20 @@ class SelfPracticeViewModel() : ViewModel() {
     private val _uiEffect = Channel<UiEffect>()
     val uiEffect = _uiEffect.receiveAsFlow()
 
+    private val _toastMessageEvent = MutableSharedFlow<ToastMessageEvent>()
+    val toastMessageEvent = _toastMessageEvent.asSharedFlow()
+
+
+
+
+    fun sendNotification(message: String){
+
+        viewModelScope.launch {
+            _toastMessageEvent.emit(ToastMessageEvent(message))
+        }
+
+    }
+
     fun onEvent(event: LoginEvent) {
 
         when (event) {
@@ -80,6 +97,7 @@ class SelfPracticeViewModel() : ViewModel() {
             else -> {}
         }
     }
+
 
     fun login() {
         viewModelScope.launch {
@@ -127,6 +145,20 @@ fun SelfPracticeScreen(
     val context = LocalContext.current
 
 
+    LaunchedEffect(Unit) {
+
+        viewModel.toastMessageEvent.collect { message ->
+            Toast.makeText(context, message.message, Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    LaunchedEffect(Unit) {
+
+        viewModel.toastMessageEvent.collect { message ->
+            snackbarHostState.showSnackbar(message.message)
+        }
+    }
+
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
@@ -136,6 +168,19 @@ fun SelfPracticeScreen(
             when( effect){
 
                 is UiEffect.ShowSnackbar -> snackbarHostState.showSnackbar(effect.value)
+                is UiEffect.NavigateToHome -> {}
+            }
+
+        }
+    }
+
+    LaunchedEffect(Unit) {
+
+        viewModel.uiEffect.collect { effect ->
+
+            when( effect){
+
+                is UiEffect.ShowSnackbar -> Toast.makeText(context,effect.value, Toast.LENGTH_SHORT).show()
                 is UiEffect.NavigateToHome -> {}
             }
 
@@ -181,6 +226,11 @@ fun SelfPracticeScreen(
             Button(onClick = { viewModel.onEvent(LoginEvent.LoginClicked) }) {
 
                 Text("Login")
+            }
+
+            Button(onClick = { viewModel.sendNotification("Nigga wake up!!")}) {
+
+                Text("Toast")
             }
 
             Text(

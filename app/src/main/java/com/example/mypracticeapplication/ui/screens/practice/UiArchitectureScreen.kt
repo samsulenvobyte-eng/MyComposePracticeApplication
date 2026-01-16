@@ -28,7 +28,8 @@ fun UiArchitectureScreen(
     onNavigateToLevel2: () -> Unit = {},
     onNavigateToLevel3: () -> Unit = {},
     onNavigateToLevel4: () -> Unit = {},
-    onNavigateToSelfPractice: () -> Unit = {}
+    onNavigateToSelfPractice: () -> Unit = {},
+    onNavigateToSharedFlow: () -> Unit = {}
 ) {
     Column(
         modifier = Modifier
@@ -139,6 +140,26 @@ fun UiArchitectureScreen(
         ) {
             Text(
                 text = "Self Practice 🎯",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Button(
+            onClick = onNavigateToSharedFlow,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(50.dp),
+            shape = RoundedCornerShape(12.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color(0xFF00BCD4),
+                contentColor = Color.White
+            )
+        ) {
+            Text(
+                text = "SharedFlow Demo 🔔",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.SemiBold
             )
