@@ -47,53 +47,50 @@ import kotlin.math.cos
 import kotlin.math.roundToInt
 import kotlin.math.sin
 
-// Orbit icon colors
-private val CyanColor = Color(0xFF01A3EE)
-private val GreenColor = Color(0xFFA5FF38)
-private val YellowColor = Color(0xFFFFD31F)
-private val PinkColor = Color(0xFFEE018D)
-private val RedColor = Color(0xFFEE0000)
 private val CenterBlueColor = Color(0xFF1D60BA)
 private val CenterBlueLight = Color(0xFF1C78F2)
 private val OrbitRingColor = Color(0xFF1C78F2).copy(alpha = 0.4f)
 
-// Orbit icon data
 private data class OrbitIcon(
     @DrawableRes val icon: Int,
-    val color: Color,
     val startAngleDegrees: Float
 )
 
 private val orbitIcons = listOf(
-    OrbitIcon(R.drawable.img_onboarding_scan, CyanColor, 120f),      // Top-left
-    OrbitIcon(R.drawable.img_onboarding_brain, GreenColor, 60f),    // Top-right
-    OrbitIcon(R.drawable.img_onboarding_translate, YellowColor, -20f),   // Right
-    OrbitIcon(R.drawable.img_onboarding_image, PinkColor, -90f),         // Bottom
-    OrbitIcon(R.drawable.img_onboarding_batch, RedColor, 180f)        // Left
+    OrbitIcon(R.drawable.img_onboarding_scan, 0f),
+    OrbitIcon(R.drawable.img_onboarding_brain, 72f),
+    OrbitIcon(R.drawable.img_onboarding_translate, 144f),
+    OrbitIcon(R.drawable.img_onboarding_image, 216f),
+    OrbitIcon(R.drawable.img_onboarding_batch, 288f)
 )
 
 @Composable
 fun OnBoardingAnimationScreen(
     onNavigateBack: () -> Unit = {}
 ) {
+    CircularAnimationComponent()
+}
+
+@Composable
+private fun CircularAnimationComponent() {
     val infiniteTransition = rememberInfiniteTransition(label = "orbit")
-    
+
     // Slow rotation animation (20 seconds for full circle)
     val rotationAngle by infiniteTransition.animateFloat(
         initialValue = 0f,
-        targetValue = 360f,
+        targetValue = -360f,
         animationSpec = infiniteRepeatable(
             animation = tween(durationMillis = 20000, easing = LinearEasing),
             repeatMode = RepeatMode.Restart
         ),
         label = "rotation"
     )
-    
+
     val density = LocalDensity.current
     val orbitRadius = 140.dp
     val iconSize = 56.dp
     val centerIconSize = 156.dp
-    
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -105,7 +102,7 @@ fun OnBoardingAnimationScreen(
             modifier = Modifier.size(350.dp)
         ) {
             val center = Offset(size.width / 2, size.height / 2)
-            
+
             // Draw 3 concentric circles
             listOf(0.55f, 0.7f, 0.85f).forEach { radiusFraction ->
                 drawCircle(
@@ -116,7 +113,7 @@ fun OnBoardingAnimationScreen(
                 )
             }
         }
-        
+
         // Central blue circle with icon
         Box(
             modifier = Modifier
@@ -124,7 +121,7 @@ fun OnBoardingAnimationScreen(
                 .clip(CircleShape)
                 .background(
                     Brush.linearGradient(
-                        colors = listOf(CenterBlueLight, CenterBlueColor ),
+                        colors = listOf(CenterBlueLight, CenterBlueColor),
                         start = Offset.Zero,
                         end = Offset.Infinite
                     )
@@ -145,19 +142,18 @@ fun OnBoardingAnimationScreen(
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = Icons.Default.CropFree,
+                    imageVector = ImageVector.vectorResource(R.drawable.ic_onboarding_scan_center),
                     contentDescription = "Center Icon",
                     tint = Color.White,
-                    modifier = Modifier.size(32.dp)
+                    modifier = Modifier.size(25.dp)
                 )
             }
         }
-        
+
         // Orbiting icons
         orbitIcons.forEach { orbitIcon ->
             OrbitingIcon(
                 icon = orbitIcon.icon,
-                color = orbitIcon.color,
                 angleDegrees = orbitIcon.startAngleDegrees + rotationAngle,
                 orbitRadius = orbitRadius,
                 iconSize = iconSize
@@ -166,10 +162,10 @@ fun OnBoardingAnimationScreen(
     }
 }
 
+
 @Composable
 private fun OrbitingIcon(
     @DrawableRes icon: Int,
-    color: Color,
     angleDegrees: Float,
     orbitRadius: Dp,
     iconSize: Dp
@@ -195,9 +191,7 @@ private fun OrbitingIcon(
                 clip = false
             ),
         contentDescription = null,
-
     )
-
 }
 
 @Preview(showBackground = true)
