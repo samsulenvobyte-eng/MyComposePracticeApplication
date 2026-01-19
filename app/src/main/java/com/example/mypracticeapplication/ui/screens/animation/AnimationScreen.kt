@@ -99,7 +99,8 @@ private val AccentColor = Color(0xFFFFE66D)
 @Composable
 fun AnimationScreen(
     onNavigateBack: () -> Unit = {},
-    onNavigateToOnBoardingAnimation: () -> Unit = {}
+    onNavigateToOnBoardingAnimation: () -> Unit = {},
+    onNavigateToLottieAnimation: () -> Unit = {}
 ) {
     Column(
         modifier = Modifier
@@ -145,6 +146,15 @@ fun AnimationScreen(
                 colors = ButtonDefaults.buttonColors(containerColor = SecondaryColor)
             ) {
                 Text("Go to OnBoarding Animation")
+            }
+
+            // Navigate to Lottie Animation Screen
+            Button(
+                onClick = onNavigateToLottieAnimation,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(containerColor = PrimaryColor)
+            ) {
+                Text("🎥 Go to Lottie Animation")
             }
 
             Spacer(modifier = Modifier.height(24.dp))

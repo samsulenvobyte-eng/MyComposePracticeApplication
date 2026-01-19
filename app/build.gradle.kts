@@ -71,4 +71,7 @@ dependencies {
 
     // ZoomImage library for gesture zoom viewing
     implementation("io.github.panpf.zoomimage:zoomimage-compose:1.1.0")
+
+    // Lottie animation library
+    implementation("com.airbnb.android:lottie-compose:6.6.2")
 }

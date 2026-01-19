@@ -98,3 +98,6 @@ object OnBoardingAnimationRoute
 
 @Serializable
 object SelfPracticeRoute
+
+@Serializable
+object LottieAnimationRoute
