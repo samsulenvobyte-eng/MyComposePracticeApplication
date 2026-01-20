@@ -101,3 +101,6 @@ object SelfPracticeRoute
 
 @Serializable
 object LottieAnimationRoute
+
+@Serializable
+object ScrapeRoute

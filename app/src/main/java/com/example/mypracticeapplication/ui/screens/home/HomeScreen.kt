@@ -78,7 +78,8 @@ fun HomeScreen(
     onNavigateToSideEffectApis: () -> Unit = {},
     onNavigateToPractice: () -> Unit = {},
     onNavigateToLibrary: () -> Unit = {},
-    onNavigateToAnimation: () -> Unit = {}
+    onNavigateToAnimation: () -> Unit = {},
+    onNavigateToScrape: () -> Unit = {}
 ) {
     var selectedTabIndex by rememberSaveable { mutableIntStateOf(0) }
 
@@ -146,7 +147,8 @@ fun HomeScreen(
             onNavigateToComposeLab = onNavigateToComposeLab,
             onNavigateToSideEffectApis = onNavigateToSideEffectApis,
             onNavigateToPractice = onNavigateToPractice,
-            onNavigateToAnimation = onNavigateToAnimation
+            onNavigateToAnimation = onNavigateToAnimation,
+            onNavigateToScrape = onNavigateToScrape
         )
     }
 }
@@ -169,7 +171,8 @@ private fun UIContent(
     onNavigateToComposeLab: () -> Unit,
     onNavigateToSideEffectApis: () -> Unit,
     onNavigateToPractice: () -> Unit,
-    onNavigateToAnimation: () -> Unit
+    onNavigateToAnimation: () -> Unit,
+    onNavigateToScrape: () -> Unit
 ) {
     val navButtons = listOf(
         NavButton("Profile", Color.White, Color(0xFF667eea), onNavigateToProfile),
@@ -187,7 +190,8 @@ private fun UIContent(
         NavButton("Compose Lab", Color(0xFF6200EE), Color.White, onNavigateToComposeLab),
         NavButton("Side Effects", Color(0xFFFF5722), Color.White, onNavigateToSideEffectApis),
         NavButton("Practice", Color(0xFF3F51B5), Color.White, onNavigateToPractice),
-        NavButton("Animation", Color(0xFFFF6B6B), Color.White, onNavigateToAnimation)
+        NavButton("Animation", Color(0xFFFF6B6B), Color.White, onNavigateToAnimation),
+        NavButton("Scrape", Color(0xFF00BCD4), Color.White, onNavigateToScrape)
     )
 
     Box(
@@ -310,6 +314,7 @@ private fun HomeScreenPreview() {
         onNavigateToSideEffectApis = {},
         onNavigateToPractice = {},
         onNavigateToLibrary = {},
-        onNavigateToAnimation = {}
+        onNavigateToAnimation = {},
+        onNavigateToScrape = {}
     )
 }

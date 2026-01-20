@@ -40,6 +40,7 @@ import com.example.mypracticeapplication.ui.screens.library.ZoomImageScreen
 import com.example.mypracticeapplication.ui.screens.animation.AnimationScreen
 import com.example.mypracticeapplication.ui.screens.animation.OnBoardingAnimationScreen
 import com.example.mypracticeapplication.ui.screens.animation.LottieAnimationScreen
+import com.example.mypracticeapplication.ui.screens.scrape.ScrapeScreen
 
 
 @Composable
@@ -68,7 +69,8 @@ fun AppNavHost(
                 onNavigateToSideEffectApis = { navController.navigate(SideEffectApisRoute) },
                 onNavigateToPractice = { navController.navigate(PracticeRoute) },
                 onNavigateToLibrary = { navController.navigate(LibraryRoute) },
-                onNavigateToAnimation = { navController.navigate(AnimationRoute) }
+                onNavigateToAnimation = { navController.navigate(AnimationRoute) },
+                onNavigateToScrape = { navController.navigate(ScrapeRoute) }
             )
         }
 
@@ -250,6 +252,12 @@ fun AppNavHost(
 
         composable<LottieAnimationRoute> {
             LottieAnimationScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable<ScrapeRoute> {
+            ScrapeScreen(
                 onNavigateBack = { navController.popBackStack() }
             )
         }
