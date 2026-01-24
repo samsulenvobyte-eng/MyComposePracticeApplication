@@ -100,7 +100,16 @@ fun AnimationScreen(
     onNavigateBack: () -> Unit = {},
     onNavigateToGraphs: () -> Unit = {},
     onNavigateToMaps: () -> Unit = {},
-    onNavigateToAnimationType: () -> Unit = {}
+    onNavigateToAnimationType: () -> Unit = {},
+    onNavigateToConfetti: () -> Unit = {},
+    onNavigateToFireworks: () -> Unit = {},
+    onNavigateToConfettiBurst: () -> Unit = {},
+    onNavigateToJsonAnim: () -> Unit = {},
+    onNavigateToFestiveConfetti: () -> Unit = {},
+    onNavigateToLottieConfetti: () -> Unit = {},
+    onNavigateToCoinHarvest: () -> Unit = {},
+    onNavigateToLoadingCircle: () -> Unit = {},
+    onNavigateToSuccessAnimation: () -> Unit = {}
 ) {
     Column(
         modifier = Modifier
@@ -157,6 +166,69 @@ fun AnimationScreen(
                 title = "🔟 Animation Types",
                 subtitle = "Different animation effects and demos",
                 onClick = onNavigateToAnimationType
+            )
+
+            // 1️⃣1️⃣ Navigate to Confetti Screen
+            NavigationCard(
+                title = "1️⃣1️⃣ Confetti",
+                subtitle = "Particle-based celebration animation",
+                onClick = onNavigateToConfetti
+            )
+
+            // 1️⃣2️⃣ Navigate to Fireworks Screen
+            NavigationCard(
+                title = "1️⃣2️⃣ Fireworks",
+                subtitle = "Center burst confetti + fireworks",
+                onClick = onNavigateToFireworks
+            )
+
+            // 1️⃣3️⃣ Navigate to Confetti Burst Screen
+            NavigationCard(
+                title = "1️⃣3️⃣ Confetti Burst",
+                subtitle = "Physics-based fountain effect",
+                onClick = onNavigateToConfettiBurst
+            )
+
+            // 1️⃣4️⃣ Navigate to JSON Anim Screen
+            NavigationCard(
+                title = "1️⃣4️⃣ JSON Anim",
+                subtitle = "Lottie-style confetti with 3D rotation",
+                onClick = onNavigateToJsonAnim
+            )
+
+            // 1️⃣5️⃣ Navigate to Festive Confetti Screen
+            NavigationCard(
+                title = "1️⃣5️⃣ Festive Confetti",
+                subtitle = "Multicolor trails with path effect",
+                onClick = onNavigateToFestiveConfetti
+            )
+
+            // 1️⃣6️⃣ Navigate to Lottie Confetti Screen
+            NavigationCard(
+                title = "1️⃣6️⃣ Lottie Confetti",
+                subtitle = "Blue-themed 3D particle burst",
+                onClick = onNavigateToLottieConfetti
+            )
+
+            // 1️⃣7️⃣ Navigate to Coin Harvest Screen
+            NavigationCard(
+                title = "1️⃣7️⃣ Coin Harvest",
+                subtitle = "Bezier curve collection animation",
+                onClick = onNavigateToCoinHarvest
+            )
+
+            // 1️⃣8️⃣ Navigate to Loading Circle Screen
+            NavigationCard(
+                title = "1️⃣8️⃣ Loading Circle",
+                subtitle = "Custom Canvas circular loader",
+                onClick = onNavigateToLoadingCircle
+            )
+
+            // 1️⃣9️⃣ Navigate to Success Animation Screen
+            NavigationCard(
+                title = "1️⃣9️⃣ Success Motion",
+                subtitle = "Bouncing checkmark & confetti",
+                onClick = onNavigateToSuccessAnimation
             )
 
             Spacer(modifier = Modifier.height(24.dp))

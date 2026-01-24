@@ -1,8 +1,17 @@
 package com.example.mypracticeapplication.navigation
 
+import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.unit.IntOffset
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -42,8 +51,40 @@ import com.example.mypracticeapplication.ui.screens.animation.AnimationScreen
 import com.example.mypracticeapplication.ui.screens.animation.AnimatedGraphsScreen
 import com.example.mypracticeapplication.ui.screens.animation.MapsScreen
 import com.example.mypracticeapplication.ui.screens.animation.AnimationTypeScreen
+import com.example.mypracticeapplication.ui.screens.animation.ConfettiScreen
+import com.example.mypracticeapplication.ui.screens.animation.FireworksScreen
+import com.example.mypracticeapplication.ui.screens.animation.ConfettiBurstScreen
+import com.example.mypracticeapplication.ui.screens.animation.JsonAnimScreen
+import com.example.mypracticeapplication.ui.screens.animation.FestiveConfettiScreen
+import com.example.mypracticeapplication.ui.screens.animation.LottieConfettiScreen
+import com.example.mypracticeapplication.ui.screens.animation.CoinHarvestScreen
+import com.example.mypracticeapplication.ui.screens.animation.LoadingCircleScreen
+import com.example.mypracticeapplication.ui.screens.animation.SuccessAnimationScreen
 import com.example.mypracticeapplication.ui.screens.practice.CoroutineScreen
 
+
+
+// Custom Spring Specs for Varied Smoothness
+private val LuxuriousSpec = spring<IntOffset>(
+    stiffness = 200f,
+    dampingRatio = 1.0f
+)
+
+private val PlayfulSpec = spring<IntOffset>(
+    stiffness = 400f,
+    dampingRatio = 0.6f
+)
+
+private val ModernSpec = spring<IntOffset>(
+    stiffness = 350f,
+    dampingRatio = 0.85f
+)
+
+// Float specs for Scale/Fade if needed, matching the stiffness
+private val ModernSpecFloat = spring<Float>(
+    stiffness = 350f,
+    dampingRatio = 0.85f
+)
 
 @Composable
 fun AppNavHost(
@@ -51,7 +92,41 @@ fun AppNavHost(
 ) {
     NavHost(
         navController = navController,
-        startDestination = HomeRoute
+        startDestination = HomeRoute,
+        // 1. Enter: Slide in from Right (Modern)
+        enterTransition = {
+            slideIntoContainer(
+                towards = AnimatedContentTransitionScope.SlideDirection.Start,
+                animationSpec = ModernSpec
+            ) + fadeIn(animationSpec = ModernSpecFloat)
+        },
+        // 2. Exit: Slide out to Left (Modern)
+        exitTransition = {
+            slideOutOfContainer(
+                towards = AnimatedContentTransitionScope.SlideDirection.Start,
+                animationSpec = ModernSpec
+            ) + fadeOut(animationSpec = ModernSpecFloat) + scaleOut(
+                targetScale = 0.92f,
+                animationSpec = ModernSpecFloat
+            )
+        },
+        // 3. Pop Enter (Back): Slide in from Left (Modern)
+        popEnterTransition = {
+            slideIntoContainer(
+                towards = AnimatedContentTransitionScope.SlideDirection.End,
+                animationSpec = ModernSpec
+            ) + fadeIn(animationSpec = ModernSpecFloat) + scaleIn(
+                initialScale = 0.92f,
+                animationSpec = ModernSpecFloat
+            )
+        },
+        // 4. Pop Exit (Back): Slide out to Right (Modern)
+        popExitTransition = {
+            slideOutOfContainer(
+                towards = AnimatedContentTransitionScope.SlideDirection.End,
+                animationSpec = ModernSpec
+            ) + fadeOut(animationSpec = ModernSpecFloat)
+        }
     ) {
         composable<HomeRoute> {
             HomeScreen(
@@ -76,19 +151,82 @@ fun AppNavHost(
             )
         }
 
-        composable<ProfileRoute> {
+composable<ProfileRoute>(
+            enterTransition = {
+                slideIntoContainer(
+                    towards = AnimatedContentTransitionScope.SlideDirection.Up,
+                    animationSpec = tween(400)
+                ) + fadeIn(animationSpec = tween(400))
+            },
+            exitTransition = {
+                slideOutOfContainer(
+                    towards = AnimatedContentTransitionScope.SlideDirection.Down,
+                    animationSpec = tween(400)
+                ) + fadeOut(animationSpec = tween(400))
+            },
+            popEnterTransition = {
+                slideIntoContainer(
+                    towards = AnimatedContentTransitionScope.SlideDirection.Up,
+                    animationSpec = tween(400)
+                ) + fadeIn(animationSpec = tween(400))
+            },
+            popExitTransition = {
+                slideOutOfContainer(
+                    towards = AnimatedContentTransitionScope.SlideDirection.Down,
+                    animationSpec = tween(400)
+                ) + fadeOut(animationSpec = tween(400))
+            }
+        ) {
             PremiumScreen(
                 onClose = { navController.popBackStack() },
                 onNavigateToTrial = { navController.navigate(SettingsRoute) }
             )
         }
 
-        composable<SettingsRoute> {
+composable<SettingsRoute>(
+            enterTransition = {
+                slideIntoContainer(
+                    towards = AnimatedContentTransitionScope.SlideDirection.Up,
+                    animationSpec = tween(400)
+                ) + fadeIn(animationSpec = tween(400))
+            },
+            exitTransition = {
+                slideOutOfContainer(
+                    towards = AnimatedContentTransitionScope.SlideDirection.Down,
+                    animationSpec = tween(400)
+                ) + fadeOut(animationSpec = tween(400))
+            },
+            popEnterTransition = {
+                slideIntoContainer(
+                    towards = AnimatedContentTransitionScope.SlideDirection.Up,
+                    animationSpec = tween(400)
+                ) + fadeIn(animationSpec = tween(400))
+            },
+            popExitTransition = {
+                slideOutOfContainer(
+                    towards = AnimatedContentTransitionScope.SlideDirection.Down,
+                    animationSpec = tween(400)
+                ) + fadeOut(animationSpec = tween(400))
+            }
+        ) {
             SettingsScreen(
             )
         }
 
-        composable<CanvasRoute> {
+composable<CanvasRoute>(
+            enterTransition = {
+                scaleIn(initialScale = 0.8f, animationSpec = tween(300)) + fadeIn(animationSpec = tween(300))
+            },
+            exitTransition = {
+                scaleOut(targetScale = 0.8f, animationSpec = tween(300)) + fadeOut(animationSpec = tween(300))
+            },
+            popEnterTransition = {
+                scaleIn(initialScale = 0.8f, animationSpec = tween(300)) + fadeIn(animationSpec = tween(300))
+            },
+            popExitTransition = {
+                scaleOut(targetScale = 0.8f, animationSpec = tween(300)) + fadeOut(animationSpec = tween(300))
+            }
+        ) {
             CanvasScreen(
                 onNavigateBack = { navController.popBackStack() }
             )
@@ -104,7 +242,32 @@ fun AppNavHost(
             )
         }
 
-        composable<ExperimentRoute> {
+        composable<ExperimentRoute>(
+            enterTransition = {
+                slideIntoContainer(
+                    towards = AnimatedContentTransitionScope.SlideDirection.Start,
+                    animationSpec = PlayfulSpec
+                ) + fadeIn(animationSpec = tween(300))
+            },
+            exitTransition = {
+                slideOutOfContainer(
+                    towards = AnimatedContentTransitionScope.SlideDirection.Start,
+                    animationSpec = PlayfulSpec
+                ) + fadeOut(animationSpec = tween(300))
+            },
+            popEnterTransition = {
+                slideIntoContainer(
+                    towards = AnimatedContentTransitionScope.SlideDirection.End,
+                    animationSpec = PlayfulSpec
+                ) + fadeIn(animationSpec = tween(300))
+            },
+            popExitTransition = {
+                slideOutOfContainer(
+                    towards = AnimatedContentTransitionScope.SlideDirection.End,
+                    animationSpec = PlayfulSpec
+                ) + fadeOut(animationSpec = tween(300))
+            }
+        ) {
             ExperimentScreen(
                 onNavigateBack = { navController.popBackStack() }
             )
@@ -231,24 +394,84 @@ fun AppNavHost(
             SharedFlowScreen()
         }
 
-        composable<LibraryRoute> {
+composable<LibraryRoute>(
+            enterTransition = {
+                scaleIn(initialScale = 0.8f, animationSpec = tween(300)) + fadeIn(animationSpec = tween(300))
+            },
+            exitTransition = {
+                scaleOut(targetScale = 0.8f, animationSpec = tween(300)) + fadeOut(animationSpec = tween(300))
+            },
+            popEnterTransition = {
+                scaleIn(initialScale = 0.8f, animationSpec = tween(300)) + fadeIn(animationSpec = tween(300))
+            },
+            popExitTransition = {
+                scaleOut(targetScale = 0.8f, animationSpec = tween(300)) + fadeOut(animationSpec = tween(300))
+            }
+        ) {
             LibraryScreen(
                 onNavigateToZoomImage = { navController.navigate(ZoomImageRoute) }
             )
         }
 
-        composable<ZoomImageRoute> {
+composable<ZoomImageRoute>(
+            enterTransition = {
+                scaleIn(initialScale = 0.8f, animationSpec = tween(300)) + fadeIn(animationSpec = tween(300))
+            },
+            exitTransition = {
+                scaleOut(targetScale = 0.8f, animationSpec = tween(300)) + fadeOut(animationSpec = tween(300))
+            },
+            popEnterTransition = {
+                scaleIn(initialScale = 0.8f, animationSpec = tween(300)) + fadeIn(animationSpec = tween(300))
+            },
+            popExitTransition = {
+                scaleOut(targetScale = 0.8f, animationSpec = tween(300)) + fadeOut(animationSpec = tween(300))
+            }
+        ) {
             ZoomImageScreen(
                 onNavigateBack = { navController.popBackStack() }
             )
         }
 
-        composable<AnimationRoute> {
+        composable<AnimationRoute>(
+             enterTransition = {
+                slideIntoContainer(
+                    towards = AnimatedContentTransitionScope.SlideDirection.Start,
+                    animationSpec = PlayfulSpec
+                ) + fadeIn(animationSpec = tween(300))
+            },
+            exitTransition = {
+                slideOutOfContainer(
+                    towards = AnimatedContentTransitionScope.SlideDirection.Start,
+                    animationSpec = PlayfulSpec
+                ) + fadeOut(animationSpec = tween(300))
+            },
+            popEnterTransition = {
+                slideIntoContainer(
+                    towards = AnimatedContentTransitionScope.SlideDirection.End,
+                    animationSpec = PlayfulSpec
+                ) + fadeIn(animationSpec = tween(300))
+            },
+            popExitTransition = {
+                slideOutOfContainer(
+                    towards = AnimatedContentTransitionScope.SlideDirection.End,
+                    animationSpec = PlayfulSpec
+                ) + fadeOut(animationSpec = tween(300))
+            }
+        ) {
             AnimationScreen(
                 onNavigateBack = { navController.popBackStack() },
                 onNavigateToGraphs = { navController.navigate(AnimatedGraphsRoute) },
                 onNavigateToMaps = { navController.navigate(MapsRoute) },
-                onNavigateToAnimationType = { navController.navigate(AnimationTypeRoute) }
+                onNavigateToAnimationType = { navController.navigate(AnimationTypeRoute) },
+                onNavigateToConfetti = { navController.navigate(ConfettiRoute) },
+                onNavigateToFireworks = { navController.navigate(FireworksRoute) },
+                onNavigateToConfettiBurst = { navController.navigate(ConfettiBurstRoute) },
+                onNavigateToJsonAnim = { navController.navigate(JsonAnimRoute) },
+                onNavigateToFestiveConfetti = { navController.navigate(FestiveConfettiRoute) },
+                onNavigateToLottieConfetti = { navController.navigate(LottieConfettiRoute) },
+                onNavigateToCoinHarvest = { navController.navigate(CoinHarvestRoute) },
+                onNavigateToLoadingCircle = { navController.navigate(LoadingCircleRoute) },
+                onNavigateToSuccessAnimation = { navController.navigate(SuccessAnimationRoute) }
             )
         }
 
@@ -270,9 +493,63 @@ fun AppNavHost(
             )
         }
 
+        composable<ConfettiRoute> {
+            ConfettiScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable<FireworksRoute> {
+            FireworksScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable<ConfettiBurstRoute> {
+            ConfettiBurstScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable<JsonAnimRoute> {
+            JsonAnimScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable<FestiveConfettiRoute> {
+            FestiveConfettiScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
         composable<CoroutineRoute> {
             CoroutineScreen(
                 onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable<LottieConfettiRoute> {
+            LottieConfettiScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+            composable<CoinHarvestRoute> {
+            CoinHarvestScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable<LoadingCircleRoute> {
+            LoadingCircleScreen(
+                navController = navController
+            )
+        }
+
+        composable<SuccessAnimationRoute> {
+            SuccessAnimationScreen(
+                navController = navController
             )
         }
     }

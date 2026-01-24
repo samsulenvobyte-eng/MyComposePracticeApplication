@@ -1,7 +1,6 @@
 package com.example.mypracticeapplication.ui.screens.practice
 
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -106,9 +105,11 @@ fun CoroutineScreen(
             
             // Interactive Demo Section
             DemoSection(
+                viewModel = viewModel,
                 uiState = uiState,
                 onFetchClick = viewModel::fetchUserData,
                 onFetchMultipleClick = viewModel::fetchMultipleData,
+                onFetchParallelClick = viewModel::fetchParallelData,
                 onClearClick = viewModel::clearData
             )
             
@@ -191,7 +192,9 @@ private fun DemoSection(
     uiState: CoroutineUiState,
     onFetchClick: () -> Unit,
     onFetchMultipleClick: () -> Unit,
-    onClearClick: () -> Unit
+    onFetchParallelClick: () -> Unit,
+    onClearClick: () -> Unit,
+    viewModel: CoroutineViewModel
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -259,16 +262,52 @@ private fun DemoSection(
             
             Spacer(modifier = Modifier.height(12.dp))
             
-            Button(
-                onClick = onFetchMultipleClick,
-                enabled = !uiState.isLoading,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = SecondaryColor
-                ),
-                shape = RoundedCornerShape(12.dp)
+            // Sequential vs Parallel comparison
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Text("Fetch Multiple (Sequential)")
+                Button(
+                    onClick = onFetchMultipleClick,
+                    enabled = !uiState.isLoading,
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = SecondaryColor
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text("Sequential", fontSize = 13.sp)
+                }
+                
+                Button(
+                    onClick = onFetchParallelClick,
+                    enabled = !uiState.isLoading,
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF059669) // Teal for parallel
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text("⚡ Parallel", fontSize = 13.sp)
+                }
+                Button(
+                    onClick = viewModel::getUserProfileUpdate,
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF059669) // Teal for parallel
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text("my co\n ${uiState.profileMessage}", fontSize = 13.sp)
+                }
             }
+            
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            Text(
+                text = "Sequential: ~3s | Parallel: ~2s",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+            )
             
             Spacer(modifier = Modifier.height(16.dp))
             
@@ -493,6 +532,15 @@ private fun LearningSection() {
             description = "Child coroutines are tied to parent's lifecycle",
             codeSnippet = "// Navigate away → ViewModel cleared → coroutines cancelled"
         )
+        
+        ConceptCard(
+            emoji = "6️⃣",
+            title = "async/await",
+            description = "Run coroutines in PARALLEL and combine results",
+            codeSnippet = """val a = async { fetchUser() }
+val b = async { fetchPosts() }
+val result = a.await() + b.await()"""
+        )
     }
 }
 
@@ -581,6 +629,7 @@ private fun TakeawaysSection() {
             val takeaways = listOf(
                 "Use viewModelScope.launch { } for almost everything",
                 "Use withContext(Dispatchers.IO) for network/database",
+                "Use async/await for parallel operations",
                 "Don't worry about cancellation - it's automatic!",
                 "Keep UI state in a single StateFlow<UiState>",
                 "Mark long-running functions as suspend"

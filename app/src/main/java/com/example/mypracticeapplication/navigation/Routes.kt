@@ -100,6 +100,9 @@ object SelfPracticeRoute
 object SharedFlowRoute
 
 @Serializable
+object CoroutineRoute
+
+@Serializable
 object AnimatedGraphsRoute
 
 @Serializable
@@ -109,4 +112,28 @@ object MapsRoute
 object AnimationTypeRoute
 
 @Serializable
-object CoroutineRoute
+object ConfettiRoute
+
+@Serializable
+object FireworksRoute
+
+@Serializable
+object ConfettiBurstRoute
+
+@Serializable
+object JsonAnimRoute
+
+@Serializable
+object FestiveConfettiRoute
+
+@Serializable
+object LottieConfettiRoute
+
+@Serializable
+object CoinHarvestRoute
+
+@Serializable
+object LoadingCircleRoute
+
+@Serializable
+object SuccessAnimationRoute

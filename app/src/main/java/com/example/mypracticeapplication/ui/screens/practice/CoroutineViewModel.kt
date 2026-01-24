@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -31,7 +32,8 @@ data class CoroutineUiState(
     val isLoading: Boolean = false,
     val userName: String? = null,
     val errorMessage: String? = null,
-    val requestCount: Int = 0
+    val requestCount: Int = 0,
+    val profileMessage: String? = null
 ) {
     // Derived state - computed from existing state
     val hasData: Boolean get() = userName != null
@@ -66,6 +68,7 @@ class CoroutineViewModel : ViewModel() {
     fun fetchUserData() {
         // 🚀 Launch a coroutine in viewModelScope
         // This is the pattern you'll use 90% of the time!
+        viewModelScope.async {  }
         viewModelScope.launch {
             // Update state to show loading
             // (We're on Main dispatcher, so this is safe for UI)
@@ -155,6 +158,99 @@ class CoroutineViewModel : ViewModel() {
         return withContext(Dispatchers.IO) {
             delay(1000)
             "Premium User"
+        }
+    }
+    
+    // ═══════════════════════════════════════════════════════════════════════════
+    // 6️⃣ async/await - PARALLEL EXECUTION
+    // ═══════════════════════════════════════════════════════════════════════════
+    
+    /**
+     * Demonstrates PARALLEL operations using async/await
+     * 
+     * KEY CONCEPT: async { } + await()
+     * - async { } starts a coroutine and returns a Deferred<T> (like a Promise/Future)
+     * - await() suspends until the result is ready
+     * - Multiple async blocks run IN PARALLEL (not sequentially!)
+     * - Great for fetching independent data at the same time
+     * 
+     * COMPARISON:
+     * Sequential (3 seconds total):
+     *   val user = fetchUser()      // 2 sec
+     *   val posts = fetchPosts()    // 1 sec
+     * 
+     * Parallel (2 seconds total - the longest one):
+     *   val userDeferred = async { fetchUser() }   // starts immediately
+     *   val postsDeferred = async { fetchPosts() } // starts immediately
+     *   val user = userDeferred.await()            // wait for results
+     *   val posts = postsDeferred.await()
+     */
+    fun fetchParallelData() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+            
+            try {
+                // 🚀 KEY: Both operations start AT THE SAME TIME!
+                // async returns immediately with a Deferred (a promise of a result)
+                val userDeferred = async { simulateApiCall() }      // Takes 2 sec
+                val extraDeferred = async { simulateExtraData() }   // Takes 1 sec
+                
+                // ⏳ await() suspends until each result is ready
+                // Total time: ~2 seconds (not 3 seconds!)
+                val user = userDeferred.await()
+                val extra = extraDeferred.await()
+                
+                _uiState.update { currentState ->
+                    currentState.copy(
+                        isLoading = false,
+                        userName = "⚡ $user - $extra (parallel!)",
+                        requestCount = currentState.requestCount + 1
+                    )
+                }
+            } catch (e: Exception) {
+                // Note: If any async fails, the exception propagates here
+                // Other running async coroutines are also cancelled (structured concurrency!)
+                _uiState.update { 
+                    it.copy(isLoading = false, errorMessage = e.message) 
+                }
+            }
+        }
+    }
+
+    fun getUserProfileUpdate(){
+
+        viewModelScope.launch {
+
+            val updateStr = simulateUserProfile()
+
+            _uiState.update {  it.copy(profileMessage = updateStr)}
+
+        }
+
+
+
+    }
+
+
+
+    
+    /**
+     * Simulates fetching user profile - takes 1.5 seconds
+     */
+    private suspend fun simulateUserProfile(): String {
+        return withContext(Dispatchers.IO) {
+            delay(1500)
+            "Profile loaded"
+        }
+    }
+    
+    /**
+     * Simulates fetching user settings - takes 1 second
+     */
+    private suspend fun simulateUserSettings(): String {
+        return withContext(Dispatchers.IO) {
+            delay(1000)
+            "Settings ready"
         }
     }
     
