@@ -55,13 +55,13 @@ import kotlin.random.Random
 // ═══════════════════════════════════════════════════════════════════════════════
 
 private val LottieBlueColors = listOf(
-    Color(0xFF42AAF8), // Primary Blue
-    Color(0xFF2DB3F9), // Lighter Blue
-    Color(0xFF0073BC), // Darker Blue
-    Color(0xFF59A3CE), // Muted Blue
+    Color(0xFF1C78F2), // Primary Blue
+    Color(0xFF10458C), // Lighter Blue
+    Color(0xFFFB8500), // Darker Blue
+    Color(0xFF00F03C), // Muted Blue
     Color(0xFF7780FD), // Purple-ish Blue (for variety)
-    Color(0xFFE0E0E0), // Silver/Light Grey
-    Color(0xFFB0B0B0)  // Darker Grey
+    Color(0xFFFCD227), // Silver/Light Grey
+    Color(0xFFFF0CE1)  // Darker Grey
 )
 
 private enum class LottieShape {
@@ -172,7 +172,7 @@ private fun ConfettiControls(
         modifier = Modifier
             .fillMaxWidth()
             .padding(16.dp)
-            .background(Color(0xFF1E1E1E).copy(alpha = 0.9f), RoundedCornerShape(16.dp))
+            .background(Color(0xFF2C2C2C).copy(alpha = 0.9f), RoundedCornerShape(16.dp))
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
@@ -308,7 +308,10 @@ private fun LottieConfettiExplosion(
             val progress = animationProgress.value
             val time = progress * 3.7f * speedMultiplier // Dynamic Speed
             
-            particles.forEach { particle ->
+            particles.forEach {
+
+
+                particle ->
                 // 1. Calculate Drag (Velocity Decay)
                 val frames = time * 60f
                 val dragEffect = particle.drag.toDouble().pow(frames.toDouble()).toFloat()
@@ -507,13 +510,13 @@ fun LottieConfettiScreen(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color(0xFF0A0A0A))
+                    .background(Color(0xFFFFFFFF))
             )
             
             // Confetti Animation
             LottieConfettiExplosion(
                 isVisible = isPlaying,
-                particleCount = 150,
+                particleCount = 50,
                 spreadAngle = spread,
                 startPositionY = positionY,
                 forceMultiplier = forceMultiplier,

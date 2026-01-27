@@ -1,6 +1,7 @@
 package com.example.mypracticeapplication.navigation
 
 import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
@@ -85,6 +86,17 @@ private val ModernSpecFloat = spring<Float>(
     stiffness = 350f,
     dampingRatio = 0.85f
 )
+
+val CubicOutSpec = tween<IntOffset>(
+    durationMillis = 400, // Slightly faster feels snappier with Cubic Out
+    easing = CubicBezierEasing(0.22f, 1f, 0.36f, 1f)
+)
+
+val CubicOutSpecFloat = tween<Float>(
+    durationMillis = 400,
+    easing = CubicBezierEasing(0.22f, 1f, 0.36f, 1f)
+)
+
 
 @Composable
 fun AppNavHost(
@@ -243,30 +255,47 @@ composable<CanvasRoute>(
         }
 
         composable<ExperimentRoute>(
+
+
+// 2. The Transitions
             enterTransition = {
                 slideIntoContainer(
                     towards = AnimatedContentTransitionScope.SlideDirection.Start,
-                    animationSpec = PlayfulSpec
-                ) + fadeIn(animationSpec = tween(300))
+                    animationSpec = CubicOutSpec
+                )
             },
             exitTransition = {
                 slideOutOfContainer(
                     towards = AnimatedContentTransitionScope.SlideDirection.Start,
-                    animationSpec = PlayfulSpec
-                ) + fadeOut(animationSpec = tween(300))
+                    animationSpec = CubicOutSpec
+                ) + fadeOut(
+                    animationSpec = CubicOutSpecFloat,
+                    targetAlpha = 0.9f
+                ) + scaleOut(
+                    targetScale = 0.92f, // Keeps the nice depth effect
+                    animationSpec = CubicOutSpecFloat
+                )
             },
             popEnterTransition = {
                 slideIntoContainer(
                     towards = AnimatedContentTransitionScope.SlideDirection.End,
-                    animationSpec = PlayfulSpec
-                ) + fadeIn(animationSpec = tween(300))
+                    animationSpec = CubicOutSpec
+                ) + fadeIn(
+                    animationSpec = CubicOutSpecFloat,
+                    initialAlpha = 0.9f
+                ) + scaleIn(
+                    initialScale = 0.92f,
+                    animationSpec = CubicOutSpecFloat
+                )
             },
             popExitTransition = {
                 slideOutOfContainer(
                     towards = AnimatedContentTransitionScope.SlideDirection.End,
-                    animationSpec = PlayfulSpec
-                ) + fadeOut(animationSpec = tween(300))
+                    animationSpec = CubicOutSpec
+                )
             }
+
+
         ) {
             ExperimentScreen(
                 onNavigateBack = { navController.popBackStack() }
