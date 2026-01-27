@@ -55,20 +55,15 @@ import kotlin.random.Random
 // ═══════════════════════════════════════════════════════════════════════════════
 
 private val LottieBlueColors = listOf(
-    Color(0xFF1C78F2), // Primary Blue
-    Color(0xFF10458C), // Lighter Blue
-    Color(0xFFFB8500), // Darker Blue
-    Color(0xFF00F03C), // Muted Blue
-    Color(0xFF7780FD), // Purple-ish Blue (for variety)
-    Color(0xFFFCD227), // Silver/Light Grey
-    Color(0xFFFF0CE1)  // Darker Grey
+    Color(0xFFFF4000), // Primary Blue
+    Color(0xFF3080EB), // Lighter Blue
+    Color(0xFFFFE120), // Darker Blue
 )
 
 private enum class LottieShape {
     RECTANGLE,
-    TALL_RECTANGLE,
-    TRIANGLE,
-    PARALLELOGRAM
+    CIRCLE,
+    STAR
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -113,7 +108,7 @@ private fun generateLottieParticles(
 ): List<LottieParticle> {
     return List(count) { index ->
         val baseColor = LottieBlueColors.random()
-        val hasGradient = Random.nextFloat() > 0.3f
+        val hasGradient = false//Random.nextFloat() > 0.3f
         
         // Directional Cannon Physics
         val randomSpread = (Random.nextFloat() - 0.5f) * spreadAngle
@@ -166,6 +161,10 @@ private fun ConfettiControls(
     onHeightChange: (Float) -> Unit,
     speed: Float,
     onSpeedChange: (Float) -> Unit,
+    particleCount: Int,
+    onParticleCountChange: (Float) -> Unit,
+    is3DEnabled: Boolean,
+    on3DToggle: (Boolean) -> Unit,
     onFire: () -> Unit
 ) {
     Column(
@@ -217,6 +216,18 @@ private fun ConfettiControls(
                         activeTrackColor = Color(0xFFE0E0E0)
                     )
                 )
+
+                // Particle Count Slider
+                Text("Particles: $particleCount", color = Color.White, style = MaterialTheme.typography.bodySmall)
+                androidx.compose.material3.Slider(
+                    value = particleCount.toFloat(),
+                    onValueChange = onParticleCountChange,
+                    valueRange = 10f..300f,
+                    colors = androidx.compose.material3.SliderDefaults.colors(
+                        thumbColor = Color(0xFFFF4000),
+                        activeTrackColor = Color(0xFFFF4000)
+                    )
+                )
             }
             
             // Right Column
@@ -244,6 +255,23 @@ private fun ConfettiControls(
                         activeTrackColor = Color(0xFF7780FD)
                     )
                 )
+
+                // 3D Effect Toggle
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("3D Depth", color = Color.White, style = MaterialTheme.typography.bodySmall)
+                    androidx.compose.material3.Switch(
+                        checked = is3DEnabled,
+                        onCheckedChange = on3DToggle,
+                        colors = androidx.compose.material3.SwitchDefaults.colors(
+                            checkedThumbColor = Color(0xFF42AAF8),
+                            checkedTrackColor = Color(0xFF42AAF8).copy(alpha = 0.5f)
+                        )
+                    )
+                }
             }
         }
     }
@@ -262,6 +290,7 @@ private fun LottieConfettiExplosion(
     startPositionY: Float = 0.5f,
     forceMultiplier: Float = 1f,
     speedMultiplier: Float = 1f,
+    is3DEnabled: Boolean = true,
     onAnimationEnd: (() -> Unit)? = null
 ) {
     val animationProgress = remember { Animatable(0f) }
@@ -341,8 +370,8 @@ private fun LottieConfettiExplosion(
                 val spinZ = particle.rotationZ + particle.rotationSpeedZ * frames * speedMultiplier
                 
                 // Scale
-                val scaleX = cos(spinY * (PI.toFloat() / 180f)).coerceIn(0.05f, 1f)
-                val scaleY = cos(spinX * (PI.toFloat() / 180f)).coerceIn(0.05f, 1f)
+                val scaleX = if (is3DEnabled) cos(spinY * (PI.toFloat() / 180f)).coerceIn(0.05f, 1f) else 1f
+                val scaleY = if (is3DEnabled) cos(spinX * (PI.toFloat() / 180f)).coerceIn(0.05f, 1f) else 1f
                 
                 // 5. Fade Out
                 val alpha = if (progress > 0.7f) {
@@ -381,9 +410,8 @@ private fun DrawScope.drawLottieShape(
     val width = particle.size * scaleX
     val height = when (particle.shape) {
         LottieShape.RECTANGLE -> particle.size * 0.6f * scaleY
-        LottieShape.TALL_RECTANGLE -> particle.size * 2f * scaleY
-        LottieShape.TRIANGLE -> particle.size * scaleY
-        LottieShape.PARALLELOGRAM -> particle.size * 0.5f * scaleY
+        LottieShape.CIRCLE -> particle.size * scaleY
+        LottieShape.STAR -> particle.size * scaleY
     }
     
     val color = particle.color.copy(alpha = alpha)
@@ -412,41 +440,33 @@ private fun DrawScope.drawLottieShape(
                 )
             }
         }
-        LottieShape.TALL_RECTANGLE -> {
+        LottieShape.CIRCLE -> {
             if (brush != null) {
-                drawRect(
+                drawOval(
                     brush = brush,
-                    topLeft = Offset(x - width / 4, y - height / 2),
-                    size = Size(width / 2, height)
+                    topLeft = Offset(x - width / 2, y - height / 2),
+                    size = Size(width, height)
                 )
             } else {
-                drawRect(
+                drawOval(
                     color = color,
-                    topLeft = Offset(x - width / 4, y - height / 2),
-                    size = Size(width / 2, height)
+                    topLeft = Offset(x - width / 2, y - height / 2),
+                    size = Size(width, height)
                 )
             }
         }
-        LottieShape.TRIANGLE -> {
+        LottieShape.STAR -> {
             val path = Path().apply {
-                moveTo(x, y - height / 2)
-                lineTo(x - width / 2, y + height / 2)
-                lineTo(x + width / 2, y + height / 2)
-                close()
-            }
-            if (brush != null) {
-                drawPath(path = path, brush = brush)
-            } else {
-                drawPath(path = path, color = color)
-            }
-        }
-        LottieShape.PARALLELOGRAM -> {
-            val skew = width * 0.3f
-            val path = Path().apply {
-                moveTo(x - width / 2 + skew, y - height / 2)
-                lineTo(x + width / 2 + skew, y - height / 2)
-                lineTo(x + width / 2 - skew, y + height / 2)
-                lineTo(x - width / 2 - skew, y + height / 2)
+                val outerRadius = width / 2
+                val innerRadius = outerRadius * 0.4f
+                val points = 5
+                for (i in 0 until points * 2) {
+                    val radius = if (i % 2 == 0) outerRadius else innerRadius
+                    val angle = i * PI.toFloat() / points - PI.toFloat() / 2
+                    val px = x + cos(angle) * radius
+                    val py = y + sin(angle) * radius
+                    if (i == 0) moveTo(px, py) else lineTo(px, py)
+                }
                 close()
             }
             if (brush != null) {
@@ -473,6 +493,8 @@ fun LottieConfettiScreen(
     var positionY by remember { mutableStateOf(1.0f) } 
     var forceMultiplier by remember { mutableStateOf(0.8f) } // Default power
     var speed by remember { mutableStateOf(1.0f) }
+    var is3DEnabled by remember { mutableStateOf(true) }
+    var particleCount by remember { mutableStateOf(50) }
     
     // Trigger State
     var triggerCount by remember { mutableStateOf(0) }
@@ -516,11 +538,12 @@ fun LottieConfettiScreen(
             // Confetti Animation
             LottieConfettiExplosion(
                 isVisible = isPlaying,
-                particleCount = 50,
+                particleCount = particleCount,
                 spreadAngle = spread,
                 startPositionY = positionY,
                 forceMultiplier = forceMultiplier,
                 speedMultiplier = speed,
+                is3DEnabled = is3DEnabled,
                 onAnimationEnd = { isPlaying = false }
             )
             
@@ -540,6 +563,10 @@ fun LottieConfettiScreen(
                     onHeightChange = { forceMultiplier = it },
                     speed = speed,
                     onSpeedChange = { speed = it },
+                    particleCount = particleCount,
+                    onParticleCountChange = { particleCount = it.toInt() },
+                    is3DEnabled = is3DEnabled,
+                    on3DToggle = { is3DEnabled = it },
                     onFire = { 
                         triggerCount++ 
                     }
