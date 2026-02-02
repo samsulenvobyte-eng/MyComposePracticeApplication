@@ -298,6 +298,82 @@ composable<CanvasRoute>(
 
         ) {
             ExperimentScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToHeavyComputation = { navController.navigate(HeavyComputationRoute) },
+                onNavigateToComplexUi = { navController.navigate(ComplexUiRoute) }
+            )
+        }
+
+        composable<ComplexUiRoute>(
+             enterTransition = {
+                slideIntoContainer(
+                    towards = AnimatedContentTransitionScope.SlideDirection.Start,
+                    animationSpec = ModernSpec
+                ) + fadeIn(animationSpec = ModernSpecFloat)
+            },
+            exitTransition = {
+                slideOutOfContainer(
+                    towards = AnimatedContentTransitionScope.SlideDirection.Start,
+                    animationSpec = ModernSpec
+                ) + fadeOut(animationSpec = ModernSpecFloat) + scaleOut(
+                    targetScale = 0.92f,
+                    animationSpec = ModernSpecFloat
+                )
+            },
+            popEnterTransition = {
+                slideIntoContainer(
+                    towards = AnimatedContentTransitionScope.SlideDirection.End,
+                    animationSpec = ModernSpec
+                ) + fadeIn(animationSpec = ModernSpecFloat) + scaleIn(
+                    initialScale = 0.92f,
+                    animationSpec = ModernSpecFloat
+                )
+            },
+            popExitTransition = {
+                slideOutOfContainer(
+                    towards = AnimatedContentTransitionScope.SlideDirection.End,
+                    animationSpec = ModernSpec
+                ) + fadeOut(animationSpec = ModernSpecFloat)
+            }
+        ) {
+            com.example.mypracticeapplication.ui.screens.experiment.ComplexUiScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable<HeavyComputationRoute>(
+            enterTransition = {
+                slideIntoContainer(
+                    towards = AnimatedContentTransitionScope.SlideDirection.Start,
+                    animationSpec = ModernSpec
+                ) + fadeIn(animationSpec = ModernSpecFloat)
+            },
+            exitTransition = {
+                slideOutOfContainer(
+                    towards = AnimatedContentTransitionScope.SlideDirection.Start,
+                    animationSpec = ModernSpec
+                ) + fadeOut(animationSpec = ModernSpecFloat) + scaleOut(
+                    targetScale = 0.92f,
+                    animationSpec = ModernSpecFloat
+                )
+            },
+            popEnterTransition = {
+                slideIntoContainer(
+                    towards = AnimatedContentTransitionScope.SlideDirection.End,
+                    animationSpec = ModernSpec
+                ) + fadeIn(animationSpec = ModernSpecFloat) + scaleIn(
+                    initialScale = 0.92f,
+                    animationSpec = ModernSpecFloat
+                )
+            },
+            popExitTransition = {
+                slideOutOfContainer(
+                    towards = AnimatedContentTransitionScope.SlideDirection.End,
+                    animationSpec = ModernSpec
+                ) + fadeOut(animationSpec = ModernSpecFloat)
+            }
+        ) {
+            com.example.mypracticeapplication.ui.screens.experiment.HeavyComputationScreen(
                 onNavigateBack = { navController.popBackStack() }
             )
         }
@@ -500,7 +576,9 @@ composable<ZoomImageRoute>(
                 onNavigateToLottieConfetti = { navController.navigate(LottieConfettiRoute) },
                 onNavigateToCoinHarvest = { navController.navigate(CoinHarvestRoute) },
                 onNavigateToLoadingCircle = { navController.navigate(LoadingCircleRoute) },
-                onNavigateToSuccessAnimation = { navController.navigate(SuccessAnimationRoute) }
+                onNavigateToSuccessAnimation = { navController.navigate(SuccessAnimationRoute) },
+                onNavigateToOnboardingPage1 = { navController.navigate(OnboardingPage1Route) },
+                onNavigateToOnboardingElement = { navController.navigate(OnboardingElementRoute) }
             )
         }
 
@@ -579,6 +657,18 @@ composable<ZoomImageRoute>(
         composable<SuccessAnimationRoute> {
             SuccessAnimationScreen(
                 navController = navController
+            )
+        }
+
+        composable<OnboardingPage1Route> {
+            com.example.mypracticeapplication.ui.screens.animation.OnboardingPage1Screen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable<OnboardingElementRoute> {
+            com.example.mypracticeapplication.ui.screens.animation.OnboardingElementScreen(
+                onNavigateBack = { navController.popBackStack() }
             )
         }
     }

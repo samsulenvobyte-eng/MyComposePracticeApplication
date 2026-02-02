@@ -109,7 +109,9 @@ fun AnimationScreen(
     onNavigateToLottieConfetti: () -> Unit = {},
     onNavigateToCoinHarvest: () -> Unit = {},
     onNavigateToLoadingCircle: () -> Unit = {},
-    onNavigateToSuccessAnimation: () -> Unit = {}
+    onNavigateToSuccessAnimation: () -> Unit = {},
+    onNavigateToOnboardingPage1: () -> Unit = {},
+    onNavigateToOnboardingElement: () -> Unit = {}
 ) {
     Column(
         modifier = Modifier
@@ -126,6 +128,13 @@ fun AnimationScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            NavigationCard(
+                title = "2️⃣1️⃣ Onboarding Elements",
+               // description = "Placeholder for Onboarding Elements",
+                onClick = onNavigateToOnboardingElement,
+                subtitle = ""
+            )
+            
 //            // 1️⃣ AnimatedVisibility Demo
 //            AnimatedVisibilityDemo()
 //
@@ -229,6 +238,13 @@ fun AnimationScreen(
                 title = "1️⃣9️⃣ Success Motion",
                 subtitle = "Bouncing checkmark & confetti",
                 onClick = onNavigateToSuccessAnimation
+            )
+
+            // 2️⃣0️⃣ Navigate to Onboarding Page 1 Screen
+            NavigationCard(
+                title = "2️⃣0️⃣ Onboarding Page 1",
+                subtitle = "Animation placeholder",
+                onClick = onNavigateToOnboardingPage1
             )
 
             Spacer(modifier = Modifier.height(24.dp))

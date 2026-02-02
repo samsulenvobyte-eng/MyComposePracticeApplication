@@ -137,3 +137,15 @@ object LoadingCircleRoute
 
 @Serializable
 object SuccessAnimationRoute
+
+@Serializable
+object HeavyComputationRoute
+
+@Serializable
+object ComplexUiRoute
+
+@Serializable
+object OnboardingPage1Route
+
+@Serializable
+object OnboardingElementRoute
