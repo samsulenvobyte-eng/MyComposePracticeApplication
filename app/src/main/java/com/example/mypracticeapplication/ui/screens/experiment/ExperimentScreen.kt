@@ -27,7 +27,9 @@ import com.example.mypracticeapplication.ui.components.GradientBottomBar
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ExperimentScreen(
-    onNavigateBack: () -> Unit = {}
+    onNavigateBack: () -> Unit = {},
+    onNavigateToHeavyComputation: () -> Unit = {},
+    onNavigateToComplexUi: () -> Unit = {}
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
     Scaffold(
@@ -92,6 +94,19 @@ fun ExperimentScreen(
                         modifier = Modifier.size(14.dp),
                         tint = Color.White
                     )
+                }
+            }
+
+            androidx.compose.foundation.layout.Column(
+                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 32.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp)
+            ) {
+                androidx.compose.material3.Button(onClick = onNavigateToHeavyComputation) {
+                    androidx.compose.material3.Text("Test Smooth Transition (Simulated)")
+                }
+                androidx.compose.material3.Button(onClick = onNavigateToComplexUi) {
+                    androidx.compose.material3.Text("Test Complex UI Transition (2000 nodes)")
                 }
             }
         }
