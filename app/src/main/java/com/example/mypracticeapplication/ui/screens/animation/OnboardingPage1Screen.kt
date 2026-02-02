@@ -14,6 +14,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -21,7 +22,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.CurrencyBitcoin
+import androidx.compose.material.icons.filled.CurrencyExchange
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.MonetizationOn
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -176,35 +180,23 @@ fun AnimatedBarChart() {
         )
     }
     
-    // Load images
-    val images = remember(overlays) { mutableMapOf<Int, androidx.compose.ui.graphics.ImageBitmap>() }
-    val context = androidx.compose.ui.platform.LocalContext.current
-    
-    LaunchedEffect(overlays) {
-        overlays.forEach { overlay ->
-            if (!images.containsKey(overlay.res)) {
-                val bitmap = android.graphics.BitmapFactory.decodeResource(context.resources, overlay.res)
-                if (bitmap != null) {
-                    images[overlay.res] = bitmap.asImageBitmap()
-                }
-            }
-        }
-    }
 
-    Box(){
+    BoxWithConstraints(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(300.dp)
+            .padding(horizontal = 0.dp)
+    ) {
+        val barCount = barData.size
+        val availableWidthPx = constraints.maxWidth.toFloat()
+
+        val spacing = availableWidthPx * 0.05f
+        val barWidth = (availableWidthPx - (spacing * (barCount - 1))) / barCount
+        val canvasHeight = constraints.maxHeight.toFloat()
 
         Canvas(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(300.dp)
-                .padding(horizontal = 0.dp)
+            modifier = Modifier.fillMaxSize()
         ) {
-            val barCount = barData.size
-
-            // Dynamic calculations
-            val availableWidth = size.width
-            val spacing = size.width * 0.05f // 5% spacing
-            val barWidth = (availableWidth - (spacing * (barCount - 1))) / barCount
 
             // Draw Bars
             barData.forEachIndexed { index, targetRelativeHeight ->
@@ -219,7 +211,7 @@ fun AnimatedBarChart() {
                 }
 
                 // Combine heights: Target * Entrance * (1 + Ambient)
-                val finalRelativeHeight = (targetRelativeHeight * entranceProgress + ambientOffset).coerceAtLeast(0.01f)
+                val finalRelativeHeight = (targetRelativeHeight * entranceProgress + ambientOffset).coerceAtLeast(0.00f)
 
                 val barHeight = size.height * finalRelativeHeight
                 val xOffset = index * (barWidth + spacing)
@@ -238,98 +230,38 @@ fun AnimatedBarChart() {
                 )
             }
 
-            // Draw Overlays
-            if (overlayVisible.value > 0f) {
-                overlays.forEach { overlay ->
-                    val image = images[overlay.res] ?: return@forEach
+        }
 
-                    val barCenterX = (overlay.xIndex * (barWidth + spacing)) + (barWidth / 2)
-                    val centerY = size.height - (size.height * overlay.yPercent)
-                    val scale = overlayVisible.value
-
-                    when (overlay) {
-                        is ChartOverlay.Circle -> {
-                            val radiusPx = overlay.radius.toPx() * scale
-                            val path = androidx.compose.ui.graphics.Path().apply {
-                                addOval(
-                                    androidx.compose.ui.geometry.Rect(
-                                        center = Offset(barCenterX, centerY),
-                                        radius = radiusPx
-                                    )
-                                )
-                            }
-                            clipPath(path) {
-                                val dstWidth = radiusPx * 2
-                                val dstHeight = radiusPx * 2
-                                val imgWidth = image.width.toFloat()
-                                val imgHeight = image.height.toFloat()
-                                val scaleFactor = kotlin.math.max(dstWidth / imgWidth, dstHeight / imgHeight)
-                                val scaledWidth = imgWidth * scaleFactor
-                                val scaledHeight = imgHeight * scaleFactor
-                                val drawX = (barCenterX - radiusPx) + (dstWidth - scaledWidth) / 2
-                                val drawY = (centerY - radiusPx) + (dstHeight - scaledHeight) / 2
-                                
-                                drawImage(
-                                    image = image,
-                                    dstOffset = androidx.compose.ui.unit.IntOffset(drawX.toInt(), drawY.toInt()),
-                                    dstSize = androidx.compose.ui.unit.IntSize(scaledWidth.toInt(), scaledHeight.toInt())
-                                )
-                            }
-                        }
-                        is ChartOverlay.Pill -> {
-                            val widthPx = overlay.width.toPx() * scale
-                            val heightPx = overlay.height.toPx() * scale
-                            val topLeft = Offset(barCenterX - widthPx / 2, centerY - heightPx / 2)
-                            val path = androidx.compose.ui.graphics.Path().apply {
-                                addRoundRect(
-                                    androidx.compose.ui.geometry.RoundRect(
-                                        rect = androidx.compose.ui.geometry.Rect(topLeft, Size(widthPx, heightPx)),
-                                        cornerRadius = CornerRadius(widthPx / 2, widthPx / 2)
-                                    )
-                                )
-                            }
-                            clipPath(path) {
-                                val dstWidth = widthPx
-                                val dstHeight = heightPx
-                                val imgWidth = image.width.toFloat()
-                                val imgHeight = image.height.toFloat()
-                                val scaleFactor = kotlin.math.max(dstWidth / imgWidth, dstHeight / imgHeight)
-                                val scaledWidth = imgWidth * scaleFactor
-                                val scaledHeight = imgHeight * scaleFactor
-                                val drawX = topLeft.x + (dstWidth - scaledWidth) / 2
-                                val drawY = topLeft.y + (dstHeight - scaledHeight) / 2
-                                
-                                drawImage(
-                                    image = image,
-                                    dstOffset = androidx.compose.ui.unit.IntOffset(drawX.toInt(), drawY.toInt()),
-                                    dstSize = androidx.compose.ui.unit.IntSize(scaledWidth.toInt(), scaledHeight.toInt())
-                                )
-                            }
-                        }
-                    }
-                }
-            }
+        // 4. Overlays as Independent Elements
+        overlays.forEach { overlay ->
+            OverlayItemView(
+                overlay = overlay,
+                barWidth = barWidth,
+                spacing = spacing,
+                canvasHeight = canvasHeight,
+                isVisible = overlayVisible.value > 0.5f // Trigger entrance when orchestrated
+            )
         }
 
         DynamicStatBubble(
             modifier = Modifier
-                .padding(start = 32.dp)
+                .padding(start = 32.dp, top = 16.dp)
                 .rotate(-15f)
                 .graphicsLayer {
                      scaleX = bubblesVisible.value
                      scaleY = bubblesVisible.value
                      alpha = bubblesVisible.value
                 },
-            icon = Icons.Default.Favorite,
-            count = (100 * mainProgress.value).toInt(),
-            color = Color(0xFFE84E66),
+            icon = Icons.Default.CurrencyExchange,
+            count = (999 * mainProgress.value).toInt(),
+            color = Color(0xFFFB8500),
             shadowColor = Color(0xFFA62C41)
         )
 
         DynamicStatBubble(
             modifier = Modifier
                 .align(alignment = Alignment.TopEnd)
-                .padding(end = 32.dp)
+                .padding(end = 32.dp, top = 16.dp)
                 .rotate(15f)
                  .graphicsLayer {
                      scaleX = bubblesVisible.value
@@ -337,15 +269,143 @@ fun AnimatedBarChart() {
                      alpha = bubblesVisible.value
                 },
             icon = Icons.Default.Person,
-            count = (250 * mainProgress.value).toInt(), // Different scale example
+            count = (999 * mainProgress.value).toInt(), // Different scale example
             color = Color(0xFF2DB3F9),
+            shadowColor = Color(0xFFA62C41)
+        )
+
+        DynamicStatBubble(
+            modifier = Modifier
+                .align(alignment = Alignment.TopCenter)
+
+                .graphicsLayer {
+                    scaleX = bubblesVisible.value
+                    scaleY = bubblesVisible.value
+                    alpha = bubblesVisible.value
+                },
+            icon = Icons.Default.Favorite,
+            count = (999 * mainProgress.value).toInt(), // Different scale example
+            color = Color(0xFFE84E66),
             shadowColor = Color(0xFFA62C41)
         )
     }
 }
 
 
+@Composable
+fun OverlayItemView(
+    overlay: ChartOverlay,
+    barWidth: Float,
+    spacing: Float,
+    canvasHeight: Float,
+    isVisible: Boolean
+) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val image = remember(overlay.res) {
+        val bitmap = android.graphics.BitmapFactory.decodeResource(context.resources, overlay.res)
+        bitmap?.asImageBitmap()
+    }
+
+    // Individual entrance animation
+    val entranceProgress = remember {Animatable(0f)}
+    
+    // Independent breathing/floating animation
+    val infiniteTransition = rememberInfiniteTransition(label = "overlay_breathing")
+    val breathingOffset by infiniteTransition.animateFloat(
+        initialValue = -5f,
+        targetValue = 5f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2000 + (overlay.xIndex * 200).toInt(), easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "bounce"
+    )
+
+    LaunchedEffect(isVisible) {
+        if (isVisible) {
+            entranceProgress.animateTo(
+                targetValue = 1f,
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioLowBouncy,
+                    stiffness = Spring.StiffnessLow
+                )
+            )
+        }
+    }
+
+    if (image != null && entranceProgress.value > 0f) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val scale = entranceProgress.value
+            val barCenterX = (overlay.xIndex * (barWidth + spacing)) + (barWidth / 2)
+            val centerY = canvasHeight - (canvasHeight * overlay.yPercent) + breathingOffset
+
+            when (overlay) {
+                is ChartOverlay.Circle -> {
+                    val radiusPx = overlay.radius.toPx() * scale
+                    val path = androidx.compose.ui.graphics.Path().apply {
+                        addOval(
+                            androidx.compose.ui.geometry.Rect(
+                                center = Offset(barCenterX, centerY),
+                                radius = radiusPx
+                            )
+                        )
+                    }
+                    clipPath(path) {
+                        val dstWidth = radiusPx * 2
+                        val dstHeight = radiusPx * 2
+                        val imgWidth = image.width.toFloat()
+                        val imgHeight = image.height.toFloat()
+                        val scaleFactor = kotlin.math.max(dstWidth / imgWidth, dstHeight / imgHeight)
+                        val scaledWidth = imgWidth * scaleFactor
+                        val scaledHeight = imgHeight * scaleFactor
+                        val drawX = (barCenterX - radiusPx) + (dstWidth - scaledWidth) / 2
+                        val drawY = (centerY - radiusPx) + (dstHeight - scaledHeight) / 2
+
+                        drawImage(
+                            image = image,
+                            dstOffset = androidx.compose.ui.unit.IntOffset(drawX.toInt(), drawY.toInt()),
+                            dstSize = androidx.compose.ui.unit.IntSize(scaledWidth.toInt(), scaledHeight.toInt())
+                        )
+                    }
+                }
+                is ChartOverlay.Pill -> {
+                    val widthPx = overlay.width.toPx() * scale
+                    val heightPx = overlay.height.toPx() * scale
+                    val topLeft = Offset(barCenterX - widthPx / 2, centerY - heightPx / 2)
+                    val path = androidx.compose.ui.graphics.Path().apply {
+                        addRoundRect(
+                            androidx.compose.ui.geometry.RoundRect(
+                                rect = androidx.compose.ui.geometry.Rect(topLeft, Size(widthPx, heightPx)),
+                                cornerRadius = CornerRadius(widthPx / 2, widthPx / 2)
+                            )
+                        )
+                    }
+                    clipPath(path) {
+                        val dstWidth = widthPx
+                        val dstHeight = heightPx
+                        val imgWidth = image.width.toFloat()
+                        val imgHeight = image.height.toFloat()
+                        val scaleFactor = kotlin.math.max(dstWidth / imgWidth, dstHeight / imgHeight)
+                        val scaledWidth = imgWidth * scaleFactor
+                        val scaledHeight = imgHeight * scaleFactor
+                        val drawX = topLeft.x + (dstWidth - scaledWidth) / 2
+                        val drawY = topLeft.y + (dstHeight - scaledHeight) / 2
+
+                        drawImage(
+                            image = image,
+                            dstOffset = androidx.compose.ui.unit.IntOffset(drawX.toInt(), drawY.toInt()),
+                            dstSize = androidx.compose.ui.unit.IntSize(scaledWidth.toInt(), scaledHeight.toInt())
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+
 sealed class ChartOverlay(val xIndex: Float, val yPercent: Float, val res: Int) {
+
     class Circle(
         xIndex: Float,
         yPercent: Float,

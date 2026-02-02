@@ -50,102 +50,18 @@ import kotlin.math.pow
 import kotlin.math.sin
 import kotlin.random.Random
 
+import com.example.mypracticeapplication.ui.components.LottieConfettiView
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // CONSTANTS & COLORS
 // ═══════════════════════════════════════════════════════════════════════════════
 
 private val LottieBlueColors = listOf(
-    Color(0xFFFF4000), // Primary Blue
+   // Color(0xFFFF4000), // Primary Blue
     Color(0xFF3080EB), // Lighter Blue
     Color(0xFFFFE120), // Darker Blue
+    Color(0xFFFB8500),
 )
-
-private enum class LottieShape {
-    RECTANGLE,
-    CIRCLE,
-    STAR
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// PARTICLE DATA CLASS
-// ═══════════════════════════════════════════════════════════════════════════════
-
-private data class LottieParticle(
-    val id: Int,
-    var x: Float,                     // Current X position
-    var y: Float,                     // Current Y position
-    var vx: Float,                    // Velocity X
-    var vy: Float,                    // Velocity Y
-    val color: Color,
-    val gradientColor: Color?,
-    val size: Float,
-    val shape: LottieShape,
-    var rotationX: Float,             // Current 3D Rotation X
-    var rotationY: Float,             // Current 3D Rotation Y
-    var rotationZ: Float,             // Current 2D Rotation Z
-    val rotationSpeedX: Float,
-    val rotationSpeedY: Float,
-    val rotationSpeedZ: Float,
-    val drag: Float,                  // Air resistance (0.9 - 0.99)
-    val mass: Float,                  // Gravity multiplier
-    val oscillationSpeed: Float,      // Flutter speed
-    val oscillationAmp: Float,        // Flutter intensity
-    var timeOffset: Float             // Random start offset for flutter
-)
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// PARTICLE GENERATOR
-// ═══════════════════════════════════════════════════════════════════════════════
-
-private fun generateLottieParticles(
-    count: Int, 
-    centerX: Float, 
-    centerY: Float,
-    directionAngle: Float = 270f, // Default Up
-    spreadAngle: Float = 90f,     // Default 90 degrees fan
-    minForce: Float = 15f,
-    maxForce: Float = 40f
-): List<LottieParticle> {
-    return List(count) { index ->
-        val baseColor = LottieBlueColors.random()
-        val hasGradient = false//Random.nextFloat() > 0.3f
-        
-        // Directional Cannon Physics
-        val randomSpread = (Random.nextFloat() - 0.5f) * spreadAngle
-        val angle = directionAngle + randomSpread
-        val angleRad = angle * (PI.toFloat() / 180f)
-        
-        // Initial "Pop" force - Varied for depth
-        val force = Random.nextFloat() * (maxForce - minForce) + minForce
-        
-        // Velocity components
-        val initialVx = cos(angleRad) * force
-        val initialVy = sin(angleRad) * force 
-        
-        LottieParticle(
-            id = index,
-            x = centerX,
-            y = centerY,
-            vx = initialVx,
-            vy = initialVy,
-            color = baseColor,
-            gradientColor = if (hasGradient) LottieBlueColors.random() else null,
-            size = Random.nextFloat() * 30f + 15f,
-            shape = LottieShape.entries.random(),
-            rotationX = Random.nextFloat() * 360f,
-            rotationY = Random.nextFloat() * 360f,
-            rotationZ = Random.nextFloat() * 360f,
-            rotationSpeedX = (Random.nextFloat() - 0.5f) * 15f,
-            rotationSpeedY = (Random.nextFloat() - 0.5f) * 15f,
-            rotationSpeedZ = (Random.nextFloat() - 0.5f) * 10f,
-            drag = Random.nextFloat() * 0.05f + 0.92f, // 0.92 - 0.97
-            mass = Random.nextFloat() * 0.5f + 0.8f,
-            oscillationSpeed = Random.nextFloat() * 0.1f + 0.05f,
-            oscillationAmp = Random.nextFloat() * 2f,
-            timeOffset = Random.nextFloat() * 100f
-        )
-    }
-}
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // CONTROLS COMPOSABLE
@@ -163,6 +79,8 @@ private fun ConfettiControls(
     onSpeedChange: (Float) -> Unit,
     particleCount: Int,
     onParticleCountChange: (Float) -> Unit,
+    sizeMultiplier: Float,
+    onSizeChange: (Float) -> Unit,
     is3DEnabled: Boolean,
     on3DToggle: (Boolean) -> Unit,
     onFire: () -> Unit
@@ -256,6 +174,18 @@ private fun ConfettiControls(
                     )
                 )
 
+                // Size Slider
+                Text("Size: ${String.format("%.1fx", sizeMultiplier)}", color = Color.White, style = MaterialTheme.typography.bodySmall)
+                androidx.compose.material3.Slider(
+                    value = sizeMultiplier,
+                    onValueChange = onSizeChange,
+                    valueRange = 0.5f..3.0f,
+                    colors = androidx.compose.material3.SliderDefaults.colors(
+                        thumbColor = Color(0xFF00F03C),
+                        activeTrackColor = Color(0xFF00F03C)
+                    )
+                )
+
                 // 3D Effect Toggle
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
@@ -277,206 +207,6 @@ private fun ConfettiControls(
     }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// CONFETTI EXPLOSION COMPOSABLE
-// ═══════════════════════════════════════════════════════════════════════════════
-
-@Composable
-private fun LottieConfettiExplosion(
-    modifier: Modifier = Modifier,
-    isVisible: Boolean,
-    particleCount: Int = 100,
-    spreadAngle: Float = 90f,
-    startPositionY: Float = 0.5f,
-    forceMultiplier: Float = 1f,
-    speedMultiplier: Float = 1f,
-    is3DEnabled: Boolean = true,
-    onAnimationEnd: (() -> Unit)? = null
-) {
-    val animationProgress = remember { Animatable(0f) }
-    var particles by remember { mutableStateOf(emptyList<LottieParticle>()) }
-    
-    // We need the size to center the burst, but Canvas size is only available during draw.
-    // We'll use a BoxWithConstraints or just assume a reasonable center for now.
-    var canvasSize by remember { mutableStateOf(Size.Zero) }
-    
-    LaunchedEffect(isVisible, canvasSize) {
-        if (isVisible && canvasSize != Size.Zero) {
-            // Generate particles from the location
-            val baseMinForce = 15f * forceMultiplier
-            val baseMaxForce = 40f * forceMultiplier
-            
-            particles = generateLottieParticles(
-                count = particleCount, 
-                centerX = canvasSize.width / 2, 
-                centerY = canvasSize.height * startPositionY, 
-                directionAngle = 270f, 
-                spreadAngle = spreadAngle,
-                minForce = baseMinForce,
-                maxForce = baseMaxForce
-            )
-            animationProgress.snapTo(0f)
-            animationProgress.animateTo(
-                targetValue = 1f,
-                animationSpec = tween(
-                    durationMillis = 3700,
-                    easing = LinearEasing
-                )
-            )
-            delay(300)
-            onAnimationEnd?.invoke()
-        }
-    }
-    
-    if (isVisible) {
-        Canvas(modifier = modifier.fillMaxSize()) {
-            if (canvasSize == Size.Zero) {
-                canvasSize = size
-            }
-            
-            val progress = animationProgress.value
-            val time = progress * 3.7f * speedMultiplier // Dynamic Speed
-            
-            particles.forEach {
-
-
-                particle ->
-                // 1. Calculate Drag (Velocity Decay)
-                val frames = time * 60f
-                val dragEffect = particle.drag.toDouble().pow(frames.toDouble()).toFloat()
-                
-                // 2. Apply Velocity & Gravity
-                val decaySum = (1f - dragEffect) / (1f - particle.drag)
-                val moveX = particle.vx * decaySum
-                val moveY = particle.vy * decaySum
-                
-                // Gravity
-                val gravityDisplacement = 0.5f * (980f * particle.mass) * time * time
-                
-                // 3. Oscillation (Flutter)
-                val oscTime = time * particle.oscillationSpeed + particle.timeOffset
-                val oscOffset = sin(oscTime) * particle.oscillationAmp
-                
-                // Final Position
-                val currentX = particle.x + moveX + oscOffset
-                val currentY = particle.y + moveY + gravityDisplacement
-                
-                // Skip if out of bounds (optimization)
-                if (currentY > size.height + 100) return@forEach
-                
-                // 4. 3D Tumbling
-                val spinX = particle.rotationX + particle.rotationSpeedX * frames * speedMultiplier
-                val spinY = particle.rotationY + particle.rotationSpeedY * frames * speedMultiplier
-                val spinZ = particle.rotationZ + particle.rotationSpeedZ * frames * speedMultiplier
-                
-                // Scale
-                val scaleX = if (is3DEnabled) cos(spinY * (PI.toFloat() / 180f)).coerceIn(0.05f, 1f) else 1f
-                val scaleY = if (is3DEnabled) cos(spinX * (PI.toFloat() / 180f)).coerceIn(0.05f, 1f) else 1f
-                
-                // 5. Fade Out
-                val alpha = if (progress > 0.7f) {
-                    (1f - (progress - 0.7f) / 0.3f).coerceIn(0f, 1f)
-                } else {
-                    1f
-                }
-                
-                // Draw
-                rotate(
-                    degrees = spinZ,
-                    pivot = Offset(currentX, currentY)
-                ) {
-                    drawLottieShape(
-                        particle = particle,
-                        x = currentX,
-                        y = currentY,
-                        scaleX = scaleX,
-                        scaleY = scaleY,
-                        alpha = alpha
-                    )
-                }
-            }
-        }
-    }
-}
-
-private fun DrawScope.drawLottieShape(
-    particle: LottieParticle,
-    x: Float,
-    y: Float,
-    scaleX: Float,
-    scaleY: Float,
-    alpha: Float
-) {
-    val width = particle.size * scaleX
-    val height = when (particle.shape) {
-        LottieShape.RECTANGLE -> particle.size * 0.6f * scaleY
-        LottieShape.CIRCLE -> particle.size * scaleY
-        LottieShape.STAR -> particle.size * scaleY
-    }
-    
-    val color = particle.color.copy(alpha = alpha)
-    val brush = if (particle.gradientColor != null) {
-        Brush.horizontalGradient(
-            colors = listOf(
-                particle.color.copy(alpha = alpha),
-                particle.gradientColor.copy(alpha = alpha)
-            )
-        )
-    } else null
-    
-    when (particle.shape) {
-        LottieShape.RECTANGLE -> {
-            if (brush != null) {
-                drawRect(
-                    brush = brush,
-                    topLeft = Offset(x - width / 2, y - height / 2),
-                    size = Size(width, height)
-                )
-            } else {
-                drawRect(
-                    color = color,
-                    topLeft = Offset(x - width / 2, y - height / 2),
-                    size = Size(width, height)
-                )
-            }
-        }
-        LottieShape.CIRCLE -> {
-            if (brush != null) {
-                drawOval(
-                    brush = brush,
-                    topLeft = Offset(x - width / 2, y - height / 2),
-                    size = Size(width, height)
-                )
-            } else {
-                drawOval(
-                    color = color,
-                    topLeft = Offset(x - width / 2, y - height / 2),
-                    size = Size(width, height)
-                )
-            }
-        }
-        LottieShape.STAR -> {
-            val path = Path().apply {
-                val outerRadius = width / 2
-                val innerRadius = outerRadius * 0.4f
-                val points = 5
-                for (i in 0 until points * 2) {
-                    val radius = if (i % 2 == 0) outerRadius else innerRadius
-                    val angle = i * PI.toFloat() / points - PI.toFloat() / 2
-                    val px = x + cos(angle) * radius
-                    val py = y + sin(angle) * radius
-                    if (i == 0) moveTo(px, py) else lineTo(px, py)
-                }
-                close()
-            }
-            if (brush != null) {
-                drawPath(path = path, brush = brush)
-            } else {
-                drawPath(path = path, color = color)
-            }
-        }
-    }
-}
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // SCREEN COMPOSABLE
@@ -495,6 +225,7 @@ fun LottieConfettiScreen(
     var speed by remember { mutableStateOf(1.0f) }
     var is3DEnabled by remember { mutableStateOf(true) }
     var particleCount by remember { mutableStateOf(50) }
+    var sizeMultiplier by remember { mutableStateOf(1.0f) }
     
     // Trigger State
     var triggerCount by remember { mutableStateOf(0) }
@@ -536,15 +267,16 @@ fun LottieConfettiScreen(
             )
             
             // Confetti Animation
-            LottieConfettiExplosion(
-                isVisible = isPlaying,
+            LottieConfettiView(
+                triggerKey = triggerCount,
+                colors = LottieBlueColors,
                 particleCount = particleCount,
                 spreadAngle = spread,
                 startPositionY = positionY,
                 forceMultiplier = forceMultiplier,
                 speedMultiplier = speed,
                 is3DEnabled = is3DEnabled,
-                onAnimationEnd = { isPlaying = false }
+                sizeMultiplier = sizeMultiplier
             )
             
             // Controls Overlay
@@ -565,10 +297,12 @@ fun LottieConfettiScreen(
                     onSpeedChange = { speed = it },
                     particleCount = particleCount,
                     onParticleCountChange = { particleCount = it.toInt() },
+                    sizeMultiplier = sizeMultiplier,
+                    onSizeChange = { sizeMultiplier = it },
                     is3DEnabled = is3DEnabled,
                     on3DToggle = { is3DEnabled = it },
                     onFire = { 
-                        triggerCount++ 
+                        triggerCount++
                     }
                 )
             }
