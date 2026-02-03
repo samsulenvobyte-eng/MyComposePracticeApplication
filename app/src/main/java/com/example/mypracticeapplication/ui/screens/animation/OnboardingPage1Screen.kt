@@ -260,7 +260,6 @@ fun AnimatedBarChart() {
             icon = Icons.Default.Paid,
             count = (234 * mainProgress.value).toInt(),
             color = Color(0xFFFB8500),
-            shadowColor = Color(0xFFA62C41)
         )
 
         DynamicStatBubble(
@@ -275,8 +274,7 @@ fun AnimatedBarChart() {
                 },
             icon = Icons.Default.Person,
             count = (234 * mainProgress.value).toInt(), // Different scale example
-            color = Color(0xFF2DB3F9),
-            shadowColor = Color(0xFFA62C41)
+            color = Color(0xFF2DB3F9)
         )
 
         DynamicStatBubble(
@@ -291,7 +289,6 @@ fun AnimatedBarChart() {
             icon = Icons.Default.Favorite,
             count = (147 * mainProgress.value).toInt(), // Different scale example
             color = Color(0xFFE84E66),
-            shadowColor = Color(0xFFA62C41)
         )
     }
 }

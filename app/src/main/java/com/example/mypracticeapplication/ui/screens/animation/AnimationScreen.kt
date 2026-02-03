@@ -131,150 +131,55 @@ fun AnimationScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            NavigationCard(
-                title = "2️⃣1️⃣ Onboarding Elements",
-               // description = "Placeholder for Onboarding Elements",
-                onClick = onNavigateToOnboardingElement,
-                subtitle = ""
-            )
             
-//            // 1️⃣ AnimatedVisibility Demo
-//            AnimatedVisibilityDemo()
-//
-//            // 2️⃣ Animate*AsState Demo
-//            AnimateAsStateDemo()
-//
-//            // 3️⃣ AnimatedContent Demo
-//            AnimatedContentDemo()
-//
-//            // 4️⃣ Infinite Transition Demo
-//            InfiniteTransitionDemo()
-//
-//            // 5️⃣ Animatable Demo
-//            AnimatableDemo()
-//
-//            // 6️⃣ animateContentSize Demo
-//            AnimateContentSizeDemo()
-//
-            // 7️⃣ Link/Unlink Icon Animation with Canvas
-            LinkUnlinkDemo()
+            // Demos Section
+            val demos = remember(Unit) {
+               listOf(
+                   NavPath("2️⃣1️⃣ Onboarding Elements", "", onNavigateToOnboardingElement),
+                   NavPath("7️⃣ Link/Unlink Icon", "Vector drawable animation", null), // Demo inline
+                   NavPath("8️⃣ Animated Graphs", "Explore animated chart and graph visualizations", onNavigateToGraphs),
+                   NavPath("9️⃣ Maps", "Map animations and interactions", onNavigateToMaps),
+                   NavPath("🔟 Animation Types", "Different animation effects and demos", onNavigateToAnimationType),
+                   NavPath("1️⃣1️⃣ Confetti", "Particle-based celebration animation", onNavigateToConfetti),
+                   NavPath("1️⃣2️⃣ Fireworks", "Center burst confetti + fireworks", onNavigateToFireworks),
+                   NavPath("1️⃣3️⃣ Confetti Burst", "Physics-based fountain effect", onNavigateToConfettiBurst),
+                   NavPath("1️⃣4️⃣ JSON Anim", "Lottie-style confetti with 3D rotation", onNavigateToJsonAnim),
+                   NavPath("1️⃣5️⃣ Festive Confetti", "Multicolor trails with path effect", onNavigateToFestiveConfetti),
+                   NavPath("1️⃣6️⃣ Lottie Confetti", "Blue-themed 3D particle burst", onNavigateToLottieConfetti),
+                   NavPath("1️⃣7️⃣ Coin Harvest", "Bezier curve collection animation", onNavigateToCoinHarvest),
+                   NavPath("1️⃣8️⃣ Loading Circle", "Custom Canvas circular loader", onNavigateToLoadingCircle),
+                   NavPath("1️⃣9️⃣ Success Motion", "Bouncing checkmark & confetti", onNavigateToSuccessAnimation),
+                   NavPath("2️⃣0️⃣ Onboarding Page 1", "Animation placeholder", onNavigateToOnboardingPage1),
+                   NavPath("2️⃣1️⃣ Empty Animation", "Template for new animations", onNavigateToEmptyAnimation),
+                   NavPath("2️⃣2️⃣ Custom Auto-Anim", "Auto-emitting particles", onNavigateToCustomAnimation),
+                   NavPath("2️⃣3️⃣ Onboarding Page 2", "Combined Chart + Particle Effects", onNavigateToOnboardingPage2)
+               )
+            }
+            
+            // Specific inline demos (kept outside loop for now as they are complex composables)
+             LinkUnlinkDemo()
 
-            // 8️⃣ Navigate to Animated Graphs Screen
-            NavigationCard(
-                title = "8️⃣ Animated Graphs",
-                subtitle = "Explore animated chart and graph visualizations",
-                onClick = onNavigateToGraphs
-            )
-
-            // 9️⃣ Navigate to Maps Screen
-            NavigationCard(
-                title = "9️⃣ Maps",
-                subtitle = "Map animations and interactions",
-                onClick = onNavigateToMaps
-            )
-
-            // 🔟 Navigate to Animation Types Screen
-            NavigationCard(
-                title = "🔟 Animation Types",
-                subtitle = "Different animation effects and demos",
-                onClick = onNavigateToAnimationType
-            )
-
-            // 1️⃣1️⃣ Navigate to Confetti Screen
-            NavigationCard(
-                title = "1️⃣1️⃣ Confetti",
-                subtitle = "Particle-based celebration animation",
-                onClick = onNavigateToConfetti
-            )
-
-            // 1️⃣2️⃣ Navigate to Fireworks Screen
-            NavigationCard(
-                title = "1️⃣2️⃣ Fireworks",
-                subtitle = "Center burst confetti + fireworks",
-                onClick = onNavigateToFireworks
-            )
-
-            // 1️⃣3️⃣ Navigate to Confetti Burst Screen
-            NavigationCard(
-                title = "1️⃣3️⃣ Confetti Burst",
-                subtitle = "Physics-based fountain effect",
-                onClick = onNavigateToConfettiBurst
-            )
-
-            // 1️⃣4️⃣ Navigate to JSON Anim Screen
-            NavigationCard(
-                title = "1️⃣4️⃣ JSON Anim",
-                subtitle = "Lottie-style confetti with 3D rotation",
-                onClick = onNavigateToJsonAnim
-            )
-
-            // 1️⃣5️⃣ Navigate to Festive Confetti Screen
-            NavigationCard(
-                title = "1️⃣5️⃣ Festive Confetti",
-                subtitle = "Multicolor trails with path effect",
-                onClick = onNavigateToFestiveConfetti
-            )
-
-            // 1️⃣6️⃣ Navigate to Lottie Confetti Screen
-            NavigationCard(
-                title = "1️⃣6️⃣ Lottie Confetti",
-                subtitle = "Blue-themed 3D particle burst",
-                onClick = onNavigateToLottieConfetti
-            )
-
-            // 1️⃣7️⃣ Navigate to Coin Harvest Screen
-            NavigationCard(
-                title = "1️⃣7️⃣ Coin Harvest",
-                subtitle = "Bezier curve collection animation",
-                onClick = onNavigateToCoinHarvest
-            )
-
-            // 1️⃣8️⃣ Navigate to Loading Circle Screen
-            NavigationCard(
-                title = "1️⃣8️⃣ Loading Circle",
-                subtitle = "Custom Canvas circular loader",
-                onClick = onNavigateToLoadingCircle
-            )
-
-            // 1️⃣9️⃣ Navigate to Success Animation Screen
-            NavigationCard(
-                title = "1️⃣9️⃣ Success Motion",
-                subtitle = "Bouncing checkmark & confetti",
-                onClick = onNavigateToSuccessAnimation
-            )
-
-            // 2️⃣0️⃣ Navigate to Onboarding Page 1 Screen
-            NavigationCard(
-                title = "2️⃣0️⃣ Onboarding Page 1",
-                subtitle = "Animation placeholder",
-                onClick = onNavigateToOnboardingPage1
-            )
-
-            // 2️⃣1️⃣ Navigate to Empty Animation Screen
-            NavigationCard(
-                title = "2️⃣1️⃣ Empty Animation",
-                subtitle = "Template for new animations",
-                onClick = onNavigateToEmptyAnimation
-            )
-
-            // 2️⃣2️⃣ Navigate to Custom Animation Screen
-            NavigationCard(
-                title = "2️⃣2️⃣ Custom Auto-Anim",
-                subtitle = "Auto-emitting particles",
-                onClick = onNavigateToCustomAnimation
-            )
-
-            // 2️⃣3️⃣ Navigate to Onboarding Page 2 Screen
-            NavigationCard(
-                title = "2️⃣3️⃣ Onboarding Page 2",
-                subtitle = "Combined Chart + Particle Effects",
-                onClick = onNavigateToOnboardingPage2
-            )
+            // Navigation List
+            demos.forEach { nav ->
+                if (nav.onClick != null) {
+                    NavigationCard(
+                        title = nav.title,
+                        subtitle = nav.subtitle,
+                        onClick = nav.onClick
+                    )
+                }
+            }
 
             Spacer(modifier = Modifier.height(24.dp))
         }
     }
 }
+
+private data class NavPath(
+    val title: String,
+    val subtitle: String,
+    val onClick: (() -> Unit)?
+)
 
 @Composable
 private fun Header(onNavigateBack: () -> Unit) {

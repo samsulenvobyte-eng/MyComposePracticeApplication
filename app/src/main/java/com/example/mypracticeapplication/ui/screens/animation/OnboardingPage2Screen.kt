@@ -35,7 +35,9 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
@@ -49,6 +51,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.mypracticeapplication.R
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import kotlin.math.sin
 
 // Reusing shared components from AnimationComponents.kt
@@ -67,7 +71,7 @@ fun OnboardingPage2Screen(
             TopAppBar(
                 title = { 
                     Text(
-                        "Growth Analytics 2.0", // Updated title
+                        "Growth Analytics 2.0",
                         color = Color.White.copy(alpha = 0.9f)
                     ) 
                 },
@@ -108,7 +112,11 @@ fun AnimatedBarChart2() {
     // Animation States
     val overlayVisible = remember { Animatable(0f) }
     val bubblesVisible = remember { Animatable(0f) }
-    val mainProgress = remember { Animatable(0f) } // Defines both Bar Height % and Counter %
+    val mainProgress = remember { Animatable(0f) } 
+    var likeCount by remember { mutableIntStateOf(0) }
+    var goldCount by remember { mutableIntStateOf(0) }
+    var followCount by remember { mutableIntStateOf(0) }
+
 
     // Orchestration
     LaunchedEffect(Unit) {
@@ -135,6 +143,28 @@ fun AnimatedBarChart2() {
             targetValue = 1f,
             animationSpec = tween(durationMillis = 2000, easing = FastOutSlowInEasing)
         )
+
+        delay(200)
+
+        // 4. Slow Increment Loop - Launch concurrent coroutines
+        launch {
+            while (likeCount < 1000) {
+                delay(500) // Wait 1.5 seconds
+                likeCount += 1
+            }
+        }
+        launch {
+            while (goldCount < 1000) {
+                delay(1500) // Wait 1.5 seconds
+                goldCount += 5
+            }
+        }
+        launch {
+            while (followCount < 1000) {
+                delay(1000) // Wait 0.5 seconds
+                followCount += 1
+            }
+        }
     }
 
     // Infinite transition for ambient breathing
@@ -260,9 +290,8 @@ fun AnimatedBarChart2() {
                      alpha = bubblesVisible.value
                 },
             icon = Icons.Default.Paid,
-            count = (234 * mainProgress.value).toInt(),
-            color = Color(0xFFFB8500),
-            shadowColor = Color(0xFFA62C41)
+            count = (234 * mainProgress.value).toInt()+ goldCount,
+            color = Color(0xFFFB8500)
         )
 
         DynamicStatBubble(
@@ -276,9 +305,8 @@ fun AnimatedBarChart2() {
                      alpha = bubblesVisible.value
                 },
             icon = Icons.Default.Person,
-            count = (234 * mainProgress.value).toInt(), // Different scale example
+            count = (234 * mainProgress.value).toInt() + followCount,
             color = Color(0xFF2DB3F9),
-            shadowColor = Color(0xFFA62C41)
         )
 
         DynamicStatBubble(
@@ -290,9 +318,8 @@ fun AnimatedBarChart2() {
                     alpha = bubblesVisible.value
                 },
             icon = Icons.Default.Favorite,
-            count = (147 * mainProgress.value).toInt(), // Different scale example
+            count = (147 * mainProgress.value).toInt() +likeCount,
             color = Color(0xFFE84E66),
-            shadowColor = Color(0xFFA62C41)
         )
     }
 }

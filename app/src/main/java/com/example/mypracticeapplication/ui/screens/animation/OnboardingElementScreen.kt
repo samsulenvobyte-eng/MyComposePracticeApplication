@@ -97,7 +97,6 @@ fun HeartBubble3D() {
         icon = Icons.Default.Favorite,
         count = count,
         color = Color(0xFFE84E66),
-        shadowColor = Color(0xFFA62C41),
         onCountChange = { count++ }
     )
 }
@@ -107,7 +106,6 @@ fun DynamicStatBubble(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     count: Int,
     color: Color,
-    shadowColor: Color,
     modifier: Modifier = Modifier,
     onCountChange: () -> Unit = {}
 ) {
@@ -178,27 +176,14 @@ fun DynamicStatBubble(
                 
                 Spacer(modifier = Modifier.width(8.dp))
                 
-                AnimatedContent(
-                    targetState = count,
-                    transitionSpec = {
-                        if (targetState > initialState) {
-                            (slideInVertically { height -> height } + fadeIn()).togetherWith(
-                                slideOutVertically { height -> -height } + fadeOut())
-                        } else {
-                            (slideInVertically { height -> -height } + fadeIn()).togetherWith(
-                                slideOutVertically { height -> height } + fadeOut())
-                        }.using(SizeTransform(clip = false))
-                    },
-                    label = "counter"
-                ) { targetCount ->
-                    Text(
-                        text = "$targetCount",
-                        color = Color.White,
+                OdometerText(
+                    count = count,
+                    style = MaterialTheme.typography.displaySmall.copy(
                         fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        style = MaterialTheme.typography.displaySmall
-                    )
-                }
+                        fontWeight = FontWeight.Bold
+                    ),
+                    color = Color.White
+                )
             }
         }
     }
@@ -254,5 +239,62 @@ fun BubbleShape(): GenericShape {
 private fun OnboardingElementScreenPreview() {
     MaterialTheme {
         OnboardingElementScreen(onNavigateBack = {})
+    }
+}
+
+@Composable
+fun OdometerText(
+    count: Int,
+    style: androidx.compose.ui.text.TextStyle,
+    color: Color
+) {
+    val digits = count.toString().map { it }
+    
+    // Track previous count to determine direction
+    var lastCount by remember { mutableIntStateOf(count) }
+    val isCountUp = count >= lastCount
+    
+    SideEffect {
+        lastCount = count
+    }
+
+    Row {
+        digits.forEach { digit ->
+            Digit(
+                digit = digit,
+                style = style,
+                color = color,
+                isCountUp = isCountUp
+            )
+        }
+    }
+}
+
+@Composable
+private fun Digit(
+    digit: Char,
+    style: androidx.compose.ui.text.TextStyle,
+    color: Color,
+    isCountUp: Boolean
+) {
+    AnimatedContent(
+        targetState = digit,
+        transitionSpec = {
+            if (isCountUp) {
+                // Determine direction based on global count change, not digit comparison
+                (slideInVertically { height -> height } + fadeIn()).togetherWith(
+                    slideOutVertically { height -> -height } + fadeOut())
+            } else {
+                (slideInVertically { height -> -height } + fadeIn()).togetherWith(
+                    slideOutVertically { height -> height } + fadeOut())
+            }.using(SizeTransform(clip = false))
+        },
+        label = "digit_anim"
+    ) { targetDigit ->
+        Text(
+            text = targetDigit.toString(),
+            style = style,
+            color = color
+        )
     }
 }
