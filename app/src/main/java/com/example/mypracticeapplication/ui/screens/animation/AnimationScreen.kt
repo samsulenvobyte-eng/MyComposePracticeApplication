@@ -111,7 +111,10 @@ fun AnimationScreen(
     onNavigateToLoadingCircle: () -> Unit = {},
     onNavigateToSuccessAnimation: () -> Unit = {},
     onNavigateToOnboardingPage1: () -> Unit = {},
-    onNavigateToOnboardingElement: () -> Unit = {}
+    onNavigateToOnboardingElement: () -> Unit = {},
+    onNavigateToEmptyAnimation: () -> Unit = {},
+    onNavigateToCustomAnimation: () -> Unit = {},
+    onNavigateToOnboardingPage2: () -> Unit = {}
 ) {
     Column(
         modifier = Modifier
@@ -245,6 +248,27 @@ fun AnimationScreen(
                 title = "2️⃣0️⃣ Onboarding Page 1",
                 subtitle = "Animation placeholder",
                 onClick = onNavigateToOnboardingPage1
+            )
+
+            // 2️⃣1️⃣ Navigate to Empty Animation Screen
+            NavigationCard(
+                title = "2️⃣1️⃣ Empty Animation",
+                subtitle = "Template for new animations",
+                onClick = onNavigateToEmptyAnimation
+            )
+
+            // 2️⃣2️⃣ Navigate to Custom Animation Screen
+            NavigationCard(
+                title = "2️⃣2️⃣ Custom Auto-Anim",
+                subtitle = "Auto-emitting particles",
+                onClick = onNavigateToCustomAnimation
+            )
+
+            // 2️⃣3️⃣ Navigate to Onboarding Page 2 Screen
+            NavigationCard(
+                title = "2️⃣3️⃣ Onboarding Page 2",
+                subtitle = "Combined Chart + Particle Effects",
+                onClick = onNavigateToOnboardingPage2
             )
 
             Spacer(modifier = Modifier.height(24.dp))

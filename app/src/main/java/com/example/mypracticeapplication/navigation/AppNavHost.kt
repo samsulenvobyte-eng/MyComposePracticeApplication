@@ -61,6 +61,7 @@ import com.example.mypracticeapplication.ui.screens.animation.LottieConfettiScre
 import com.example.mypracticeapplication.ui.screens.animation.CoinHarvestScreen
 import com.example.mypracticeapplication.ui.screens.animation.LoadingCircleScreen
 import com.example.mypracticeapplication.ui.screens.animation.SuccessAnimationScreen
+import com.example.mypracticeapplication.ui.screens.animation.EmptyAnimationScreen
 import com.example.mypracticeapplication.ui.screens.practice.CoroutineScreen
 
 
@@ -578,7 +579,10 @@ composable<ZoomImageRoute>(
                 onNavigateToLoadingCircle = { navController.navigate(LoadingCircleRoute) },
                 onNavigateToSuccessAnimation = { navController.navigate(SuccessAnimationRoute) },
                 onNavigateToOnboardingPage1 = { navController.navigate(OnboardingPage1Route) },
-                onNavigateToOnboardingElement = { navController.navigate(OnboardingElementRoute) }
+                onNavigateToOnboardingElement = { navController.navigate(OnboardingElementRoute) },
+                onNavigateToEmptyAnimation = { navController.navigate(EmptyAnimationRoute) },
+                onNavigateToCustomAnimation = { navController.navigate(CustomAnimationRoute) },
+                onNavigateToOnboardingPage2 = { navController.navigate(OnboardingPage2Route) }
             )
         }
 
@@ -668,6 +672,24 @@ composable<ZoomImageRoute>(
 
         composable<OnboardingElementRoute> {
             com.example.mypracticeapplication.ui.screens.animation.OnboardingElementScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable<EmptyAnimationRoute> {
+            EmptyAnimationScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable<CustomAnimationRoute> {
+            com.example.mypracticeapplication.ui.screens.animation.CustomAnimationScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable<OnboardingPage2Route> {
+            com.example.mypracticeapplication.ui.screens.animation.OnboardingPage2Screen(
                 onNavigateBack = { navController.popBackStack() }
             )
         }

@@ -35,7 +35,6 @@ import kotlin.math.sin
 // Colors
 private val BubbleColor = Color(0xFFE84E66) // Comparable pink/red
 private val BubbleShadowColor = Color(0xFFA62C41) // Darker shade for depth
-private val DarkBackground = Color(0xFF0B0F19)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -195,7 +194,7 @@ fun DynamicStatBubble(
                     Text(
                         text = "$targetCount",
                         color = Color.White,
-                        fontSize = 22.sp,
+                        fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         style = MaterialTheme.typography.displaySmall
                     )

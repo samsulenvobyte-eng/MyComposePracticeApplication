@@ -149,3 +149,13 @@ object OnboardingPage1Route
 
 @Serializable
 object OnboardingElementRoute
+
+
+@Serializable
+object EmptyAnimationRoute
+
+@Serializable
+object CustomAnimationRoute
+
+@Serializable
+object OnboardingPage2Route

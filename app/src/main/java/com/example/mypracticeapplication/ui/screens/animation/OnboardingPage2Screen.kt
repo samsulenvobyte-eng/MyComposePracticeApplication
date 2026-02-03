@@ -8,30 +8,22 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.CurrencyBitcoin
-import androidx.compose.material.icons.filled.CurrencyExchange
 import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.MonetizationOn
 import androidx.compose.material.icons.filled.Paid
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -52,24 +44,22 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.drawscope.clipPath
-import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.zIndex
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
-import kotlin.math.sin
 import com.example.mypracticeapplication.R
+import kotlinx.coroutines.delay
+import kotlin.math.sin
 
-// Reference Color Palette
+// Reusing shared components from AnimationComponents.kt
+
 private val BarTopColor = Color(0xFFA86E90)
 private val BarBottomColor = Color(0xFF0B0F19) // Fading into dark
 private val BarGradient = listOf(BarTopColor, BarBottomColor)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun OnboardingPage1Screen(
+fun OnboardingPage2Screen(
     onNavigateBack: () -> Unit
 ) {
     Scaffold(
@@ -77,7 +67,7 @@ fun OnboardingPage1Screen(
             TopAppBar(
                 title = { 
                     Text(
-                        "Growth Analytics",
+                        "Growth Analytics 2.0", // Updated title
                         color = Color.White.copy(alpha = 0.9f)
                     ) 
                 },
@@ -105,13 +95,13 @@ fun OnboardingPage1Screen(
                 .background(DarkBackground),
             contentAlignment = Alignment.Center
         ) {
-            AnimatedBarChart()
+            AnimatedBarChart2()
         }
     }
 }
 
 @Composable
-fun AnimatedBarChart() {
+fun AnimatedBarChart2() {
     // Data definition: Relative heights [0.0 - 1.0]
     val barData = remember { listOf(0.4f, 0.55f, 0.65f, 0.85f, 0.95f) }
     
@@ -159,28 +149,40 @@ fun AnimatedBarChart() {
         label = "phase"
     )
 
-    // Overlay Data
+    // NEW: Using CustomChartOverlay with rich particle properties
     val overlays = remember {
         listOf(
-            ChartOverlay.Circle(
-                xIndex = 0.5f,
-                yPercent = 0.4f,
+            CustomChartOverlay.Circle(
+                _xIndex = 0.5f,
+                _yPercent = 0.4f,
                 radius = 55.dp,
-                res = R.drawable.compress_before_1
+                _res = R.drawable.img_coin_onboarding,
+                _type = PillCircleType.COIN,
+                _colors = GoldenMoneyPalette,
+                _icon= Icons.Default.Paid,
+                _duartion = 100L
             ),
-            ChartOverlay.Pill(
-                xIndex = 2.0f,
-                yPercent = 0.5f, 
+            CustomChartOverlay.Pill(
+                _xIndex = 2.0f,
+                _yPercent = 0.5f,
                 width = 110.dp,
                 height = 250.dp,
-                res = R.drawable.img_people_portrait
+                _res = R.drawable.img_heart_onboarding,
+                _type = PillCircleType.LIKE,
+                _colors = LovePalette,
+                _icon = Icons.Default.Favorite,
+                _duartion = 1200L
             ),
-            ChartOverlay.Pill( 
-                xIndex = 3.5f,
-                yPercent = 0.4f,
+            CustomChartOverlay.Pill(
+                _xIndex = 3.5f,
+                _yPercent = 0.4f,
                 width = 100.dp,
                 height = 200.dp,
-                res = R.drawable.img_people_landscape
+                _res = R.drawable.img_follow_onboarding,
+                _type = PillCircleType.FOLLOW,
+                _colors = GreenMoneyPalette,
+                _icon = Icons.Default.PersonAdd,
+                _duartion = 1000L
             )
         )
     }
@@ -237,9 +239,9 @@ fun AnimatedBarChart() {
 
         }
 
-        // 4. Overlays as Independent Elements
+        // 4. Overlays with Particles
         overlays.forEach { overlay ->
-            OverlayItemView(
+            CustomOverlayItemView(
                 overlay = overlay,
                 barWidth = barWidth,
                 spacing = spacing,
@@ -282,7 +284,6 @@ fun AnimatedBarChart() {
         DynamicStatBubble(
             modifier = Modifier
                 .align(alignment = Alignment.TopCenter)
-
                 .graphicsLayer {
                     scaleX = bubblesVisible.value
                     scaleY = bubblesVisible.value
@@ -296,145 +297,10 @@ fun AnimatedBarChart() {
     }
 }
 
-
+@Preview
 @Composable
-fun OverlayItemView(
-    overlay: ChartOverlay,
-    barWidth: Float,
-    spacing: Float,
-    canvasHeight: Float,
-    isVisible: Boolean
-) {
-    val heartState = rememberHeartEmitterState()
-
-    val context = androidx.compose.ui.platform.LocalContext.current
-    val image = remember(overlay.res) {
-        val bitmap = android.graphics.BitmapFactory.decodeResource(context.resources, overlay.res)
-        bitmap?.asImageBitmap()
-    }
-
-    // Individual entrance animation
-    val entranceProgress = remember {Animatable(0f)}
-    
-    // Independent breathing/floating animation
-    val infiniteTransition = rememberInfiniteTransition(label = "overlay_breathing")
-    val breathingOffset by infiniteTransition.animateFloat(
-        initialValue = -5f,
-        targetValue = 5f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(2000 + (overlay.xIndex * 200).toInt(), easing = LinearEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "bounce"
-    )
-
-    LaunchedEffect(isVisible) {
-        if (isVisible) {
-            entranceProgress.animateTo(
-                targetValue = 1f,
-                animationSpec = spring(
-                    dampingRatio = Spring.DampingRatioLowBouncy,
-                    stiffness = Spring.StiffnessLow
-                )
-            )
-        }
-    }
-
-    if (image != null && entranceProgress.value > 0f) {
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            val scale = entranceProgress.value
-            val barCenterX = (overlay.xIndex * (barWidth + spacing)) + (barWidth / 2)
-            val centerY = canvasHeight - (canvasHeight * overlay.yPercent) + breathingOffset
-
-            when (overlay) {
-                is ChartOverlay.Circle -> {
-                    val radiusPx = overlay.radius.toPx() * scale
-                    val path = androidx.compose.ui.graphics.Path().apply {
-                        addOval(
-                            androidx.compose.ui.geometry.Rect(
-                                center = Offset(barCenterX, centerY),
-                                radius = radiusPx
-                            )
-                        )
-                    }
-                    clipPath(path) {
-                        val dstWidth = radiusPx * 2
-                        val dstHeight = radiusPx * 2
-                        val imgWidth = image.width.toFloat()
-                        val imgHeight = image.height.toFloat()
-                        val scaleFactor = kotlin.math.max(dstWidth / imgWidth, dstHeight / imgHeight)
-                        val scaledWidth = imgWidth * scaleFactor
-                        val scaledHeight = imgHeight * scaleFactor
-                        val drawX = (barCenterX - radiusPx) + (dstWidth - scaledWidth) / 2
-                        val drawY = (centerY - radiusPx) + (dstHeight - scaledHeight) / 2
-
-                        drawImage(
-                            image = image,
-                            dstOffset = androidx.compose.ui.unit.IntOffset(drawX.toInt(), drawY.toInt()),
-                            dstSize = androidx.compose.ui.unit.IntSize(scaledWidth.toInt(), scaledHeight.toInt())
-                        )
-                    }
-                }
-                is ChartOverlay.Pill -> {
-                    val widthPx = overlay.width.toPx() * scale
-                    val heightPx = overlay.height.toPx() * scale
-                    val topLeft = Offset(barCenterX - widthPx / 2, centerY - heightPx / 2)
-                    val path = androidx.compose.ui.graphics.Path().apply {
-                        addRoundRect(
-                            androidx.compose.ui.geometry.RoundRect(
-                                rect = androidx.compose.ui.geometry.Rect(topLeft, Size(widthPx, heightPx)),
-                                cornerRadius = CornerRadius(widthPx / 2, widthPx / 2)
-                            )
-                        )
-                    }
-                    clipPath(path) {
-                        val dstWidth = widthPx
-                        val dstHeight = heightPx
-                        val imgWidth = image.width.toFloat()
-                        val imgHeight = image.height.toFloat()
-                        val scaleFactor = kotlin.math.max(dstWidth / imgWidth, dstHeight / imgHeight)
-                        val scaledWidth = imgWidth * scaleFactor
-                        val scaledHeight = imgHeight * scaleFactor
-                        val drawX = topLeft.x + (dstWidth - scaledWidth) / 2
-                        val drawY = topLeft.y + (dstHeight - scaledHeight) / 2
-
-                        drawImage(
-                            image = image,
-                            dstOffset = androidx.compose.ui.unit.IntOffset(drawX.toInt(), drawY.toInt()),
-                            dstSize = androidx.compose.ui.unit.IntSize(scaledWidth.toInt(), scaledHeight.toInt())
-                        )
-                    }
-                }
-            }
-
-        }
-
-    }
-}
-
-
-sealed class ChartOverlay(val xIndex: Float, val yPercent: Float, val res: Int) {
-
-    class Circle(
-        xIndex: Float,
-        yPercent: Float,
-        val radius: androidx.compose.ui.unit.Dp,
-        res: Int
-    ) : ChartOverlay(xIndex, yPercent, res)
-
-    class Pill(
-        xIndex: Float,
-        yPercent: Float,
-        val width: androidx.compose.ui.unit.Dp,
-        val height: androidx.compose.ui.unit.Dp,
-        res: Int
-    ) : ChartOverlay(xIndex, yPercent, res)
-}
-
-@androidx.compose.ui.tooling.preview.Preview
-@Composable
-private fun OnboardingPage1ScreenPreview() {
+private fun OnboardingPage2ScreenPreview() {
     MaterialTheme {
-        OnboardingPage1Screen(onNavigateBack = {})
+        OnboardingPage2Screen(onNavigateBack = {})
     }
 }
