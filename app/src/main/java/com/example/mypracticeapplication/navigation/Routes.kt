@@ -94,19 +94,13 @@ object ZoomImageRoute
 object AnimationRoute
 
 @Serializable
+object OnBoardingAnimationRoute
+
+@Serializable
 object SelfPracticeRoute
 
 @Serializable
-object SharedFlowRoute
+object LottieAnimationRoute
 
 @Serializable
-object AnimatedGraphsRoute
-
-@Serializable
-object MapsRoute
-
-@Serializable
-object AnimationTypeRoute
-
-@Serializable
-object CoroutineRoute
+object ScrapeRoute

@@ -33,16 +33,14 @@ import com.example.mypracticeapplication.ui.screens.practice.ui_architecture.Lev
 import com.example.mypracticeapplication.ui.screens.practice.ui_architecture.Level3Screen
 import com.example.mypracticeapplication.ui.screens.practice.ui_architecture.Level4Screen
 import com.example.mypracticeapplication.ui.screens.practice.ui_architecture.SelfPracticeScreen
-import com.example.mypracticeapplication.ui.screens.practice.ui_architecture.SharedFlowScreen
 import com.example.mypracticeapplication.ui.screens.practice.ui_architecture.Level1UiState
 import com.example.mypracticeapplication.ui.screens.practice.ui_architecture.Level1ViewModel
 import com.example.mypracticeapplication.ui.screens.library.LibraryScreen
 import com.example.mypracticeapplication.ui.screens.library.ZoomImageScreen
 import com.example.mypracticeapplication.ui.screens.animation.AnimationScreen
-import com.example.mypracticeapplication.ui.screens.animation.AnimatedGraphsScreen
-import com.example.mypracticeapplication.ui.screens.animation.MapsScreen
-import com.example.mypracticeapplication.ui.screens.animation.AnimationTypeScreen
-import com.example.mypracticeapplication.ui.screens.practice.CoroutineScreen
+import com.example.mypracticeapplication.ui.screens.animation.OnBoardingAnimationScreen
+import com.example.mypracticeapplication.ui.screens.animation.LottieAnimationScreen
+import com.example.mypracticeapplication.ui.screens.scrape.ScrapeScreen
 
 
 @Composable
@@ -72,7 +70,7 @@ fun AppNavHost(
                 onNavigateToPractice = { navController.navigate(PracticeRoute) },
                 onNavigateToLibrary = { navController.navigate(LibraryRoute) },
                 onNavigateToAnimation = { navController.navigate(AnimationRoute) },
-                onNavigateToCoroutine = { navController.navigate(CoroutineRoute) }
+                onNavigateToScrape = { navController.navigate(ScrapeRoute) }
             )
         }
 
@@ -202,8 +200,7 @@ fun AppNavHost(
                 onNavigateToLevel2 = { navController.navigate(Level2Route) },
                 onNavigateToLevel3 = { navController.navigate(Level3Route) },
                 onNavigateToLevel4 = { navController.navigate(Level4Route) },
-                onNavigateToSelfPractice = { navController.navigate(SelfPracticeRoute) },
-                onNavigateToSharedFlow = { navController.navigate(SharedFlowRoute) }
+                onNavigateToSelfPractice = { navController.navigate(SelfPracticeRoute) }
             )
         }
 
@@ -227,10 +224,6 @@ fun AppNavHost(
             SelfPracticeScreen()
         }
 
-        composable<SharedFlowRoute> {
-            SharedFlowScreen()
-        }
-
         composable<LibraryRoute> {
             LibraryScreen(
                 onNavigateToZoomImage = { navController.navigate(ZoomImageRoute) }
@@ -246,32 +239,25 @@ fun AppNavHost(
         composable<AnimationRoute> {
             AnimationScreen(
                 onNavigateBack = { navController.popBackStack() },
-                onNavigateToGraphs = { navController.navigate(AnimatedGraphsRoute) },
-                onNavigateToMaps = { navController.navigate(MapsRoute) },
-                onNavigateToAnimationType = { navController.navigate(AnimationTypeRoute) }
+                onNavigateToOnBoardingAnimation = { navController.navigate(OnBoardingAnimationRoute) },
+                onNavigateToLottieAnimation = { navController.navigate(LottieAnimationRoute) }
             )
         }
 
-        composable<AnimatedGraphsRoute> {
-            AnimatedGraphsScreen(
+        composable<OnBoardingAnimationRoute> {
+            OnBoardingAnimationScreen(
                 onNavigateBack = { navController.popBackStack() }
             )
         }
 
-        composable<MapsRoute> {
-            MapsScreen(
+        composable<LottieAnimationRoute> {
+            LottieAnimationScreen(
                 onNavigateBack = { navController.popBackStack() }
             )
         }
 
-        composable<AnimationTypeRoute> {
-            AnimationTypeScreen(
-                onNavigateBack = { navController.popBackStack() }
-            )
-        }
-
-        composable<CoroutineRoute> {
-            CoroutineScreen(
+        composable<ScrapeRoute> {
+            ScrapeScreen(
                 onNavigateBack = { navController.popBackStack() }
             )
         }

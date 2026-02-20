@@ -50,6 +50,7 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -98,13 +99,13 @@ private val AccentColor = Color(0xFFFFE66D)
 @Composable
 fun AnimationScreen(
     onNavigateBack: () -> Unit = {},
-    onNavigateToGraphs: () -> Unit = {},
-    onNavigateToMaps: () -> Unit = {},
-    onNavigateToAnimationType: () -> Unit = {}
+    onNavigateToOnBoardingAnimation: () -> Unit = {},
+    onNavigateToLottieAnimation: () -> Unit = {}
 ) {
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .systemBarsPadding()
             .background(MaterialTheme.colorScheme.background)
     ) {
         // Header
@@ -138,26 +139,23 @@ fun AnimationScreen(
             // 7️⃣ Link/Unlink Icon Animation with Canvas
             LinkUnlinkDemo()
 
-            // 8️⃣ Navigate to Animated Graphs Screen
-            NavigationCard(
-                title = "8️⃣ Animated Graphs",
-                subtitle = "Explore animated chart and graph visualizations",
-                onClick = onNavigateToGraphs
-            )
+            // Navigate to OnBoarding Animation Screen
+            Button(
+                onClick = onNavigateToOnBoardingAnimation,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(containerColor = SecondaryColor)
+            ) {
+                Text("Go to OnBoarding Animation")
+            }
 
-            // 9️⃣ Navigate to Maps Screen
-            NavigationCard(
-                title = "9️⃣ Maps",
-                subtitle = "Map animations and interactions",
-                onClick = onNavigateToMaps
-            )
-
-            // 🔟 Navigate to Animation Types Screen
-            NavigationCard(
-                title = "🔟 Animation Types",
-                subtitle = "Different animation effects and demos",
-                onClick = onNavigateToAnimationType
-            )
+            // Navigate to Lottie Animation Screen
+            Button(
+                onClick = onNavigateToLottieAnimation,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(containerColor = PrimaryColor)
+            ) {
+                Text("🎥 Go to Lottie Animation")
+            }
 
             Spacer(modifier = Modifier.height(24.dp))
         }
@@ -796,51 +794,6 @@ private fun LinkUnlinkDemo() {
 // ═══════════════════════════════════════════════════════════════════════════
 // Shared Components
 // ═══════════════════════════════════════════════════════════════════════════
-
-@Composable
-private fun NavigationCard(
-    title: String,
-    subtitle: String,
-    onClick: () -> Unit
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() },
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = SecondaryColor.copy(alpha = 0.15f)
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color.Gray
-                )
-            }
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = "Navigate",
-                tint = SecondaryColor,
-                modifier = Modifier.rotate(180f)
-            )
-        }
-    }
-}
 @Composable
 private fun DemoCard(
     title: String,

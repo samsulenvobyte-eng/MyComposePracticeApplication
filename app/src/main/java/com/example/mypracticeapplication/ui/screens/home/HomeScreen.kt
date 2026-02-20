@@ -79,7 +79,7 @@ fun HomeScreen(
     onNavigateToPractice: () -> Unit = {},
     onNavigateToLibrary: () -> Unit = {},
     onNavigateToAnimation: () -> Unit = {},
-    onNavigateToCoroutine: () -> Unit = {}
+    onNavigateToScrape: () -> Unit = {}
 ) {
     var selectedTabIndex by rememberSaveable { mutableIntStateOf(0) }
 
@@ -148,7 +148,7 @@ fun HomeScreen(
             onNavigateToSideEffectApis = onNavigateToSideEffectApis,
             onNavigateToPractice = onNavigateToPractice,
             onNavigateToAnimation = onNavigateToAnimation,
-            onNavigateToCoroutine = onNavigateToCoroutine
+            onNavigateToScrape = onNavigateToScrape
         )
     }
 }
@@ -172,7 +172,7 @@ private fun UIContent(
     onNavigateToSideEffectApis: () -> Unit,
     onNavigateToPractice: () -> Unit,
     onNavigateToAnimation: () -> Unit,
-    onNavigateToCoroutine: () -> Unit
+    onNavigateToScrape: () -> Unit
 ) {
     val navButtons = listOf(
         NavButton("Profile", Color.White, Color(0xFF667eea), onNavigateToProfile),
@@ -191,7 +191,7 @@ private fun UIContent(
         NavButton("Side Effects", Color(0xFFFF5722), Color.White, onNavigateToSideEffectApis),
         NavButton("Practice", Color(0xFF3F51B5), Color.White, onNavigateToPractice),
         NavButton("Animation", Color(0xFFFF6B6B), Color.White, onNavigateToAnimation),
-        NavButton("Coroutine", Color(0xFF6366F1), Color.White, onNavigateToCoroutine)
+        NavButton("Scrape", Color(0xFF00BCD4), Color.White, onNavigateToScrape)
     )
 
     Box(
@@ -315,6 +315,6 @@ private fun HomeScreenPreview() {
         onNavigateToPractice = {},
         onNavigateToLibrary = {},
         onNavigateToAnimation = {},
-        onNavigateToCoroutine = {}
+        onNavigateToScrape = {}
     )
 }
