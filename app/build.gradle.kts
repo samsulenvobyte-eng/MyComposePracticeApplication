@@ -71,4 +71,13 @@ dependencies {
 
     // ZoomImage library for gesture zoom viewing
     implementation("io.github.panpf.zoomimage:zoomimage-compose:1.1.0")
+
+    // Lottie animation library
+    implementation("com.airbnb.android:lottie-compose:6.6.2")
+
+    // OkHttp for HTTP requests (web scraping demo)
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+
+    // Jsoup for HTML parsing (web scraping demo)
+    implementation("org.jsoup:jsoup:1.17.2")
 }
