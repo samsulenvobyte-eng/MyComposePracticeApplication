@@ -149,3 +149,12 @@ object OnboardingPage1Route
 
 @Serializable
 object OnboardingElementRoute
+
+@Serializable
+object OnboardingPage2Route
+
+@Serializable
+object BoardingCompRoute
+
+@Serializable
+object TtBoostOnboardingRoute

@@ -111,7 +111,10 @@ fun AnimationScreen(
     onNavigateToLoadingCircle: () -> Unit = {},
     onNavigateToSuccessAnimation: () -> Unit = {},
     onNavigateToOnboardingPage1: () -> Unit = {},
-    onNavigateToOnboardingElement: () -> Unit = {}
+    onNavigateToOnboardingPage2: () -> Unit = {},
+    onNavigateToOnboardingElement: () -> Unit = {},
+    onNavigateToBoardingComp: () -> Unit = {},
+    onNavigateToTtBoostOnboarding: () -> Unit = {}
 ) {
     Column(
         modifier = Modifier
@@ -133,6 +136,25 @@ fun AnimationScreen(
                // description = "Placeholder for Onboarding Elements",
                 onClick = onNavigateToOnboardingElement,
                 subtitle = ""
+            )
+
+            NavigationCard(
+                title = "2️⃣2️⃣ Onboarding Page 2",
+               // description = "Placeholder for Onboarding Page 2",
+                onClick = onNavigateToOnboardingPage2,
+                subtitle = "New overlay component screen"
+            )
+
+            NavigationCard(
+                title = "2️⃣3️⃣ Boarding Comp",
+                onClick = onNavigateToBoardingComp,
+                subtitle = "Onboarding component animations"
+            )
+
+            NavigationCard(
+                title = "2️⃣4️⃣ TtBoost Onboarding",
+                onClick = onNavigateToTtBoostOnboarding,
+                subtitle = "Modular analytics animation"
             )
             
 //            // 1️⃣ AnimatedVisibility Demo

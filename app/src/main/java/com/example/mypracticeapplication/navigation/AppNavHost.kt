@@ -60,6 +60,8 @@ import com.example.mypracticeapplication.ui.screens.animation.LottieConfettiScre
 import com.example.mypracticeapplication.ui.screens.animation.CoinHarvestScreen
 import com.example.mypracticeapplication.ui.screens.animation.LoadingCircleScreen
 import com.example.mypracticeapplication.ui.screens.animation.SuccessAnimationScreen
+import com.example.mypracticeapplication.ui.screens.animation.BoardingCompScreen
+import com.example.mypracticeapplication.ui.screens.ttboost_animation.TtBoostOnboardingScreen
 import com.example.mypracticeapplication.ui.screens.practice.CoroutineScreen
 
 
@@ -549,7 +551,10 @@ composable<ZoomImageRoute>(
                 onNavigateToLoadingCircle = { navController.navigate(LoadingCircleRoute) },
                 onNavigateToSuccessAnimation = { navController.navigate(SuccessAnimationRoute) },
                 onNavigateToOnboardingPage1 = { navController.navigate(OnboardingPage1Route) },
-                onNavigateToOnboardingElement = { navController.navigate(OnboardingElementRoute) }
+                onNavigateToOnboardingPage2 = { navController.navigate(OnboardingPage2Route) },
+                onNavigateToOnboardingElement = { navController.navigate(OnboardingElementRoute) },
+                onNavigateToBoardingComp = { navController.navigate(BoardingCompRoute) },
+                onNavigateToTtBoostOnboarding = { navController.navigate(TtBoostOnboardingRoute) }
             )
         }
 
@@ -639,6 +644,24 @@ composable<ZoomImageRoute>(
 
         composable<OnboardingElementRoute> {
             com.example.mypracticeapplication.ui.screens.animation.OnboardingElementScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable<OnboardingPage2Route> {
+            com.example.mypracticeapplication.ui.screens.animation.OnboardingPage2Screen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable<BoardingCompRoute> {
+            BoardingCompScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable<TtBoostOnboardingRoute> {
+            TtBoostOnboardingScreen(
                 onNavigateBack = { navController.popBackStack() }
             )
         }
