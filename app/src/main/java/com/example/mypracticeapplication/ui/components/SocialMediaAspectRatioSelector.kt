@@ -1,4 +1,4 @@
-package com.example.mypracticeapplication.ui.components
+﻿package com.example.mypracticeapplication.ui.components
 
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
@@ -32,7 +32,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.mypracticeapplication.R
-import com.example.mypracticeapplication.ui.screens.image.verticalGradient
+import com.example.mypracticeapplication.presentation.image.verticalGradient
 import kotlinx.collections.immutable.ImmutableList
 
 sealed class SocialAspectRatio(
@@ -144,3 +144,5 @@ fun AspectRatioItem(
         Spacer(modifier = Modifier.height(11.dp))
     }
 }
+
+

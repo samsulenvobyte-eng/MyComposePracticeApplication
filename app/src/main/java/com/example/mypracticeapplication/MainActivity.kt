@@ -1,4 +1,4 @@
-package com.example.mypracticeapplication
+﻿package com.example.mypracticeapplication
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -24,10 +24,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.navigation.compose.rememberNavController
-import com.example.mypracticeapplication.model.ImageMetaData
-import com.example.mypracticeapplication.model.ImageMetadataUtils
-import com.example.mypracticeapplication.navigation.AppNavHost
-import com.example.mypracticeapplication.ui.theme.MyPracticeApplicationTheme
+import com.example.mypracticeapplication.domain.model.ImageMetaData
+import com.example.mypracticeapplication.domain.model.ImageMetadataUtils
+import com.example.mypracticeapplication.presentation.navigation.AppNavHost
+import com.example.mypracticeapplication.presentation.theme.MyPracticeApplicationTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
@@ -95,3 +95,5 @@ fun ImagePickerScreen() {
         } ?: Text("No image selected yet")
     }
 }
+
+

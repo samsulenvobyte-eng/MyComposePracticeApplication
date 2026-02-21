@@ -1,4 +1,4 @@
-package com.example.mypracticeapplication.ui.components
+﻿package com.example.mypracticeapplication.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -28,7 +28,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.mypracticeapplication.R
-import com.example.mypracticeapplication.ui.screens.image.BatchImageMetaData
+import com.example.mypracticeapplication.presentation.image.BatchImageMetaData
 
 @Composable
 fun PagerNavigator(
@@ -145,3 +145,4 @@ fun PagerNavigator(
 
     }
 }
+

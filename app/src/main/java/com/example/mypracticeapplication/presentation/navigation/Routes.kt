@@ -1,0 +1,165 @@
+﻿package com.example.mypracticeapplication.presentation.navigation
+
+import kotlinx.serialization.Serializable
+
+/**
+ * Type-safe navigation routes using Kotlin Serialization
+ */
+
+@Serializable
+object HomeRoute
+
+@Serializable
+object ProfileRoute
+
+@Serializable
+object SettingsRoute
+
+@Serializable
+object CanvasRoute
+
+@Serializable
+object OfferRoute
+
+@Serializable
+object CustomOnboardingRoute
+
+@Serializable
+object ExperimentRoute
+
+@Serializable
+object OnboardingV2Route
+
+@Serializable
+object CompareRoute
+
+@Serializable
+object ViewBatchImageRoute
+
+@Serializable
+object ResultRoute
+
+@Serializable
+object FitPhotoRoute
+
+@Serializable
+object ComposeTestLapRoute
+
+@Serializable
+object StateLabRoute
+
+@Serializable
+object ListStateDemoRoute
+
+@Serializable
+object StateMechanicsLabRoute
+
+@Serializable
+object ComposeLabRoute
+
+@Serializable
+object SideEffectApisRoute
+
+@Serializable
+object LaunchedEffectExampleRoute
+
+@Serializable
+object DisposableEffectExampleRoute
+
+@Serializable
+object PracticeRoute
+
+@Serializable
+object UiArchitectureRoute
+
+@Serializable
+object Level1Route
+
+@Serializable
+object Level2Route
+
+@Serializable
+object Level3Route
+
+@Serializable
+object Level4Route
+
+@Serializable
+object LibraryRoute
+
+@Serializable
+object ZoomImageRoute
+
+@Serializable
+object AnimationRoute
+
+@Serializable
+object SelfPracticeRoute
+
+@Serializable
+object SharedFlowRoute
+
+@Serializable
+object CoroutineRoute
+
+@Serializable
+object AnimatedGraphsRoute
+
+@Serializable
+object MapsRoute
+
+@Serializable
+object AnimationTypeRoute
+
+@Serializable
+object ConfettiRoute
+
+@Serializable
+object FireworksRoute
+
+@Serializable
+object ConfettiBurstRoute
+
+@Serializable
+object JsonAnimRoute
+
+@Serializable
+object FestiveConfettiRoute
+
+@Serializable
+object LottieConfettiRoute
+
+@Serializable
+object CoinHarvestRoute
+
+@Serializable
+object LoadingCircleRoute
+
+@Serializable
+object SuccessAnimationRoute
+
+@Serializable
+object HeavyComputationRoute
+
+@Serializable
+object ComplexUiRoute
+
+@Serializable
+object OnboardingPage1Route
+
+@Serializable
+object OnboardingElementRoute
+
+@Serializable
+object OnboardingPage2Route
+
+@Serializable
+object BoardingCompRoute
+
+@Serializable
+object TtBoostOnboardingRoute
+
+@Serializable
+object NotificationRoute
+
+

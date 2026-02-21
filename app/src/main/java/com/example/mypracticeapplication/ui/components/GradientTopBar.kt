@@ -1,4 +1,4 @@
-package com.example.mypracticeapplication.ui.components
+﻿package com.example.mypracticeapplication.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Row
@@ -21,7 +21,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.mypracticeapplication.ui.screens.image.horizontalGradient
+import com.example.mypracticeapplication.presentation.image.horizontalGradient
 
 @Composable
 fun GradientTopBar(
@@ -69,4 +69,6 @@ fun GradientTopBar(
         }
     }
 }
+
+
 
