@@ -1,10 +1,10 @@
-package com.example.mypracticeapplication
+﻿package com.example.mypracticeapplication
 
 import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.mypracticeapplication.model.ImageMetadataUtils
+import com.example.mypracticeapplication.domain.model.ImageMetadataUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
@@ -26,3 +26,4 @@ class MainViewModel: ViewModel() {
         }
     }
 }
+

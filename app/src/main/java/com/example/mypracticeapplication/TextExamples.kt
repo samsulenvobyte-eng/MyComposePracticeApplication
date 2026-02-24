@@ -1,4 +1,4 @@
-package com.example.mypracticeapplication
+﻿package com.example.mypracticeapplication
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -92,3 +92,5 @@ fun TextComponentsModifierDemo() {
         )
     }
 }
+
+
