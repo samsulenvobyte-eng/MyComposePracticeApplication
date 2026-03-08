@@ -105,9 +105,23 @@ fun AnimatedDonutChart(
         )
     }
     
-    val totalValue = segments.sumOf { it.value.toDouble() }.toFloat()
-    val sweepAngles = segments.map { segment ->
-        (segment.value / totalValue) * (360f - (segments.size * gapAngle))
+    val totalValue = remember(segments) { segments.sumOf { it.value.toDouble() }.toFloat() }
+    val sweepAngles = remember(segments, gapAngle) {
+        segments.map { segment ->
+            (segment.value / totalValue) * (360f - (segments.size * gapAngle))
+        }
+    }
+
+    // Pre-measure labels to avoid expensive measurement in the draw loop
+    val labelLayoutResults = remember(segments, labelTextStyle, textMeasurer) {
+        segments.map { segment ->
+            val displayValue = if (segment.value == segment.value.toLong().toFloat()) {
+                segment.value.toLong().toString()
+            } else {
+                String.format("%.1f", segment.value)
+            }
+            textMeasurer.measure(text = displayValue, style = labelTextStyle)
+        }
     }
     
     Box(
@@ -140,13 +154,7 @@ fun AnimatedDonutChart(
                     val labelX = center.x + labelRadius * cos(Math.toRadians(labelAngle.toDouble())).toFloat()
                     val labelY = center.y + labelRadius * sin(Math.toRadians(labelAngle.toDouble())).toFloat()
                     
-                    val displayValue = if (segment.value == segment.value.toLong().toFloat()) {
-                        segment.value.toLong().toString()
-                    } else {
-                        String.format("%.1f", segment.value)
-                    }
-                    
-                    val textLayoutResult = textMeasurer.measure(text = displayValue, style = labelTextStyle)
+                    val textLayoutResult = labelLayoutResults[index]
                     
                     if (sweepAngles[index] > 15f) {
                         drawText(
@@ -286,9 +294,20 @@ fun AnimatedLineChart(
     
     if (dataPoints.isEmpty()) return
     
-    val minValue = dataPoints.minOf { it.value }
-    val maxValue = dataPoints.maxOf { it.value }
-    val valueRange = if (maxValue - minValue == 0f) 1f else maxValue - minValue
+    val minValue = remember(dataPoints) { dataPoints.minOf { it.value } }
+    val maxValue = remember(dataPoints) { dataPoints.maxOf { it.value } }
+    val valueRange = remember(minValue, maxValue) {
+        if (maxValue - minValue == 0f) 1f else maxValue - minValue
+    }
+
+    // Pre-measure x-axis labels to avoid redundant work in Canvas
+    val labelLayoutResults = remember(dataPoints, labelTextStyle, textMeasurer) {
+        dataPoints.map { dataPoint ->
+            if (dataPoint.label.isNotEmpty()) {
+                textMeasurer.measure(text = dataPoint.label, style = labelTextStyle)
+            } else null
+        }
+    }
     
     Canvas(modifier = modifier) {
         val canvasWidth = size.width
@@ -398,12 +417,9 @@ fun AnimatedLineChart(
         // Draw x-axis labels (outside clip rect so they're always visible)
         if (showLabels) {
             dataPoints.forEachIndexed { index, dataPoint ->
-                if (dataPoint.label.isNotEmpty()) {
+                val textLayoutResult = labelLayoutResults[index]
+                if (textLayoutResult != null) {
                     val x = chartPadding + index * pointSpacing
-                    val textLayoutResult = textMeasurer.measure(
-                        text = dataPoint.label,
-                        style = labelTextStyle
-                    )
                     drawText(
                         textLayoutResult = textLayoutResult,
                         topLeft = Offset(
