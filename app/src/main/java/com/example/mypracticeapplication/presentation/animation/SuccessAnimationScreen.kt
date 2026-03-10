@@ -96,6 +96,20 @@ fun SuccessAnimationContent() {
     // Animation States
     val circleScale = remember { Animatable(0f) }
     val checkmarkProgress = remember { Animatable(0f) }
+
+    val density = LocalDensity.current
+
+    // Pre-calculate checkmark path and measure to avoid allocations in draw block
+    val checkmarkPath = remember(density) {
+        Path().apply {
+            with(density) {
+                moveTo(32.dp.toPx(), 58.dp.toPx())
+                lineTo(48.dp.toPx(), 74.dp.toPx()) // Tip
+                lineTo(82.dp.toPx(), 38.dp.toPx()) // End
+            }
+        }
+    }
+    val pathMeasure = remember(checkmarkPath) { PathMeasure() }
     
     // Confetti State
     var startConfetti by remember { mutableStateOf(false) }
@@ -168,19 +182,12 @@ fun SuccessAnimationContent() {
                     .size(110.dp)
                     .scale(circleScale.value.coerceAtLeast(0f)) // Scale with circle
             ) {
-                // Define Checkmark Path
-                val path = Path().apply {
-                    moveTo(32.dp.toPx(), 58.dp.toPx())
-                    lineTo(48.dp.toPx(), 74.dp.toPx()) // Tip
-                    lineTo(82.dp.toPx(), 38.dp.toPx()) // End
-                }
-                
-                // Helper to measure path length
-                val pathMeasure = PathMeasure()
-                pathMeasure.setPath(path, false)
+                pathMeasure.setPath(checkmarkPath, false)
                 val pathLength = pathMeasure.length
                 
                 // Create animated path segment
+                // BOLT: pathMeasure.getSegment creates a new Path.
+                // However, we've avoided recreating the base path and measure.
                 val animatedPath = Path()
                 pathMeasure.getSegment(0f, pathLength * checkmarkProgress.value, animatedPath, true)
                 
@@ -250,6 +257,32 @@ fun ConfettiBurst(
     Box(modifier = modifier) {
         if (isVisible) {
             val density = LocalDensity.current
+
+            // BOLT: Pre-calculate complex paths for confetti shapes to avoid allocations in draw loop.
+            // We use normalized paths (size=1) and scale them during drawing.
+            val lightningPath = remember {
+                Path().apply {
+                    moveTo(-0.2f, -0.5f)
+                    lineTo(0.3f, -0.1f)
+                    lineTo(-0.1f, -0.1f)
+                    lineTo(0.2f, 0.5f)
+                    lineTo(-0.3f, 0.1f)
+                    lineTo(0.1f, 0.1f)
+                    close()
+                }
+            }
+
+            val curvePath = remember {
+                Path().apply {
+                    moveTo(-0.5f, 0f)
+                    cubicTo(
+                        -0.25f, -0.5f,
+                        0.25f, 0.5f,
+                        0.5f, 0f
+                    )
+                }
+            }
+
             var particles by remember { mutableStateOf<List<SuccessParticle>>(emptyList()) }
             var lastFrameTime by remember { mutableStateOf(0L) }
             
@@ -357,10 +390,23 @@ fun ConfettiBurst(
                                 drawCross(color, p.size)
                             }
                             ParticleShape.ZIGZAG -> {
-                                drawZigzag(color, p.size)
+                                // Scale the pre-calculated path to the particle size
+                                scale(p.size) {
+                                    drawPath(path = lightningPath, color = color)
+                                }
                             }
                             ParticleShape.CURVE -> {
-                                drawCurve(color, p.size)
+                                // Scale the pre-calculated path to the particle size
+                                scale(p.size) {
+                                    drawPath(
+                                        path = curvePath,
+                                        color = color,
+                                        style = Stroke(
+                                            width = 0.2f, // Relative to normalized size
+                                            cap = StrokeCap.Round
+                                        )
+                                    )
+                                }
                             }
                             ParticleShape.STRIP -> {
                                 drawStrip(color, p.size)
@@ -395,50 +441,8 @@ fun DrawScope.drawCross(color: Color, size: Float) {
     )
 }
 
-fun DrawScope.drawZigzag(color: Color, size: Float) {
-    // 3-point zigzag path
-    val path = Path().apply {
-        moveTo(-size/2, -size/2)
-        lineTo(0f, 0f)
-        lineTo(-size/2, size/2)
-        lineTo(0f, size/2)
-        lineTo(size/2, 0f)
-        lineTo(0f, -size/2)
-        close()
-    }
-    // Simplification: Just a jagged path outline or fill. 
-    // Let's draw a "Lightning" style filled shape
-    val lightningPath = Path().apply {
-        moveTo(-size * 0.2f, -size * 0.5f)
-        lineTo(size * 0.3f, -size * 0.1f)
-        lineTo(-size * 0.1f, -size * 0.1f)
-        lineTo(size * 0.2f, size * 0.5f)
-        lineTo(-size * 0.3f, size * 0.1f)
-        lineTo(size * 0.1f, size * 0.1f)
-        close()
-    }
-    drawPath(path = lightningPath, color = color)
-}
-
-fun DrawScope.drawCurve(color: Color, size: Float) {
-    // A simple squiggly line
-    val path = Path().apply {
-        moveTo(-size/2, 0f)
-        cubicTo(
-            -size/4, -size/2,
-            size/4, size/2,
-            size/2, 0f
-        )
-    }
-    drawPath(
-        path = path,
-        color = color,
-        style = Stroke(
-            width = size * 0.2f,
-            cap = StrokeCap.Round
-        )
-    )
-}
+// BOLT: Removed drawZigzag and drawCurve as they were allocating paths every frame.
+// They are replaced by drawing pre-calculated paths in the ConfettiBurst Canvas.
 
 fun DrawScope.drawStrip(color: Color, size: Float) {
     // a long thin rectangle (Strip)
