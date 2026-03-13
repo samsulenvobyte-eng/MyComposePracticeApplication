@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
@@ -17,6 +18,7 @@ import androidx.compose.ui.unit.dp
  * Sealed class representing different overlay types for the chart.
  * Each overlay has a position (xIndex, yPercent) and a drawable resource.
  */
+@Immutable
 sealed class ChartOverlay(
     val xIndex: Float,
     val yPercent: Float,
@@ -25,6 +27,7 @@ sealed class ChartOverlay(
     /**
      * Circular overlay with specified radius
      */
+    @Immutable
     class Circle(
         xIndex: Float,
         yPercent: Float,
@@ -35,6 +38,7 @@ sealed class ChartOverlay(
     /**
      * Pill-shaped overlay with specified dimensions
      */
+    @Immutable
     class Pill(
         xIndex: Float,
         yPercent: Float,
@@ -46,6 +50,7 @@ sealed class ChartOverlay(
     /**
      * Profile card overlay with rounded corners
      */
+    @Immutable
     class ProfileCard(
         xIndex: Float,
         yPercent: Float,
