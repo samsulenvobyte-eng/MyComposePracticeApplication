@@ -31,6 +31,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.tooling.preview.Preview
@@ -80,13 +81,13 @@ fun TtBoostOnboardingScreen(
                 .background(TtBoostTheme.DarkBackground),
             contentAlignment = Alignment.Center
         ) {
-            TtBoostContent()
+            TtBoostContent(modifier = Modifier.fillMaxSize())
         }
     }
 }
 
 @Composable
-private fun TtBoostContent() {
+private fun TtBoostContent(modifier: Modifier = Modifier) {
     // Data definition: Relative heights [0.0 - 1.0]
     val barData = remember { listOf(0.4f, 0.55f, 0.65f, 0.85f, 0.95f) }
 
@@ -160,42 +161,26 @@ private fun TtBoostContent() {
         val barWidth = (availableWidth - (spacing * (barCount - 1))) / barCount
 
         // Animated Bar Chart
+        // Performance Optimization: Defer state read to draw phase via lambda
         AnimatedBarChart(
             barData = barData,
-            entranceProgress = mainProgress.value,
+            entranceProgress = { mainProgress.value },
             barWidth = barWidth,
             barSpacing = spacing,
             modifier = Modifier.fillMaxSize()
         )
 
-        // Draw Overlays
-        if (overlayVisible.value > 0f) {
-            val scale = overlayVisible.value
-
-            overlays.forEach { overlay ->
-                // Calculate position
-                val barCenterX =
-                    (overlay.xIndex * (barWidth.value + spacing.value)) + (barWidth.value / 2)
-                val fullHeightVal = availableHeight.value
-                val centerY = fullHeightVal - (fullHeightVal * overlay.yPercent)
-
-                // Render overlay with animation
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.TopStart)
-                        .offset(x = barCenterX.dp, y = centerY.dp)
-                        .graphicsLayer {
-                            scaleX = scale
-                            scaleY = scale
-                            alpha = scale
-                        }
-                ) {
-                    OverlayRenderer(overlay)
-                }
-            }
-        }
+        // Performance Optimization: Extract overlays UI logic to isolate recompositions
+        OverlaysSection(
+            overlayVisible = { overlayVisible.value },
+            barWidth = barWidth,
+            spacing = spacing,
+            availableHeight = availableHeight,
+            overlays = overlays
+        )
 
         // Heart Bubble (Top-Left)
+        // Performance Optimization: Defer count state read via lambda
         StatBubble(
             modifier = Modifier
                 .padding(start = 32.dp)
@@ -208,12 +193,13 @@ private fun TtBoostContent() {
                     alpha = bubblesVisible.value
                 },
             icon = Icons.Default.Favorite,
-            count = (100 * mainProgress.value).toInt(),
+            count = { (100 * mainProgress.value).toInt() },
             color = TtBoostTheme.Bubble.HeartColor,
             shadowColor = TtBoostTheme.Bubble.HeartShadow
         )
 
         // Person Bubble (Top-Right)
+        // Performance Optimization: Defer count state read via lambda
         StatBubble(
             modifier = Modifier
                 .align(Alignment.TopEnd)
@@ -225,10 +211,44 @@ private fun TtBoostContent() {
                     alpha = bubblesVisible.value
                 },
             icon = Icons.Default.Person,
-            count = (250 * mainProgress.value).toInt(),
+            count = { (250 * mainProgress.value).toInt() },
             color = TtBoostTheme.Bubble.PersonColor,
             shadowColor = TtBoostTheme.Bubble.PersonShadow
         )
+    }
+}
+
+@Composable
+private fun androidx.compose.foundation.layout.BoxScope.OverlaysSection(
+    overlayVisible: () -> Float,
+    barWidth: Dp,
+    spacing: Dp,
+    availableHeight: Dp,
+    overlays: List<ChartOverlay>
+) {
+    val scale = overlayVisible()
+    if (scale > 0f) {
+        overlays.forEach { overlay ->
+            // Calculate position
+            val barCenterX =
+                (overlay.xIndex * (barWidth.value + spacing.value)) + (barWidth.value / 2)
+            val fullHeightVal = availableHeight.value
+            val centerY = fullHeightVal - (fullHeightVal * overlay.yPercent)
+
+            // Render overlay with animation
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .offset(x = barCenterX.dp, y = centerY.dp)
+                    .graphicsLayer {
+                        scaleX = scale
+                        scaleY = scale
+                        alpha = scale
+                    }
+            ) {
+                OverlayRenderer(overlay)
+            }
+        }
     }
 }
 
