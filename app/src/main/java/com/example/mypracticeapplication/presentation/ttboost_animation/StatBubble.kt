@@ -28,7 +28,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -84,7 +83,7 @@ private fun createBubbleShape(): GenericShape {
 @Composable
 fun StatBubble(
     icon: ImageVector,
-    count: Int,
+    count: () -> Int,
     color: Color,
     shadowColor: Color,
     modifier: Modifier = Modifier,
@@ -93,7 +92,8 @@ fun StatBubble(
     // 3D Rotation Animation
     val infiniteTransition = rememberInfiniteTransition(label = "3d_float")
     
-    val rotationY by infiniteTransition.animateFloat(
+    // Using direct state access instead of delegation to avoid recomposition on every frame
+    val rotationY = infiniteTransition.animateFloat(
         initialValue = -15f,
         targetValue = 15f,
         animationSpec = infiniteRepeatable(
@@ -103,7 +103,7 @@ fun StatBubble(
         label = "rotationY"
     )
 
-    val rotationX by infiniteTransition.animateFloat(
+    val rotationX = infiniteTransition.animateFloat(
         initialValue = 5f,
         targetValue = -5f,
         animationSpec = infiniteRepeatable(
@@ -122,8 +122,9 @@ fun StatBubble(
                 interactionSource = remember { MutableInteractionSource() }
             ) { onClick() }
             .graphicsLayer {
-                this.rotationY = rotationY
-                this.rotationX = rotationX
+                // Reading state inside graphicsLayer lambda defers reading to draw phase
+                this.rotationY = rotationY.value
+                this.rotationX = rotationX.value
                 cameraDistance = 12f * density
                 transformOrigin = TransformOrigin(0.5f, 0.5f)
             }
@@ -149,7 +150,7 @@ fun StatBubble(
                     Spacer(modifier = Modifier.width(8.dp))
 
                     AnimatedContent(
-                        targetState = count,
+                        targetState = count(),
                         transitionSpec = {
                             if (targetState > initialState) {
                                 (slideInVertically { height -> height } + fadeIn()).togetherWith(
