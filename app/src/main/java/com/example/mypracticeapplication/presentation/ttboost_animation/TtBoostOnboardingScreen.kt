@@ -1,4 +1,4 @@
-﻿package com.example.mypracticeapplication.presentation.ttboost_animation
+package com.example.mypracticeapplication.presentation.ttboost_animation
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -27,6 +27,8 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -162,16 +164,16 @@ private fun TtBoostContent() {
         // Animated Bar Chart
         AnimatedBarChart(
             barData = barData,
-            entranceProgress = mainProgress.value,
+            entranceProgress = { mainProgress.value }, // Optimization: Pass as lambda to defer read
             barWidth = barWidth,
             barSpacing = spacing,
             modifier = Modifier.fillMaxSize()
         )
 
         // Draw Overlays
-        if (overlayVisible.value > 0f) {
-            val scale = overlayVisible.value
-
+        // Optimization: Use derivedStateOf for the visibility check to reduce recompositions
+        val isOverlayVisible by remember { derivedStateOf { overlayVisible.value > 0f } }
+        if (isOverlayVisible) {
             overlays.forEach { overlay ->
                 // Calculate position
                 val barCenterX =
@@ -185,6 +187,8 @@ private fun TtBoostContent() {
                         .align(Alignment.TopStart)
                         .offset(x = barCenterX.dp, y = centerY.dp)
                         .graphicsLayer {
+                            // Optimization: Read Animatable value inside graphicsLayer to avoid parent recomposition
+                            val scale = overlayVisible.value
                             scaleX = scale
                             scaleY = scale
                             alpha = scale
@@ -203,12 +207,14 @@ private fun TtBoostContent() {
                 .align(Alignment.TopStart)
                 .offset(y = (-50).dp)
                 .graphicsLayer {
-                    scaleX = bubblesVisible.value
-                    scaleY = bubblesVisible.value
-                    alpha = bubblesVisible.value
+                    // Optimization: Read Animatable value inside graphicsLayer
+                    val scale = bubblesVisible.value
+                    scaleX = scale
+                    scaleY = scale
+                    alpha = scale
                 },
             icon = Icons.Default.Favorite,
-            count = (100 * mainProgress.value).toInt(),
+            count = { (100 * mainProgress.value).toInt() }, // Optimization: Pass as lambda
             color = TtBoostTheme.Bubble.HeartColor,
             shadowColor = TtBoostTheme.Bubble.HeartShadow
         )
@@ -220,12 +226,14 @@ private fun TtBoostContent() {
                 .padding(end = 32.dp)
                 .rotate(15f)
                 .graphicsLayer {
-                    scaleX = bubblesVisible.value
-                    scaleY = bubblesVisible.value
-                    alpha = bubblesVisible.value
+                    // Optimization: Read Animatable value inside graphicsLayer
+                    val scale = bubblesVisible.value
+                    scaleX = scale
+                    scaleY = scale
+                    alpha = scale
                 },
             icon = Icons.Default.Person,
-            count = (250 * mainProgress.value).toInt(),
+            count = { (250 * mainProgress.value).toInt() }, // Optimization: Pass as lambda
             color = TtBoostTheme.Bubble.PersonColor,
             shadowColor = TtBoostTheme.Bubble.PersonShadow
         )
@@ -239,5 +247,3 @@ private fun TtBoostOnboardingScreenPreview() {
         TtBoostOnboardingScreen(onNavigateBack = {})
     }
 }
-
-
