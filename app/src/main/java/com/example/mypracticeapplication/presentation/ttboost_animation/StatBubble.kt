@@ -1,4 +1,4 @@
-﻿package com.example.mypracticeapplication.presentation.ttboost_animation
+package com.example.mypracticeapplication.presentation.ttboost_animation
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.SizeTransform
@@ -75,7 +75,7 @@ private fun createBubbleShape(): GenericShape {
  * A 3D rotating stat bubble with an icon and animated counter.
  * 
  * @param icon The icon to display
- * @param count The current count value
+ * @param count The current count value - passed as lambda to defer read
  * @param color The bubble background color
  * @param shadowColor The shadow/depth color (currently unused but kept for API compatibility)
  * @param modifier Modifier for positioning and styling
@@ -84,7 +84,7 @@ private fun createBubbleShape(): GenericShape {
 @Composable
 fun StatBubble(
     icon: ImageVector,
-    count: Int,
+    count: () -> Int,
     color: Color,
     shadowColor: Color,
     modifier: Modifier = Modifier,
@@ -148,8 +148,10 @@ fun StatBubble(
 
                     Spacer(modifier = Modifier.width(8.dp))
 
+                    // BOLT OPTIMIZATION: Pass targetState as lambda provider for high-frequency updates.
+                    // This ensures AnimatedContent only triggers when the final derived Int actually changes.
                     AnimatedContent(
-                        targetState = count,
+                        targetState = count(),
                         transitionSpec = {
                             if (targetState > initialState) {
                                 (slideInVertically { height -> height } + fadeIn()).togetherWith(
@@ -176,5 +178,3 @@ fun StatBubble(
         }
     }
 }
-
-

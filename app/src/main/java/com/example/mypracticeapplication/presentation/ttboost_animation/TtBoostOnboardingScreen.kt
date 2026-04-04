@@ -1,4 +1,4 @@
-﻿package com.example.mypracticeapplication.presentation.ttboost_animation
+package com.example.mypracticeapplication.presentation.ttboost_animation
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -159,43 +159,43 @@ private fun TtBoostContent() {
         val spacing = availableWidth * 0.05f
         val barWidth = (availableWidth - (spacing * (barCount - 1))) / barCount
 
-        // Animated Bar Chart
+        // BOLT OPTIMIZATION: Pass progress as lambda to defer read to draw phase
         AnimatedBarChart(
             barData = barData,
-            entranceProgress = mainProgress.value,
+            entranceProgress = { mainProgress.value },
             barWidth = barWidth,
             barSpacing = spacing,
             modifier = Modifier.fillMaxSize()
         )
 
         // Draw Overlays
-        if (overlayVisible.value > 0f) {
-            val scale = overlayVisible.value
+        // BOLT OPTIMIZATION: Use graphicsLayer to defer state reads for visibility/scale animations
+        overlays.forEach { overlay ->
+            // Calculate position
+            val barCenterX =
+                (overlay.xIndex * (barWidth.value + spacing.value)) + (barWidth.value / 2)
+            val fullHeightVal = availableHeight.value
+            val centerY = fullHeightVal - (fullHeightVal * overlay.yPercent)
 
-            overlays.forEach { overlay ->
-                // Calculate position
-                val barCenterX =
-                    (overlay.xIndex * (barWidth.value + spacing.value)) + (barWidth.value / 2)
-                val fullHeightVal = availableHeight.value
-                val centerY = fullHeightVal - (fullHeightVal * overlay.yPercent)
-
-                // Render overlay with animation
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.TopStart)
-                        .offset(x = barCenterX.dp, y = centerY.dp)
-                        .graphicsLayer {
-                            scaleX = scale
-                            scaleY = scale
-                            alpha = scale
-                        }
-                ) {
-                    OverlayRenderer(overlay)
-                }
+            // Render overlay with animation
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .offset(x = barCenterX.dp, y = centerY.dp)
+                    .graphicsLayer {
+                        // BOLT OPTIMIZATION: Read animation value inside graphicsLayer to skip recomposition
+                        val scale = overlayVisible.value
+                        scaleX = scale
+                        scaleY = scale
+                        alpha = scale
+                    }
+            ) {
+                OverlayRenderer(overlay)
             }
         }
 
         // Heart Bubble (Top-Left)
+        // BOLT OPTIMIZATION: Pass progress as lambda to StatBubble
         StatBubble(
             modifier = Modifier
                 .padding(start = 32.dp)
@@ -203,29 +203,34 @@ private fun TtBoostContent() {
                 .align(Alignment.TopStart)
                 .offset(y = (-50).dp)
                 .graphicsLayer {
-                    scaleX = bubblesVisible.value
-                    scaleY = bubblesVisible.value
-                    alpha = bubblesVisible.value
+                    // BOLT OPTIMIZATION: Read animation value inside graphicsLayer
+                    val scale = bubblesVisible.value
+                    scaleX = scale
+                    scaleY = scale
+                    alpha = scale
                 },
             icon = Icons.Default.Favorite,
-            count = (100 * mainProgress.value).toInt(),
+            count = { (100 * mainProgress.value).toInt() },
             color = TtBoostTheme.Bubble.HeartColor,
             shadowColor = TtBoostTheme.Bubble.HeartShadow
         )
 
         // Person Bubble (Top-Right)
+        // BOLT OPTIMIZATION: Pass progress as lambda to StatBubble
         StatBubble(
             modifier = Modifier
                 .align(Alignment.TopEnd)
                 .padding(end = 32.dp)
                 .rotate(15f)
                 .graphicsLayer {
-                    scaleX = bubblesVisible.value
-                    scaleY = bubblesVisible.value
-                    alpha = bubblesVisible.value
+                    // BOLT OPTIMIZATION: Read animation value inside graphicsLayer
+                    val scale = bubblesVisible.value
+                    scaleX = scale
+                    scaleY = scale
+                    alpha = scale
                 },
             icon = Icons.Default.Person,
-            count = (250 * mainProgress.value).toInt(),
+            count = { (250 * mainProgress.value).toInt() },
             color = TtBoostTheme.Bubble.PersonColor,
             shadowColor = TtBoostTheme.Bubble.PersonShadow
         )
@@ -239,5 +244,3 @@ private fun TtBoostOnboardingScreenPreview() {
         TtBoostOnboardingScreen(onNavigateBack = {})
     }
 }
-
-
