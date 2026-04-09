@@ -84,7 +84,7 @@ private fun createBubbleShape(): GenericShape {
 @Composable
 fun StatBubble(
     icon: ImageVector,
-    count: Int,
+    countProvider: () -> Int,
     color: Color,
     shadowColor: Color,
     modifier: Modifier = Modifier,
@@ -149,7 +149,7 @@ fun StatBubble(
                     Spacer(modifier = Modifier.width(8.dp))
 
                     AnimatedContent(
-                        targetState = count,
+                        targetState = countProvider(),
                         transitionSpec = {
                             if (targetState > initialState) {
                                 (slideInVertically { height -> height } + fadeIn()).togetherWith(
