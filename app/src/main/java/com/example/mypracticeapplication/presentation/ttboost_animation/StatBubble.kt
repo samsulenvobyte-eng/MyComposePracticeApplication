@@ -28,7 +28,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -75,7 +75,7 @@ private fun createBubbleShape(): GenericShape {
  * A 3D rotating stat bubble with an icon and animated counter.
  * 
  * @param icon The icon to display
- * @param count The current count value
+ * @param count Lambda providing the current count value
  * @param color The bubble background color
  * @param shadowColor The shadow/depth color (currently unused but kept for API compatibility)
  * @param modifier Modifier for positioning and styling
@@ -84,7 +84,7 @@ private fun createBubbleShape(): GenericShape {
 @Composable
 fun StatBubble(
     icon: ImageVector,
-    count: Int,
+    count: () -> Int, // Use lambda to defer state reading
     color: Color,
     shadowColor: Color,
     modifier: Modifier = Modifier,
@@ -93,7 +93,9 @@ fun StatBubble(
     // 3D Rotation Animation
     val infiniteTransition = rememberInfiniteTransition(label = "3d_float")
     
-    val rotationY by infiniteTransition.animateFloat(
+    // Performance: Remove 'by' to avoid recomposing the entire StatBubble
+    // when rotation values change every frame.
+    val rotationYState = infiniteTransition.animateFloat(
         initialValue = -15f,
         targetValue = 15f,
         animationSpec = infiniteRepeatable(
@@ -103,7 +105,7 @@ fun StatBubble(
         label = "rotationY"
     )
 
-    val rotationX by infiniteTransition.animateFloat(
+    val rotationXState = infiniteTransition.animateFloat(
         initialValue = 5f,
         targetValue = -5f,
         animationSpec = infiniteRepeatable(
@@ -122,8 +124,9 @@ fun StatBubble(
                 interactionSource = remember { MutableInteractionSource() }
             ) { onClick() }
             .graphicsLayer {
-                this.rotationY = rotationY
-                this.rotationX = rotationX
+                // Read animation values directly inside graphicsLayer to defer to draw phase
+                this.rotationY = rotationYState.value
+                this.rotationX = rotationXState.value
                 cameraDistance = 12f * density
                 transformOrigin = TransformOrigin(0.5f, 0.5f)
             }
@@ -148,8 +151,12 @@ fun StatBubble(
 
                     Spacer(modifier = Modifier.width(8.dp))
 
+                    // Performance: Wrap in derivedStateOf to ensure recomposition only
+                    // happens when the count integer actually changes.
+                    val targetCountState = remember(count) { derivedStateOf { count() } }
+
                     AnimatedContent(
-                        targetState = count,
+                        targetState = targetCountState.value,
                         transitionSpec = {
                             if (targetState > initialState) {
                                 (slideInVertically { height -> height } + fadeIn()).togetherWith(

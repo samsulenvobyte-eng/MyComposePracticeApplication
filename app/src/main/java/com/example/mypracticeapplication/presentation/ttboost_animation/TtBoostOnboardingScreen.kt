@@ -45,9 +45,11 @@ import kotlinx.coroutines.delay
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TtBoostOnboardingScreen(
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Scaffold(
+        modifier = modifier,
         topBar = {
             TopAppBar(
                 title = {
@@ -88,7 +90,7 @@ fun TtBoostOnboardingScreen(
 @Composable
 private fun TtBoostContent() {
     // Data definition: Relative heights [0.0 - 1.0]
-    val barData = remember { listOf(0.4f, 0.55f, 0.65f, 0.85f, 0.95f) }
+    val barData = remember { BarDataList(listOf(0.4f, 0.55f, 0.65f, 0.85f, 0.95f)) }
 
     // Animation States
     val overlayVisible = remember { Animatable(0f) }
@@ -155,23 +157,24 @@ private fun TtBoostContent() {
     ) {
         val availableWidth = maxWidth
         val availableHeight = maxHeight
-        val barCount = barData.size
+        val barCount = barData.items.size
         val spacing = availableWidth * 0.05f
         val barWidth = (availableWidth - (spacing * (barCount - 1))) / barCount
 
         // Animated Bar Chart
         AnimatedBarChart(
             barData = barData,
-            entranceProgress = mainProgress.value,
+            // Performance: Pass as lambda to defer state reading to draw phase
+            entranceProgress = { mainProgress.value },
             barWidth = barWidth,
             barSpacing = spacing,
             modifier = Modifier.fillMaxSize()
         )
 
         // Draw Overlays
+        // Performance: Avoid conditional composition during animation if possible,
+        // or use graphicsLayer for alpha. Here we keep the if but optimize inside.
         if (overlayVisible.value > 0f) {
-            val scale = overlayVisible.value
-
             overlays.forEach { overlay ->
                 // Calculate position
                 val barCenterX =
@@ -185,6 +188,9 @@ private fun TtBoostContent() {
                         .align(Alignment.TopStart)
                         .offset(x = barCenterX.dp, y = centerY.dp)
                         .graphicsLayer {
+                            // Performance: Read Animatable value inside graphicsLayer block
+                            // to defer to draw phase and prevent parent recomposition.
+                            val scale = overlayVisible.value
                             scaleX = scale
                             scaleY = scale
                             alpha = scale
@@ -203,12 +209,15 @@ private fun TtBoostContent() {
                 .align(Alignment.TopStart)
                 .offset(y = (-50).dp)
                 .graphicsLayer {
-                    scaleX = bubblesVisible.value
-                    scaleY = bubblesVisible.value
-                    alpha = bubblesVisible.value
+                    // Performance: Read Animatable value inside graphicsLayer block
+                    val scale = bubblesVisible.value
+                    scaleX = scale
+                    scaleY = scale
+                    alpha = scale
                 },
             icon = Icons.Default.Favorite,
-            count = (100 * mainProgress.value).toInt(),
+            // Performance: Pass as lambda to defer state reading
+            count = { (100 * mainProgress.value).toInt() },
             color = TtBoostTheme.Bubble.HeartColor,
             shadowColor = TtBoostTheme.Bubble.HeartShadow
         )
@@ -220,12 +229,15 @@ private fun TtBoostContent() {
                 .padding(end = 32.dp)
                 .rotate(15f)
                 .graphicsLayer {
-                    scaleX = bubblesVisible.value
-                    scaleY = bubblesVisible.value
-                    alpha = bubblesVisible.value
+                    // Performance: Read Animatable value inside graphicsLayer block
+                    val scale = bubblesVisible.value
+                    scaleX = scale
+                    scaleY = scale
+                    alpha = scale
                 },
             icon = Icons.Default.Person,
-            count = (250 * mainProgress.value).toInt(),
+            // Performance: Pass as lambda to defer state reading
+            count = { (250 * mainProgress.value).toInt() },
             color = TtBoostTheme.Bubble.PersonColor,
             shadowColor = TtBoostTheme.Bubble.PersonShadow
         )
