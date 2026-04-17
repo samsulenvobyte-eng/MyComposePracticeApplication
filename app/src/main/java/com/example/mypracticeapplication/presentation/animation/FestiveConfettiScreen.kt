@@ -115,7 +115,7 @@ private data class TrailPoint(
     val rotationZ: Float
 )
 
-private data class FestiveParticle(
+private class FestiveParticle(
     var x: Float,
     var y: Float,
     var vx: Float,
@@ -173,8 +173,8 @@ private fun generateFestiveParticles(
 
 @Composable
 fun FestiveConfettiExplosion(
-    modifier: Modifier = Modifier,
     isVisible: Boolean,
+    modifier: Modifier = Modifier,
     config: FestiveConfettiConfig = FestiveConfettiConfig(),
     onAnimationEnd: (() -> Unit)? = null
 ) {
@@ -183,16 +183,14 @@ fun FestiveConfettiExplosion(
         val canvasWidthPx = with(density) { maxWidth.toPx() }
         val canvasHeightPx = with(density) { maxHeight.toPx() }
         
-        var particles by remember { mutableStateOf<List<FestiveParticle>>(emptyList()) }
-        var lastFrameTime by remember { mutableLongStateOf(0L) }
+        val particles = remember { mutableListOf<FestiveParticle>() }
+        var frameTick by remember { mutableLongStateOf(0L) }
         var isAnimating by remember { mutableStateOf(false) }
-        var elapsedTime by remember { mutableFloatStateOf(0f) }
         
         LaunchedEffect(isVisible) {
             if (isVisible && !isAnimating) {
-                particles = generateFestiveParticles(canvasWidthPx, canvasHeightPx, config)
-                lastFrameTime = 0L
-                elapsedTime = 0f
+                particles.clear()
+                particles.addAll(generateFestiveParticles(canvasWidthPx, canvasHeightPx, config))
                 isAnimating = true
             }
         }
@@ -200,6 +198,9 @@ fun FestiveConfettiExplosion(
         LaunchedEffect(isAnimating) {
             if (!isAnimating) return@LaunchedEffect
             
+            var lastFrameTime = 0L
+            var elapsedTime = 0f
+
             while (isAnimating) {
                 withFrameNanos { frameTimeNanos ->
                     if (lastFrameTime == 0L) {
@@ -212,66 +213,69 @@ fun FestiveConfettiExplosion(
                     elapsedTime += deltaTime
                     
                     var anyAlive = false
-                    particles = particles.map { particle ->
-                        if (!particle.isAlive) return@map particle
+                    // Optimization: Use indexed loop to avoid iterator allocation
+                    for (i in 0 until particles.size) {
+                        val particle = particles[i]
+                        if (!particle.isAlive) continue
                         
-                        // Physics
-                        val newVy = (particle.vy + config.gravity * deltaTime) * config.airDrag
-                        val newVx = particle.vx * config.airDrag
+                        // Physics: In-place mutation
+                        particle.vy = (particle.vy + config.gravity * deltaTime) * config.airDrag
+                        particle.vx *= config.airDrag
                         
                         // Horizontal wiggle (Simulating Lottie paths)
                         val wiggle = sin(elapsedTime * particle.horizontalFreq + particle.horizontalOffset) * config.wiggleIntensity * 0.1f
                         
-                        val newX = particle.x + (newVx + wiggle) * deltaTime
-                        val newY = particle.y + newVy * deltaTime
-                        val newRotation = particle.rotationZ + particle.rotationSpeedZ * deltaTime
+                        particle.x += (particle.vx + wiggle) * deltaTime
+                        particle.y += particle.vy * deltaTime
+                        particle.rotationZ += particle.rotationSpeedZ * deltaTime
                         
-                        // Update Trail (Trim Path effect)
-                        val newTrail = particle.trail.toMutableList()
-                        newTrail.add(0, TrailPoint(newX, newY, newRotation))
-                        if (newTrail.size > config.trailLength) {
-                            newTrail.removeAt(newTrail.lastIndex)
+                        // Update Trail (Trim Path effect): In-place mutation
+                        particle.trail.add(0, TrailPoint(particle.x, particle.y, particle.rotationZ))
+                        if (particle.trail.size > config.trailLength) {
+                            particle.trail.removeAt(particle.trail.lastIndex)
                         }
                         
-                        val stillAlive = newY <= canvasHeightPx + 200f && 
-                                       newX >= -200f && newX <= canvasWidthPx + 200f
-                        if (stillAlive) anyAlive = true
+                        particle.isAlive = particle.y <= canvasHeightPx + 200f &&
+                                       particle.x >= -200f && particle.x <= canvasWidthPx + 200f
                         
-                        particle.copy(
-                            x = newX,
-                            y = newY,
-                            vx = newVx,
-                            vy = newVy,
-                            rotationZ = newRotation,
-                            isAlive = stillAlive,
-                            trail = newTrail
-                        )
+                        if (particle.isAlive) anyAlive = true
                     }
                     
-                    if (!anyAlive && particles.isNotEmpty()) {
+                    if (anyAlive) {
+                        frameTick++
+                    } else if (particles.isNotEmpty()) {
                         isAnimating = false
-                        particles = emptyList()
+                        particles.clear()
                         onAnimationEnd?.invoke()
                     }
                 }
             }
         }
+
+        // Optimization: Cache shared path instance to avoid per-frame allocations
+        val sharedPath = remember { Path() }
         
         Canvas(modifier = Modifier.fillMaxSize()) {
-            particles.forEach { particle ->
-                if (!particle.isAlive) return@forEach
+            // Read frameTick to trigger draw phase
+            @Suppress("UNUSED_VARIABLE")
+            val tick = frameTick
+
+            // Optimization: Use indexed loop to avoid iterator allocation
+            for (i in 0 until particles.size) {
+                val particle = particles[i]
+                if (!particle.isAlive) continue
                 
                 // Draw trails for POLYLINE type OR behind any shape if configured
                 if (particle.shapeType == FestiveShapeType.POLYLINE && particle.trail.size > 1) {
-                    val path = Path().apply {
-                        moveTo(particle.trail[0].x, particle.trail[0].y)
-                        for (i in 1 until particle.trail.size) {
-                            lineTo(particle.trail[i].x, particle.trail[i].y)
-                        }
+                    sharedPath.reset()
+                    sharedPath.moveTo(particle.trail[0].x, particle.trail[0].y)
+                    for (j in 1 until particle.trail.size) {
+                        sharedPath.lineTo(particle.trail[j].x, particle.trail[j].y)
                     }
                     drawPath(
-                        path = path,
-                        color = particle.color.copy(alpha = particle.alpha * 0.6f),
+                        path = sharedPath,
+                        color = particle.color,
+                        alpha = particle.alpha * 0.6f,
                         style = Stroke(width = 8f, cap = StrokeCap.Round)
                     )
                 }
@@ -282,30 +286,29 @@ fun FestiveConfettiExplosion(
                         when (particle.shapeType) {
                             FestiveShapeType.RECTANGLE -> {
                                 drawRect(
-                                    color = particle.color.copy(alpha = particle.alpha),
+                                    color = particle.color,
+                                    alpha = particle.alpha,
                                     topLeft = Offset(particle.x - particle.width / 2, particle.y - particle.height / 2),
                                     size = Size(particle.width, particle.height)
                                 )
                             }
                             FestiveShapeType.TRIANGLE -> {
-                                val tPath = Path().apply {
-                                    moveTo(particle.x, particle.y - particle.height / 2)
-                                    lineTo(particle.x - particle.width / 2, particle.y + particle.height / 2)
-                                    lineTo(particle.x + particle.width / 2, particle.y + particle.height / 2)
-                                    close()
-                                }
-                                drawPath(tPath, particle.color.copy(alpha = particle.alpha))
+                                sharedPath.reset()
+                                sharedPath.moveTo(particle.x, particle.y - particle.height / 2)
+                                sharedPath.lineTo(particle.x - particle.width / 2, particle.y + particle.height / 2)
+                                sharedPath.lineTo(particle.x + particle.width / 2, particle.y + particle.height / 2)
+                                sharedPath.close()
+                                drawPath(sharedPath, particle.color, alpha = particle.alpha)
                             }
                             FestiveShapeType.PARALLELOGRAM -> {
                                 val skew = particle.width * 0.4f
-                                val pPath = Path().apply {
-                                    moveTo(particle.x - particle.width / 2 + skew, particle.y - particle.height / 2)
-                                    lineTo(particle.x + particle.width / 2 + skew, particle.y - particle.height / 2)
-                                    lineTo(particle.x + particle.width / 2 - skew, particle.y + particle.height / 2)
-                                    lineTo(particle.x - particle.width / 2 - skew, particle.y + particle.height / 2)
-                                    close()
-                                }
-                                drawPath(pPath, particle.color.copy(alpha = particle.alpha))
+                                sharedPath.reset()
+                                sharedPath.moveTo(particle.x - particle.width / 2 + skew, particle.y - particle.height / 2)
+                                sharedPath.lineTo(particle.x + particle.width / 2 + skew, particle.y - particle.height / 2)
+                                sharedPath.lineTo(particle.x + particle.width / 2 - skew, particle.y + particle.height / 2)
+                                sharedPath.lineTo(particle.x - particle.width / 2 - skew, particle.y + particle.height / 2)
+                                sharedPath.close()
+                                drawPath(sharedPath, particle.color, alpha = particle.alpha)
                             }
                             else -> {}
                         }
@@ -322,6 +325,7 @@ fun FestiveConfettiExplosion(
 
 @Composable
 fun FestiveConfettiScreen(
+    modifier: Modifier = Modifier,
     onNavigateBack: () -> Unit = {}
 ) {
     var trigger by remember { mutableStateOf(false) }
@@ -335,7 +339,7 @@ fun FestiveConfettiScreen(
         wiggleIntensity = wiggleIntensity
     )
     
-    Column(modifier = Modifier.fillMaxSize().background(Color(0xFF0F172A))) {
+    Column(modifier = modifier.fillMaxSize().background(Color(0xFF0F172A))) {
         // Header
         FestiveHeader(onNavigateBack)
         
@@ -350,8 +354,8 @@ fun FestiveConfettiScreen(
             
             // Animation Layer
             FestiveConfettiExplosion(
-                modifier = Modifier.fillMaxSize(),
                 isVisible = trigger,
+                modifier = Modifier.fillMaxSize(),
                 config = config,
                 onAnimationEnd = { trigger = false }
             )
