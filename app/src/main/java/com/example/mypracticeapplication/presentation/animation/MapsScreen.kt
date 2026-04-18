@@ -31,6 +31,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -63,11 +64,80 @@ private val BangladeshRed = Color(0xFFF42A41)
 /**
  * Data class for city markers on the map
  */
+@Immutable
 data class CityMarker(
     val name: String,
     val x: Float,
     val y: Float,
     val isCapital: Boolean = false
+)
+
+private val BANGLADESH_BORDER_POINTS = listOf(
+    // Start at Rangpur region (northwest) - the distinctive bulge
+    Pair(0.12f, 0.18f),
+    Pair(0.08f, 0.14f),
+    Pair(0.10f, 0.08f),
+    Pair(0.18f, 0.04f),
+    Pair(0.28f, 0.02f),
+    Pair(0.35f, 0.06f),
+
+    // Northern border moving east
+    Pair(0.42f, 0.12f),
+    Pair(0.48f, 0.16f),
+    Pair(0.52f, 0.14f),
+    Pair(0.58f, 0.18f),
+
+    // Sylhet region (northeast) - bump outward
+    Pair(0.65f, 0.15f),
+    Pair(0.72f, 0.12f),
+    Pair(0.80f, 0.14f),
+    Pair(0.88f, 0.18f),
+    Pair(0.92f, 0.24f),
+    Pair(0.88f, 0.30f),
+    Pair(0.82f, 0.32f),
+
+    // Eastern border - moves south with indentations
+    Pair(0.78f, 0.38f),
+    Pair(0.72f, 0.42f),
+    Pair(0.68f, 0.48f),
+    Pair(0.72f, 0.52f),
+    Pair(0.78f, 0.55f),
+
+    // Chittagong region - distinctive eastern protrusion
+    Pair(0.82f, 0.58f),
+    Pair(0.85f, 0.62f),
+    Pair(0.88f, 0.68f),
+    Pair(0.86f, 0.75f),
+    Pair(0.82f, 0.82f),
+    Pair(0.78f, 0.88f),
+    Pair(0.75f, 0.94f),
+    Pair(0.70f, 0.98f),
+
+    // Southern coast - Bay of Bengal with delta features
+    Pair(0.62f, 0.95f),
+    Pair(0.55f, 0.88f),
+    Pair(0.50f, 0.82f),
+    Pair(0.45f, 0.78f),
+    Pair(0.42f, 0.85f),
+    Pair(0.38f, 0.90f),
+
+    // Sundarbans delta region (southwest) - multiple channels
+    Pair(0.32f, 0.92f),
+    Pair(0.28f, 0.88f),
+    Pair(0.22f, 0.90f),
+    Pair(0.18f, 0.85f),
+    Pair(0.15f, 0.80f),
+    Pair(0.12f, 0.75f),
+
+    // Western border - moving north along India border
+    Pair(0.08f, 0.68f),
+    Pair(0.05f, 0.60f),
+    Pair(0.08f, 0.52f),
+    Pair(0.12f, 0.45f),
+    Pair(0.08f, 0.38f),
+    Pair(0.05f, 0.32f),
+    Pair(0.08f, 0.25f),
+    Pair(0.12f, 0.18f)
 )
 
 /**
@@ -110,17 +180,42 @@ fun AnimatedBangladeshMap(
         }
     }
     
-    // Major cities with corrected positions
-    val cities = listOf(
-        CityMarker("Dhaka", 0.52f, 0.48f, isCapital = true),
-        CityMarker("Chittagong", 0.75f, 0.68f),
-        CityMarker("Khulna", 0.32f, 0.58f),
-        CityMarker("Rajshahi", 0.18f, 0.32f),
-        CityMarker("Sylhet", 0.72f, 0.25f),
-        CityMarker("Rangpur", 0.25f, 0.12f),
-        CityMarker("Barisal", 0.42f, 0.68f),
-        CityMarker("Mymensingh", 0.55f, 0.35f)
-    )
+    // Major cities with corrected positions - cached to avoid per-recomposition allocation
+    val cities = remember {
+        listOf(
+            CityMarker("Dhaka", 0.52f, 0.48f, isCapital = true),
+            CityMarker("Chittagong", 0.75f, 0.68f),
+            CityMarker("Khulna", 0.32f, 0.58f),
+            CityMarker("Rajshahi", 0.18f, 0.32f),
+            CityMarker("Sylhet", 0.72f, 0.25f),
+            CityMarker("Rangpur", 0.25f, 0.12f),
+            CityMarker("Barisal", 0.42f, 0.68f),
+            CityMarker("Mymensingh", 0.55f, 0.35f)
+        )
+    }
+
+    // Pre-measure city labels to avoid expensive text measurement during every frame of the animation
+    val labelLayoutResults = remember(cities, textMeasurer) {
+        cities.map { city ->
+            val textStyle = TextStyle(
+                fontSize = if (city.isCapital) 11.sp else 9.sp,
+                fontWeight = if (city.isCapital) FontWeight.Bold else FontWeight.Normal,
+                color = Color.DarkGray
+            )
+            textMeasurer.measure(city.name, textStyle)
+        }
+    }
+
+    // Cache the map Path and gradient Brush to avoid per-frame allocations
+    val mapPath = remember { Path() }
+    val gradientBrush = remember(fillColor) {
+        Brush.verticalGradient(
+            colors = listOf(
+                fillColor,
+                fillColor.copy(alpha = 0.6f)
+            )
+        )
+    }
     
     Canvas(modifier = modifier) {
         val canvasWidth = size.width
@@ -130,108 +225,28 @@ fun AnimatedBangladeshMap(
         val mapWidth = canvasWidth - padding * 2
         val mapHeight = canvasHeight - padding * 2
         
-        // Accurate Bangladesh border coordinates based on the reference image
-        // The shape resembles a person with arms spread, with distinctive features:
-        // - Rangpur region (northwest bulge)
-        // - Sylhet region (northeast)  
-        // - Chittagong Hill Tracts (southeast, extending south)
-        // - Sundarbans delta (southwest)
-        
-        val borderPoints = listOf(
-            // Start at Rangpur region (northwest) - the distinctive bulge
-            Pair(0.12f, 0.18f),
-            Pair(0.08f, 0.14f),
-            Pair(0.10f, 0.08f),
-            Pair(0.18f, 0.04f),
-            Pair(0.28f, 0.02f),
-            Pair(0.35f, 0.06f),
-            
-            // Northern border moving east
-            Pair(0.42f, 0.12f),
-            Pair(0.48f, 0.16f),
-            Pair(0.52f, 0.14f),
-            Pair(0.58f, 0.18f),
-            
-            // Sylhet region (northeast) - bump outward
-            Pair(0.65f, 0.15f),
-            Pair(0.72f, 0.12f),
-            Pair(0.80f, 0.14f),
-            Pair(0.88f, 0.18f),
-            Pair(0.92f, 0.24f),
-            Pair(0.88f, 0.30f),
-            Pair(0.82f, 0.32f),
-            
-            // Eastern border - moves south with indentations
-            Pair(0.78f, 0.38f),
-            Pair(0.72f, 0.42f),
-            Pair(0.68f, 0.48f),
-            Pair(0.72f, 0.52f),
-            Pair(0.78f, 0.55f),
-            
-            // Chittagong region - distinctive eastern protrusion
-            Pair(0.82f, 0.58f),
-            Pair(0.85f, 0.62f),
-            Pair(0.88f, 0.68f),
-            Pair(0.86f, 0.75f),
-            Pair(0.82f, 0.82f),
-            Pair(0.78f, 0.88f),
-            Pair(0.75f, 0.94f),
-            Pair(0.70f, 0.98f),
-            
-            // Southern coast - Bay of Bengal with delta features
-            Pair(0.62f, 0.95f),
-            Pair(0.55f, 0.88f),
-            Pair(0.50f, 0.82f),
-            Pair(0.45f, 0.78f),
-            Pair(0.42f, 0.85f),
-            Pair(0.38f, 0.90f),
-            
-            // Sundarbans delta region (southwest) - multiple channels
-            Pair(0.32f, 0.92f),
-            Pair(0.28f, 0.88f),
-            Pair(0.22f, 0.90f),
-            Pair(0.18f, 0.85f),
-            Pair(0.15f, 0.80f),
-            Pair(0.12f, 0.75f),
-            
-            // Western border - moving north along India border
-            Pair(0.08f, 0.68f),
-            Pair(0.05f, 0.60f),
-            Pair(0.08f, 0.52f),
-            Pair(0.12f, 0.45f),
-            Pair(0.08f, 0.38f),
-            Pair(0.05f, 0.32f),
-            Pair(0.08f, 0.25f),
-            Pair(0.12f, 0.18f)
+        // Rebuild the path only when necessary (e.g., size changes) to avoid per-frame allocation
+        mapPath.rewind()
+        val firstPoint = BANGLADESH_BORDER_POINTS[0]
+        mapPath.moveTo(
+            padding + firstPoint.first * mapWidth,
+            padding + firstPoint.second * mapHeight
         )
         
-        // Create the map path
-        val mapPath = Path().apply {
-            val firstPoint = borderPoints.first()
-            moveTo(
-                padding + firstPoint.first * mapWidth,
-                padding + firstPoint.second * mapHeight
-            )
-            
-            for (i in 1 until borderPoints.size) {
-                val curr = borderPoints[i]
-                val currX = padding + curr.first * mapWidth
-                val currY = padding + curr.second * mapHeight
-                lineTo(currX, currY)
-            }
-            close()
+        for (i in 1 until BANGLADESH_BORDER_POINTS.size) {
+            val curr = BANGLADESH_BORDER_POINTS[i]
+            val currX = padding + curr.first * mapWidth
+            val currY = padding + curr.second * mapHeight
+            mapPath.lineTo(currX, currY)
         }
+        mapPath.close()
         
-        // Draw filled map
+        // Draw filled map using the native alpha parameter to avoid per-frame Color.copy allocations
         if (fillProgress.value > 0) {
             drawPath(
                 path = mapPath,
-                brush = Brush.verticalGradient(
-                    colors = listOf(
-                        fillColor.copy(alpha = fillColor.alpha * fillProgress.value),
-                        fillColor.copy(alpha = fillColor.alpha * 0.6f * fillProgress.value)
-                    )
-                ),
+                brush = gradientBrush,
+                alpha = fillProgress.value,
                 style = Fill
             )
         }
@@ -246,16 +261,18 @@ fun AnimatedBangladeshMap(
             )
         }
         
-        // Draw cities
+        // Draw cities - use manual indexed for loop to avoid Iterator allocations per frame
         if (showCities && cityProgress.value > 0) {
-            cities.forEach { city ->
+            for (i in cities.indices) {
+                val city = cities[i]
                 val cityX = padding + city.x * mapWidth
                 val cityY = padding + city.y * mapHeight
                 val markerSize = if (city.isCapital) 10.dp.toPx() else 6.dp.toPx()
                 val animatedSize = markerSize * cityProgress.value
                 
                 drawCircle(
-                    color = if (city.isCapital) BangladeshRed else cityColor.copy(alpha = 0.8f),
+                    color = if (city.isCapital) BangladeshRed else cityColor,
+                    alpha = if (city.isCapital) 1.0f else 0.8f,
                     radius = animatedSize / 2,
                     center = Offset(cityX, cityY)
                 )
@@ -270,15 +287,12 @@ fun AnimatedBangladeshMap(
                 
                 if (cityProgress.value > 0.5f) {
                     val textAlpha = ((cityProgress.value - 0.5f) * 2f).coerceIn(0f, 1f)
-                    val textStyle = TextStyle(
-                        fontSize = if (city.isCapital) 11.sp else 9.sp,
-                        fontWeight = if (city.isCapital) FontWeight.Bold else FontWeight.Normal,
-                        color = Color.DarkGray.copy(alpha = textAlpha)
-                    )
-                    val textLayoutResult = textMeasurer.measure(city.name, textStyle)
+                    val textLayoutResult = labelLayoutResults[i]
                     
+                    // Use the alpha parameter in drawText to avoid per-frame TextStyle/Color allocations
                     drawText(
                         textLayoutResult = textLayoutResult,
+                        alpha = textAlpha,
                         topLeft = Offset(
                             cityX - textLayoutResult.size.width / 2,
                             cityY + animatedSize / 2 + 3.dp.toPx()
@@ -292,6 +306,7 @@ fun AnimatedBangladeshMap(
 
 @Composable
 fun MapsScreen(
+    modifier: Modifier = Modifier,
     onNavigateBack: () -> Unit = {}
 ) {
     Column(
@@ -406,8 +421,13 @@ fun MapsScreen(
 }
 
 @Composable
-private fun LegendItem(color: Color, label: String) {
+private fun LegendItem(
+    color: Color,
+    label: String,
+    modifier: Modifier = Modifier
+) {
     Row(
+        modifier = modifier,
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
@@ -417,9 +437,13 @@ private fun LegendItem(color: Color, label: String) {
 }
 
 @Composable
-private fun InfoRow(label: String, value: String) {
+private fun InfoRow(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier
+) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+        modifier = modifier.fillMaxWidth().padding(vertical = 4.dp),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Text(text = label, style = MaterialTheme.typography.bodyMedium, color = Color.Gray)
