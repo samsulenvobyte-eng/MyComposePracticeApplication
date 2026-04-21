@@ -28,6 +28,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -75,7 +76,7 @@ private fun createBubbleShape(): GenericShape {
  * A 3D rotating stat bubble with an icon and animated counter.
  * 
  * @param icon The icon to display
- * @param count The current count value
+ * @param count Lambda providing the current count value
  * @param color The bubble background color
  * @param shadowColor The shadow/depth color (currently unused but kept for API compatibility)
  * @param modifier Modifier for positioning and styling
@@ -84,7 +85,7 @@ private fun createBubbleShape(): GenericShape {
 @Composable
 fun StatBubble(
     icon: ImageVector,
-    count: Int,
+    count: () -> Int,
     color: Color,
     shadowColor: Color,
     modifier: Modifier = Modifier,
@@ -148,8 +149,14 @@ fun StatBubble(
 
                     Spacer(modifier = Modifier.width(8.dp))
 
+                    // Wrap count in derivedStateOf to avoid unnecessary recompositions
+                    // when the derived Int value hasn't changed.
+                    val derivedCount by remember(count) {
+                        derivedStateOf { count() }
+                    }
+
                     AnimatedContent(
-                        targetState = count,
+                        targetState = derivedCount,
                         transitionSpec = {
                             if (targetState > initialState) {
                                 (slideInVertically { height -> height } + fadeIn()).togetherWith(
