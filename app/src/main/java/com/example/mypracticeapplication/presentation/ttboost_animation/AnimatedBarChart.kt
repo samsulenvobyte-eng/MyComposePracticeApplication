@@ -22,7 +22,7 @@ import kotlin.math.sin
  * Animated bar chart with entrance animation and ambient breathing effect.
  * 
  * @param barData List of relative bar heights (0.0 to 1.0)
- * @param entranceProgress Animation progress for bar entrance (0.0 to 1.0)
+ * @param entranceProgressProvider Animation progress for bar entrance (0.0 to 1.0)
  * @param barWidth Width of each bar
  * @param barSpacing Spacing between bars
  * @param modifier Modifier for the canvas
@@ -30,14 +30,15 @@ import kotlin.math.sin
 @Composable
 fun AnimatedBarChart(
     barData: List<Float>,
-    entranceProgress: Float,
+    entranceProgressProvider: () -> Float,
     barWidth: Dp,
     barSpacing: Dp,
     modifier: Modifier = Modifier
 ) {
     // Infinite transition for ambient breathing
     val infiniteTransition = rememberInfiniteTransition(label = "breathing")
-    val breathingPhase by infiniteTransition.animateFloat(
+    // Use state object directly and read .value in Canvas to avoid recomposition
+    val breathingPhase = infiniteTransition.animateFloat(
         initialValue = 0f,
         targetValue = 2f * Math.PI.toFloat(),
         animationSpec = infiniteRepeatable(
@@ -48,13 +49,20 @@ fun AnimatedBarChart(
     )
 
     Canvas(modifier = modifier.fillMaxSize()) {
+        // CornerRadius is a value class; instantiating it here is efficient and avoids boxing from remember
+        val barCornerRadius = CornerRadius(35f, 35f)
         val barWidthPx = barWidth.toPx()
         val spacingPx = barSpacing.toPx()
+        val entranceProgress = entranceProgressProvider()
+        val phase = breathingPhase.value
 
-        barData.forEachIndexed { index, targetRelativeHeight ->
+        // Use indexed for loop to avoid iterator allocation per frame
+        for (index in barData.indices) {
+            val targetRelativeHeight = barData[index]
+
             // Calculate ambient offset using sine wave based on phase and index
             val ambientOffset = if (entranceProgress > 0.95f) {
-                sin(breathingPhase + index * 0.5f) * 0.03f
+                sin(phase + index * 0.5f) * 0.03f
             } else {
                 0f
             }
@@ -77,7 +85,7 @@ fun AnimatedBarChart(
                 alpha = 0.3f,
                 topLeft = Offset(xOffset, yOffset),
                 size = Size(barWidthPx, barHeight),
-                cornerRadius = CornerRadius(35f, 35f)
+                cornerRadius = barCornerRadius
             )
         }
     }
