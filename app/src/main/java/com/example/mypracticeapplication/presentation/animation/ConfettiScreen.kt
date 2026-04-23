@@ -37,6 +37,8 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.graphics.drawscope.translate
+import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -132,6 +134,19 @@ fun ConfettiScreen(
                     )
             )
             
+            // Pre-calculate normalized paths to avoid allocations in draw loop
+            val trianglePath = remember {
+                Path().apply {
+                    moveTo(0f, -0.5f)
+                    lineTo(-0.5f, 0.5f)
+                    lineTo(0.5f, 0.5f)
+                    close()
+                }
+            }
+            val starPath = remember {
+                createStarPath(0f, 0f, 0.5f, 0.25f)
+            }
+
             // Confetti Canvas
             if (isPlaying) {
                 Canvas(modifier = Modifier.fillMaxSize()) {
@@ -139,7 +154,10 @@ fun ConfettiScreen(
                     val canvasWidth = size.width
                     val canvasHeight = size.height
                     
-                    particles.forEach { particle ->
+                    // Use indexed loop to avoid iterator allocation
+                    for (i in particles.indices) {
+                        val particle = particles[i]
+
                         // Calculate current position
                         val time = progress * 4f // Scale time
                         val gravity = 0.5f
@@ -153,56 +171,57 @@ fun ConfettiScreen(
                             gravity * time * time * 200
                         
                         // Skip if out of bounds
-                        if (currentY > canvasHeight + 50) return@forEach
+                        if (currentY > canvasHeight + 50) continue
                         
                         val rotation = time * particle.rotationSpeed * 360
-                        val alpha = (1f - (progress * 0.5f)).coerceIn(0f, 1f)
+                        val alphaValue = (1f - (progress * 0.5f)).coerceIn(0f, 1f)
                         
-                        rotate(
-                            degrees = rotation,
-                            pivot = Offset(currentX, currentY)
-                        ) {
+                        // Use withTransform to handle all transformations at once efficiently
+                        withTransform({
+                            translate(currentX, currentY)
+                            rotate(rotation, Offset.Zero)
+                        }) {
                             when (particle.shape) {
                                 ConfettiShape.RECTANGLE -> {
+                                    // Use native alpha parameter to avoid Color.copy() allocations
                                     drawRect(
-                                        color = particle.color.copy(alpha = alpha),
-                                        topLeft = Offset(
-                                            currentX - particle.size / 2,
-                                            currentY - particle.size / 4
-                                        ),
-                                        size = Size(particle.size, particle.size / 2)
+                                        color = particle.color,
+                                        topLeft = Offset(-particle.size / 2, -particle.size / 4),
+                                        size = Size(particle.size, particle.size / 2),
+                                        alpha = alphaValue
                                     )
                                 }
                                 ConfettiShape.CIRCLE -> {
                                     drawCircle(
-                                        color = particle.color.copy(alpha = alpha),
+                                        color = particle.color,
                                         radius = particle.size / 2,
-                                        center = Offset(currentX, currentY)
+                                        center = Offset.Zero,
+                                        alpha = alphaValue
                                     )
                                 }
                                 ConfettiShape.TRIANGLE -> {
-                                    val path = Path().apply {
-                                        moveTo(currentX, currentY - particle.size / 2)
-                                        lineTo(currentX - particle.size / 2, currentY + particle.size / 2)
-                                        lineTo(currentX + particle.size / 2, currentY + particle.size / 2)
-                                        close()
+                                    // Scale and draw the pre-allocated normalized path
+                                    withTransform({
+                                        scale(particle.size, particle.size, Offset.Zero)
+                                    }) {
+                                        drawPath(
+                                            path = trianglePath,
+                                            color = particle.color,
+                                            alpha = alphaValue
+                                        )
                                     }
-                                    drawPath(
-                                        path = path,
-                                        color = particle.color.copy(alpha = alpha)
-                                    )
                                 }
                                 ConfettiShape.STAR -> {
-                                    val path = createStarPath(
-                                        centerX = currentX,
-                                        centerY = currentY,
-                                        outerRadius = particle.size / 2,
-                                        innerRadius = particle.size / 4
-                                    )
-                                    drawPath(
-                                        path = path,
-                                        color = particle.color.copy(alpha = alpha)
-                                    )
+                                    // Scale and draw the pre-allocated normalized path
+                                    withTransform({
+                                        scale(particle.size, particle.size, Offset.Zero)
+                                    }) {
+                                        drawPath(
+                                            path = starPath,
+                                            color = particle.color,
+                                            alpha = alphaValue
+                                        )
+                                    }
                                 }
                             }
                         }
