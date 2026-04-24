@@ -22,7 +22,7 @@ import kotlin.math.sin
  * Animated bar chart with entrance animation and ambient breathing effect.
  * 
  * @param barData List of relative bar heights (0.0 to 1.0)
- * @param entranceProgress Animation progress for bar entrance (0.0 to 1.0)
+ * @param entranceProgressProvider Lambda providing animation progress for bar entrance (0.0 to 1.0)
  * @param barWidth Width of each bar
  * @param barSpacing Spacing between bars
  * @param modifier Modifier for the canvas
@@ -30,14 +30,16 @@ import kotlin.math.sin
 @Composable
 fun AnimatedBarChart(
     barData: List<Float>,
-    entranceProgress: Float,
+    entranceProgressProvider: () -> Float,
     barWidth: Dp,
     barSpacing: Dp,
     modifier: Modifier = Modifier
 ) {
     // Infinite transition for ambient breathing
     val infiniteTransition = rememberInfiniteTransition(label = "breathing")
-    val breathingPhase by infiniteTransition.animateFloat(
+
+    // Performance: Avoid property delegation 'by' to prevent recomposition every frame
+    val breathingPhase = infiniteTransition.animateFloat(
         initialValue = 0f,
         targetValue = 2f * Math.PI.toFloat(),
         animationSpec = infiniteRepeatable(
@@ -51,10 +53,17 @@ fun AnimatedBarChart(
         val barWidthPx = barWidth.toPx()
         val spacingPx = barSpacing.toPx()
 
-        barData.forEachIndexed { index, targetRelativeHeight ->
+        // Performance: Defer state reading to the draw phase
+        val entranceProgress = entranceProgressProvider()
+        val currentBreathingPhase = breathingPhase.value
+
+        // Performance: Use standard for loop to avoid iterator allocation per frame
+        for (index in barData.indices) {
+            val targetRelativeHeight = barData[index]
+
             // Calculate ambient offset using sine wave based on phase and index
             val ambientOffset = if (entranceProgress > 0.95f) {
-                sin(breathingPhase + index * 0.5f) * 0.03f
+                sin(currentBreathingPhase + index * 0.5f) * 0.03f
             } else {
                 0f
             }
