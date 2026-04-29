@@ -53,6 +53,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import java.util.Locale
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -118,7 +119,7 @@ fun AnimatedDonutChart(
             val displayValue = if (segment.value == segment.value.toLong().toFloat()) {
                 segment.value.toLong().toString()
             } else {
-                String.format("%.1f", segment.value)
+                "%.1f".format(Locale.US, segment.value)
             }
             textMeasurer.measure(text = displayValue, style = labelTextStyle)
         }
@@ -135,8 +136,12 @@ fun AnimatedDonutChart(
             
             var currentStartAngle = startAngle
             
-            segments.forEachIndexed { index, segment ->
-                val sweepAngle = sweepAngles[index] * animationProgress.value
+            // Performance Optimization: Use standard indexed for loop instead of forEachIndexed
+            // to avoid iterator allocation every frame.
+            val animProgressValue = animationProgress.value
+            for (index in 0 until segments.size) {
+                val segment = segments[index]
+                val sweepAngle = sweepAngles[index] * animProgressValue
                 
                 drawArc(
                     color = segment.color,
@@ -148,7 +153,7 @@ fun AnimatedDonutChart(
                     style = Stroke(width = strokeWidth.toPx(), cap = StrokeCap.Butt)
                 )
                 
-                if (showLabels && animationProgress.value > 0.5f) {
+                if (showLabels && animProgressValue > 0.5f) {
                     val labelAngle = currentStartAngle + (sweepAngle / 2)
                     val labelRadius = radius + strokeWidth.toPx() / 2
                     val labelX = center.x + labelRadius * cos(Math.toRadians(labelAngle.toDouble())).toFloat()
@@ -308,6 +313,14 @@ fun AnimatedLineChart(
             } else null
         }
     }
+
+    // Performance Optimization: Cache Path objects and use FloatArray for coordinates
+    // to avoid per-frame heap allocations and boxing during animation.
+    val linePath = remember { Path() }
+    val fillPath = remember { Path() }
+    val xPoints = remember(dataPoints.size) { FloatArray(dataPoints.size) }
+    val yPoints = remember(dataPoints.size) { FloatArray(dataPoints.size) }
+    val fillBrush = remember(gradientColors) { Brush.verticalGradient(gradientColors) }
     
     Canvas(modifier = modifier) {
         val canvasWidth = size.width
@@ -318,73 +331,73 @@ fun AnimatedLineChart(
         
         val pointSpacing = (canvasWidth - chartPadding * 2) / (dataPoints.size - 1).coerceAtLeast(1)
         
-        // Calculate all points with vertical bounce applied
-        val baselineY = chartHeight / 2 // Center point for bounce reference
-        val points = dataPoints.mapIndexed { index, dataPoint ->
-            val x = chartPadding + index * pointSpacing
+        // Performance Optimization: Use standard indexed for loop instead of mapIndexed
+        // to avoid allocating a new List<Offset> every frame.
+        val baselineY = chartHeight / 2
+        val verticalBounceValue = verticalBounce.value
+        for (i in 0 until dataPoints.size) {
+            val dataPoint = dataPoints[i]
+            val x = chartPadding + i * pointSpacing
             val normalizedValue = (dataPoint.value - minValue) / valueRange
             val rawY = chartHeight - (normalizedValue * (chartHeight - chartPadding * 2)) - chartPadding
             
-            // Apply vertical bounce: points bounce from below
             val distanceFromBaseline = rawY - baselineY
-            val bouncedY = baselineY + (distanceFromBaseline * verticalBounce.value)
+            val bouncedY = baselineY + (distanceFromBaseline * verticalBounceValue)
             
-            Offset(x, bouncedY)
+            xPoints[i] = x
+            yPoints[i] = bouncedY
         }
         
-        if (points.size >= 2) {
-            // Create the FULL line path using smooth cubic bezier curves
-            val linePath = Path().apply {
-                moveTo(points.first().x, points.first().y)
+        if (dataPoints.size >= 2) {
+            // Performance Optimization: Reuse Path instances with rewind() to avoid allocations.
+            linePath.rewind()
+            linePath.moveTo(xPoints[0], yPoints[0])
+
+            for (i in 1 until dataPoints.size) {
+                val prevX = xPoints[i - 1]
+                val prevY = yPoints[i - 1]
+                val currX = xPoints[i]
+                val currY = yPoints[i]
                 
-                for (i in 1 until points.size) {
-                    val prev = points[i - 1]
-                    val curr = points[i]
-                    val next = if (i < points.size - 1) points[i + 1] else curr
-                    val prevPrev = if (i > 1) points[i - 2] else prev
-                    
-                    // Calculate control points for smooth cubic bezier
-                    val tension = 0.3f
-                    
-                    // Control point 1: based on previous segment direction
-                    val cp1x = prev.x + (curr.x - prevPrev.x) * tension
-                    val cp1y = prev.y + (curr.y - prevPrev.y) * tension
-                    
-                    // Control point 2: based on next segment direction
-                    val cp2x = curr.x - (next.x - prev.x) * tension
-                    val cp2y = curr.y - (next.y - prev.y) * tension
-                    
-                    cubicTo(cp1x, cp1y, cp2x, cp2y, curr.x, curr.y)
-                }
+                val nextX = if (i < dataPoints.size - 1) xPoints[i + 1] else currX
+                val nextY = if (i < dataPoints.size - 1) yPoints[i + 1] else currY
+
+                val prevPrevX = if (i > 1) xPoints[i - 2] else prevX
+                val prevPrevY = if (i > 1) yPoints[i - 2] else prevY
+
+                val tension = 0.3f
+
+                // Smooth cubic bezier control points
+                val cp1x = prevX + (currX - prevPrevX) * tension
+                val cp1y = prevY + (currY - prevPrevY) * tension
+                val cp2x = currX - (nextX - prevX) * tension
+                val cp2y = currY - (nextY - prevY) * tension
+
+                linePath.cubicTo(cp1x, cp1y, cp2x, cp2y, currX, currY)
             }
             
-            // Create the fill path (closed shape below the line)
-            val fillPath = Path().apply {
-                addPath(linePath)
-                lineTo(points.last().x, chartHeight)
-                lineTo(points.first().x, chartHeight)
-                close()
-            }
+            fillPath.rewind()
+            fillPath.addPath(linePath)
+            fillPath.lineTo(xPoints[dataPoints.size - 1], chartHeight)
+            fillPath.lineTo(xPoints[0], chartHeight)
+            fillPath.close()
             
-            // Calculate the clip width based on animation progress
             val clipWidth = chartPadding + (canvasWidth - chartPadding) * animationProgress.value
             
-            // Use clipRect to smoothly reveal the chart from left to right
             clipRect(
                 left = 0f,
                 top = 0f,
                 right = clipWidth,
                 bottom = canvasHeight
             ) {
-                // Draw gradient fill
+                // Performance Optimization: Use pre-allocated Brush.
                 if (showGradientFill) {
                     drawPath(
                         path = fillPath,
-                        brush = Brush.verticalGradient(gradientColors)
+                        brush = fillBrush
                     )
                 }
                 
-                // Draw the line
                 drawPath(
                     path = linePath,
                     color = lineColor,
@@ -395,18 +408,19 @@ fun AnimatedLineChart(
                     )
                 )
                 
-                // Draw data points with fade-in effect
+                // Performance Optimization: Standard for loop instead of forEachIndexed.
                 if (showDataPoints) {
-                    points.forEachIndexed { index, point ->
-                        // Calculate when this point should appear
-                        val pointProgress = (index.toFloat() / (points.size - 1))
-                        if (animationProgress.value >= pointProgress) {
-                            // Fade in the point
-                            val pointAlpha = ((animationProgress.value - pointProgress) * 5f).coerceIn(0f, 1f)
+                    val animProgressValue = animationProgress.value
+                    for (i in 0 until dataPoints.size) {
+                        val pointProgress = (i.toFloat() / (dataPoints.size - 1))
+                        if (animProgressValue >= pointProgress) {
+                            val pointAlpha = ((animProgressValue - pointProgress) * 5f).coerceIn(0f, 1f)
+                            // Performance Optimization: Use alpha parameter instead of Color.copy().
                             drawCircle(
-                                color = lineColor.copy(alpha = pointAlpha),
+                                color = lineColor,
+                                alpha = pointAlpha,
                                 radius = dataPointRadius.toPx() * pointAlpha,
-                                center = point
+                                center = Offset(xPoints[i], yPoints[i])
                             )
                         }
                     }
@@ -440,10 +454,10 @@ fun AnimatedLineChart(
 fun SupplyChartCard(
     title: String,
     mainValue: String,
-    isDown: Boolean = true,
     dataPoints: List<LineChartDataPoint>,
     stats: List<ChartStatItem>,
     modifier: Modifier = Modifier,
+    isDown: Boolean = true,
     lineColor: Color = Color(0xFF26C6DA),
     cardBackground: Color = Color.White
 ) {
@@ -559,6 +573,7 @@ fun SupplyChartCard(
 
 @Composable
 fun AnimatedGraphsScreen(
+    modifier: Modifier = Modifier,
     onNavigateBack: () -> Unit = {}
 ) {
     Column(
