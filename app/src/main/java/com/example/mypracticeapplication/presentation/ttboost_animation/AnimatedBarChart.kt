@@ -30,14 +30,16 @@ import kotlin.math.sin
 @Composable
 fun AnimatedBarChart(
     barData: List<Float>,
-    entranceProgress: Float,
+    entranceProgress: () -> Float,
     barWidth: Dp,
     barSpacing: Dp,
     modifier: Modifier = Modifier
 ) {
     // Infinite transition for ambient breathing
     val infiniteTransition = rememberInfiniteTransition(label = "breathing")
-    val breathingPhase by infiniteTransition.animateFloat(
+    // Using State directly instead of 'by' to avoid recomposition when phase changes.
+    // The value will be read inside the Canvas draw block (deferred state read).
+    val breathingPhase = infiniteTransition.animateFloat(
         initialValue = 0f,
         targetValue = 2f * Math.PI.toFloat(),
         animationSpec = infiniteRepeatable(
@@ -50,18 +52,20 @@ fun AnimatedBarChart(
     Canvas(modifier = modifier.fillMaxSize()) {
         val barWidthPx = barWidth.toPx()
         val spacingPx = barSpacing.toPx()
+        val currentProgress = entranceProgress()
+        val currentPhase = breathingPhase.value
 
         barData.forEachIndexed { index, targetRelativeHeight ->
             // Calculate ambient offset using sine wave based on phase and index
-            val ambientOffset = if (entranceProgress > 0.95f) {
-                sin(breathingPhase + index * 0.5f) * 0.03f
+            val ambientOffset = if (currentProgress > 0.95f) {
+                sin(currentPhase + index * 0.5f) * 0.03f
             } else {
                 0f
             }
 
             // Combine heights: Target × Entrance + Ambient
             val finalRelativeHeight =
-                (targetRelativeHeight * entranceProgress + ambientOffset).coerceAtLeast(0.01f)
+                (targetRelativeHeight * currentProgress + ambientOffset).coerceAtLeast(0.01f)
 
             val barHeight = size.height * finalRelativeHeight
             val xOffset = index * (barWidthPx + spacingPx)
