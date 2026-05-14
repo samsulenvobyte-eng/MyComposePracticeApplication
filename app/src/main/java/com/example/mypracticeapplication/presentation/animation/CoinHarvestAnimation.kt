@@ -1,8 +1,5 @@
 ﻿package com.example.mypracticeapplication.presentation.animation
 
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -10,7 +7,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -21,9 +17,6 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.rotate
-import kotlin.math.PI
-import kotlin.math.cos
-import kotlin.math.sin
 import kotlin.random.Random
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -32,10 +25,9 @@ import kotlin.random.Random
 
 @Stable
 class CoinHarvestState {
-    // We use a list that can be updated. 
-    // For high performance particle systems, a custom data structure is better, 
-    // but for < 1000 items, a MutableList is fine in Compose if handled carefully.
-    private val _particles = mutableStateListOf<CoinParticle>()
+    // Use standard ArrayList to avoid SnapshotStateList overhead in high-frequency updates.
+    // We trigger redraws via the timeNanos state.
+    private val _particles = ArrayList<CoinParticle>()
     val particles: List<CoinParticle> get() = _particles
 
     var targetPosition by mutableStateOf(Offset.Zero)
@@ -50,10 +42,10 @@ class CoinHarvestState {
     fun harvest(startPosition: Offset, amount: Int = 10) {
         if (targetPosition == Offset.Zero) return // No target yet
 
-        val newParticles = List(amount) {
-            createParticle(startPosition, targetPosition)
+        // Use repeat instead of List(amount) to avoid temporary list allocation
+        repeat(amount) {
+            _particles.add(createParticle(startPosition, targetPosition))
         }
-        _particles.addAll(newParticles)
     }
 
     private fun createParticle(start: Offset, target: Offset): CoinParticle {
@@ -84,10 +76,13 @@ class CoinHarvestState {
         // Update Time State to trigger recomposition
         timeNanos = frameTimeNanos
         
-        // Remove finished particles
-        _particles.removeAll { particle ->
+        // Manual backward loop to avoid iterator allocation and efficiently remove items
+        for (i in _particles.size - 1 downTo 0) {
+            val particle = _particles[i]
             val elapsed = (frameTimeNanos - particle.startTime) / 1_000_000f // ms
-            elapsed >= particle.durationMs
+            if (elapsed >= particle.durationMs) {
+                _particles.removeAt(i)
+            }
         }
     }
     
@@ -95,10 +90,10 @@ class CoinHarvestState {
     fun spawn(start: Offset, amount: Int, currentTimeNanos: Long) {
          if (targetPosition == Offset.Zero) return
 
-        val newParticles = List(amount) {
-            createParticle(start, targetPosition).copy(startTime = currentTimeNanos)
+        // Use repeat instead of List(amount) to avoid temporary list allocation
+        repeat(amount) {
+            _particles.add(createParticle(start, targetPosition).copy(startTime = currentTimeNanos))
         }
-        _particles.addAll(newParticles)
     }
 }
 
@@ -155,8 +150,11 @@ private fun CoinHarvestOverlay(state: CoinHarvestState) {
     Canvas(modifier = Modifier.fillMaxSize()) {
         // Read State Time to ensure we redraw every frame!
         val currentTime = state.timeNanos
+        val particles = state.particles
         
-        state.particles.forEach { particle ->
+        // Manual indexed loop to avoid iterator allocation in high-frequency draw block
+        for (i in 0 until particles.size) {
+            val particle = particles[i]
 
             // Calculate progress
             // Note: In a real app we'd pass the frame time from LaunchedEffect to Canvas 
@@ -223,9 +221,10 @@ private fun DrawScope.drawCoin(center: Offset, scale: Float) {
     
     // Detail
     drawRect(
-        color = Color(0xFFC5A000).copy(alpha = 0.5f),
+        color = Color(0xFFC5A000),
         topLeft = Offset(center.x - radius * 0.2f, center.y - radius * 0.5f),
-        size = Size(radius * 0.4f, radius * 1f)
+        size = Size(radius * 0.4f, radius * 1f),
+        alpha = 0.5f
     )
 }
 
