@@ -9,6 +9,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
@@ -19,18 +20,24 @@ import androidx.compose.ui.unit.Dp
 import kotlin.math.sin
 
 /**
+ * Wrapper for bar data to ensure stability in Compose.
+ */
+@Immutable
+data class BarData(val values: List<Float>)
+
+/**
  * Animated bar chart with entrance animation and ambient breathing effect.
  * 
  * @param barData List of relative bar heights (0.0 to 1.0)
- * @param entranceProgress Animation progress for bar entrance (0.0 to 1.0)
+ * @param entranceProgress Animation progress provider for bar entrance (0.0 to 1.0)
  * @param barWidth Width of each bar
  * @param barSpacing Spacing between bars
  * @param modifier Modifier for the canvas
  */
 @Composable
 fun AnimatedBarChart(
-    barData: List<Float>,
-    entranceProgress: Float,
+    barData: BarData,
+    entranceProgress: () -> Float,
     barWidth: Dp,
     barSpacing: Dp,
     modifier: Modifier = Modifier
@@ -50,10 +57,15 @@ fun AnimatedBarChart(
     Canvas(modifier = modifier.fillMaxSize()) {
         val barWidthPx = barWidth.toPx()
         val spacingPx = barSpacing.toPx()
+        val currentProgress = entranceProgress()
+        val values = barData.values
 
-        barData.forEachIndexed { index, targetRelativeHeight ->
+        // Use manual for loop to avoid iterator allocation in high-frequency draw block
+        for (index in values.indices) {
+            val targetRelativeHeight = values[index]
+
             // Calculate ambient offset using sine wave based on phase and index
-            val ambientOffset = if (entranceProgress > 0.95f) {
+            val ambientOffset = if (currentProgress > 0.95f) {
                 sin(breathingPhase + index * 0.5f) * 0.03f
             } else {
                 0f
@@ -61,7 +73,7 @@ fun AnimatedBarChart(
 
             // Combine heights: Target × Entrance + Ambient
             val finalRelativeHeight =
-                (targetRelativeHeight * entranceProgress + ambientOffset).coerceAtLeast(0.01f)
+                (targetRelativeHeight * currentProgress + ambientOffset).coerceAtLeast(0.01f)
 
             val barHeight = size.height * finalRelativeHeight
             val xOffset = index * (barWidthPx + spacingPx)
