@@ -53,6 +53,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import java.util.Locale
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -118,7 +119,7 @@ fun AnimatedDonutChart(
             val displayValue = if (segment.value == segment.value.toLong().toFloat()) {
                 segment.value.toLong().toString()
             } else {
-                String.format("%.1f", segment.value)
+                "%.1f".format(Locale.US, segment.value)
             }
             textMeasurer.measure(text = displayValue, style = labelTextStyle)
         }
@@ -308,83 +309,89 @@ fun AnimatedLineChart(
             } else null
         }
     }
-    
+
+    // Bolt Optimization: Pre-allocate Paths and FloatArrays to avoid per-frame allocations
+    val linePath = remember { Path() }
+    val fillPath = remember { Path() }
+    val pointsX = remember(dataPoints.size) { FloatArray(dataPoints.size) }
+    val pointsY = remember(dataPoints.size) { FloatArray(dataPoints.size) }
+
     Canvas(modifier = modifier) {
+        // Bolt Optimization: Cache animation states into local variables to avoid redundant property access
+        val progress = animationProgress.value
+        val bounce = verticalBounce.value
+
         val canvasWidth = size.width
         val canvasHeight = size.height
         val labelHeight = if (showLabels) 30.dp.toPx() else 0f
         val chartHeight = canvasHeight - labelHeight
         val chartPadding = 16.dp.toPx()
-        
+
         val pointSpacing = (canvasWidth - chartPadding * 2) / (dataPoints.size - 1).coerceAtLeast(1)
-        
-        // Calculate all points with vertical bounce applied
-        val baselineY = chartHeight / 2 // Center point for bounce reference
-        val points = dataPoints.mapIndexed { index, dataPoint ->
-            val x = chartPadding + index * pointSpacing
+
+        // Bolt Optimization: Use manual indexed loop for point calculations
+        val baselineY = chartHeight / 2
+        for (i in 0 until dataPoints.size) {
+            val dataPoint = dataPoints[i]
+            val x = chartPadding + i * pointSpacing
             val normalizedValue = (dataPoint.value - minValue) / valueRange
             val rawY = chartHeight - (normalizedValue * (chartHeight - chartPadding * 2)) - chartPadding
-            
-            // Apply vertical bounce: points bounce from below
+
+            // Apply vertical bounce
             val distanceFromBaseline = rawY - baselineY
-            val bouncedY = baselineY + (distanceFromBaseline * verticalBounce.value)
-            
-            Offset(x, bouncedY)
+            val bouncedY = baselineY + (distanceFromBaseline * bounce)
+
+            pointsX[i] = x
+            pointsY[i] = bouncedY
         }
-        
-        if (points.size >= 2) {
-            // Create the FULL line path using smooth cubic bezier curves
-            val linePath = Path().apply {
-                moveTo(points.first().x, points.first().y)
-                
-                for (i in 1 until points.size) {
-                    val prev = points[i - 1]
-                    val curr = points[i]
-                    val next = if (i < points.size - 1) points[i + 1] else curr
-                    val prevPrev = if (i > 1) points[i - 2] else prev
-                    
-                    // Calculate control points for smooth cubic bezier
-                    val tension = 0.3f
-                    
-                    // Control point 1: based on previous segment direction
-                    val cp1x = prev.x + (curr.x - prevPrev.x) * tension
-                    val cp1y = prev.y + (curr.y - prevPrev.y) * tension
-                    
-                    // Control point 2: based on next segment direction
-                    val cp2x = curr.x - (next.x - prev.x) * tension
-                    val cp2y = curr.y - (next.y - prev.y) * tension
-                    
-                    cubicTo(cp1x, cp1y, cp2x, cp2y, curr.x, curr.y)
-                }
+
+        if (dataPoints.size >= 2) {
+            // Bolt Optimization: Reuse Path objects with .reset() to avoid per-frame allocations
+            linePath.reset()
+            linePath.moveTo(pointsX[0], pointsY[0])
+
+            for (i in 1 until dataPoints.size) {
+                val prevX = pointsX[i - 1]
+                val prevY = pointsY[i - 1]
+                val currX = pointsX[i]
+                val currY = pointsY[i]
+
+                val nextX = if (i < dataPoints.size - 1) pointsX[i + 1] else currX
+                val nextY = if (i < dataPoints.size - 1) pointsY[i + 1] else currY
+
+                val prevPrevX = if (i > 1) pointsX[i - 2] else prevX
+                val prevPrevY = if (i > 1) pointsY[i - 2] else prevY
+
+                val tension = 0.3f
+                val cp1x = prevX + (currX - prevPrevX) * tension
+                val cp1y = prevY + (currY - prevPrevY) * tension
+                val cp2x = currX - (nextX - prevX) * tension
+                val cp2y = currY - (nextY - prevY) * tension
+
+                linePath.cubicTo(cp1x, cp1y, cp2x, cp2y, currX, currY)
             }
-            
-            // Create the fill path (closed shape below the line)
-            val fillPath = Path().apply {
-                addPath(linePath)
-                lineTo(points.last().x, chartHeight)
-                lineTo(points.first().x, chartHeight)
-                close()
-            }
-            
-            // Calculate the clip width based on animation progress
-            val clipWidth = chartPadding + (canvasWidth - chartPadding) * animationProgress.value
-            
-            // Use clipRect to smoothly reveal the chart from left to right
+
+            fillPath.reset()
+            fillPath.addPath(linePath)
+            fillPath.lineTo(pointsX[dataPoints.size - 1], chartHeight)
+            fillPath.lineTo(pointsX[0], chartHeight)
+            fillPath.close()
+
+            val clipWidth = chartPadding + (canvasWidth - chartPadding) * progress
+
             clipRect(
                 left = 0f,
                 top = 0f,
                 right = clipWidth,
                 bottom = canvasHeight
             ) {
-                // Draw gradient fill
                 if (showGradientFill) {
                     drawPath(
                         path = fillPath,
                         brush = Brush.verticalGradient(gradientColors)
                     )
                 }
-                
-                // Draw the line
+
                 drawPath(
                     path = linePath,
                     color = lineColor,
@@ -394,32 +401,32 @@ fun AnimatedLineChart(
                         join = StrokeJoin.Round
                     )
                 )
-                
-                // Draw data points with fade-in effect
+
                 if (showDataPoints) {
-                    points.forEachIndexed { index, point ->
-                        // Calculate when this point should appear
-                        val pointProgress = (index.toFloat() / (points.size - 1))
-                        if (animationProgress.value >= pointProgress) {
-                            // Fade in the point
-                            val pointAlpha = ((animationProgress.value - pointProgress) * 5f).coerceIn(0f, 1f)
+                    // Bolt Optimization: Manual indexed loop and alpha parameter usage
+                    val pointRadiusPx = dataPointRadius.toPx()
+                    for (i in 0 until dataPoints.size) {
+                        val pointProgress = (i.toFloat() / (dataPoints.size - 1))
+                        if (progress >= pointProgress) {
+                            val pointAlpha = ((progress - pointProgress) * 5f).coerceIn(0f, 1f)
                             drawCircle(
-                                color = lineColor.copy(alpha = pointAlpha),
-                                radius = dataPointRadius.toPx() * pointAlpha,
-                                center = point
+                                color = lineColor,
+                                alpha = pointAlpha,
+                                radius = pointRadiusPx * pointAlpha,
+                                center = Offset(pointsX[i], pointsY[i])
                             )
                         }
                     }
                 }
             }
         }
-        
-        // Draw x-axis labels (outside clip rect so they're always visible)
+
         if (showLabels) {
-            dataPoints.forEachIndexed { index, dataPoint ->
-                val textLayoutResult = labelLayoutResults[index]
+            // Bolt Optimization: Manual indexed loop for label drawing
+            for (i in 0 until dataPoints.size) {
+                val textLayoutResult = labelLayoutResults[i]
                 if (textLayoutResult != null) {
-                    val x = chartPadding + index * pointSpacing
+                    val x = pointsX[i]
                     drawText(
                         textLayoutResult = textLayoutResult,
                         topLeft = Offset(
@@ -440,10 +447,10 @@ fun AnimatedLineChart(
 fun SupplyChartCard(
     title: String,
     mainValue: String,
-    isDown: Boolean = true,
     dataPoints: List<LineChartDataPoint>,
     stats: List<ChartStatItem>,
     modifier: Modifier = Modifier,
+    isDown: Boolean = true,
     lineColor: Color = Color(0xFF26C6DA),
     cardBackground: Color = Color.White
 ) {
@@ -559,10 +566,11 @@ fun SupplyChartCard(
 
 @Composable
 fun AnimatedGraphsScreen(
+    modifier: Modifier = Modifier,
     onNavigateBack: () -> Unit = {}
 ) {
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
@@ -613,7 +621,6 @@ fun AnimatedGraphsScreen(
             SupplyChartCard(
                 title = "Supply",
                 mainValue = "2928",
-                isDown = true,
                 dataPoints = listOf(
                     LineChartDataPoint(45f, "May"),
                     LineChartDataPoint(52f, "Jun"),
@@ -626,7 +633,8 @@ fun AnimatedGraphsScreen(
                     ChartStatItem("3852", "Warehouse"),
                     ChartStatItem("1420", "Transport"),
                     ChartStatItem("2864", "Retail")
-                )
+                ),
+                isDown = true
             )
             
             // Demo 2: Basic Donut Chart
@@ -738,10 +746,11 @@ fun AnimatedGraphsScreen(
 private fun DemoCard(
     title: String,
     subtitle: String,
+    modifier: Modifier = Modifier,
     content: @Composable () -> Unit
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
@@ -782,7 +791,6 @@ private fun SupplyChartCardPreview() {
     SupplyChartCard(
         title = "Supply",
         mainValue = "2928",
-        isDown = true,
         dataPoints = listOf(
             LineChartDataPoint(45f, "May"),
             LineChartDataPoint(52f, "Jun"),
@@ -796,7 +804,8 @@ private fun SupplyChartCardPreview() {
             ChartStatItem("1420", "Transport"),
             ChartStatItem("2864", "Retail")
         ),
-        modifier = Modifier.padding(16.dp)
+        modifier = Modifier.padding(16.dp),
+        isDown = true
     )
 }
 
