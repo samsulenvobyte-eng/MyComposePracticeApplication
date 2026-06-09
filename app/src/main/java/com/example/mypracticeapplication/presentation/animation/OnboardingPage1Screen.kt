@@ -61,6 +61,7 @@ private val BarGradient = listOf(BarTopColor, BarBottomColor)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OnboardingPage1Screen(
+    modifier: Modifier = Modifier,
     onNavigateBack: () -> Unit
 ) {
     Scaffold(
@@ -90,7 +91,7 @@ fun OnboardingPage1Screen(
         containerColor = DarkBackground
     ) { paddingValues ->
         Box(
-            modifier = Modifier
+            modifier = modifier
                 .fillMaxSize()
                 .padding(paddingValues)
                 .background(DarkBackground),
@@ -102,7 +103,9 @@ fun OnboardingPage1Screen(
 }
 
 @Composable
-fun AnimatedBarChart() {
+fun AnimatedBarChart(
+    modifier: Modifier = Modifier
+) {
     // Data definition: Relative heights [0.0 - 1.0]
     val barData = remember { listOf(0.4f, 0.55f, 0.65f, 0.85f, 0.95f) }
     
@@ -191,7 +194,10 @@ fun AnimatedBarChart() {
         }
     }
 
-    Box(){
+    val isOverlayVisible = remember { androidx.compose.runtime.derivedStateOf { overlayVisible.value > 0f } }
+    val pathBuffer = remember { androidx.compose.ui.graphics.Path() }
+
+    Box(modifier = modifier){
 
         Canvas(
             modifier = Modifier
@@ -207,7 +213,8 @@ fun AnimatedBarChart() {
             val barWidth = (availableWidth - (spacing * (barCount - 1))) / barCount
 
             // Draw Bars
-            barData.forEachIndexed { index, targetRelativeHeight ->
+            for (index in barData.indices) {
+                val targetRelativeHeight = barData[index]
                 val entranceProgress = mainProgress.value
 
                 // Calculate ambient offset using sine wave based on time (phase) and index
@@ -239,9 +246,9 @@ fun AnimatedBarChart() {
             }
 
             // Draw Overlays
-            if (overlayVisible.value > 0f) {
-                overlays.forEach { overlay ->
-                    val image = images[overlay.res] ?: return@forEach
+            if (isOverlayVisible.value) {
+                for (overlay in overlays) {
+                    val image = images[overlay.res] ?: continue
 
                     val barCenterX = (overlay.xIndex * (barWidth + spacing)) + (barWidth / 2)
                     val centerY = size.height - (size.height * overlay.yPercent)
@@ -250,15 +257,14 @@ fun AnimatedBarChart() {
                     when (overlay) {
                         is ChartOverlay.Circle -> {
                             val radiusPx = overlay.radius.toPx() * scale
-                            val path = androidx.compose.ui.graphics.Path().apply {
-                                addOval(
-                                    androidx.compose.ui.geometry.Rect(
-                                        center = Offset(barCenterX, centerY),
-                                        radius = radiusPx
-                                    )
+                            pathBuffer.rewind()
+                            pathBuffer.addOval(
+                                androidx.compose.ui.geometry.Rect(
+                                    center = Offset(barCenterX, centerY),
+                                    radius = radiusPx
                                 )
-                            }
-                            clipPath(path) {
+                            )
+                            clipPath(pathBuffer) {
                                 val dstWidth = radiusPx * 2
                                 val dstHeight = radiusPx * 2
                                 val imgWidth = image.width.toFloat()
@@ -280,15 +286,14 @@ fun AnimatedBarChart() {
                             val widthPx = overlay.width.toPx() * scale
                             val heightPx = overlay.height.toPx() * scale
                             val topLeft = Offset(barCenterX - widthPx / 2, centerY - heightPx / 2)
-                            val path = androidx.compose.ui.graphics.Path().apply {
-                                addRoundRect(
-                                    androidx.compose.ui.geometry.RoundRect(
-                                        rect = androidx.compose.ui.geometry.Rect(topLeft, Size(widthPx, heightPx)),
-                                        cornerRadius = CornerRadius(widthPx / 2, widthPx / 2)
-                                    )
+                            pathBuffer.rewind()
+                            pathBuffer.addRoundRect(
+                                androidx.compose.ui.geometry.RoundRect(
+                                    rect = androidx.compose.ui.geometry.Rect(topLeft, Size(widthPx, heightPx)),
+                                    cornerRadius = CornerRadius(widthPx / 2, widthPx / 2)
                                 )
-                            }
-                            clipPath(path) {
+                            )
+                            clipPath(pathBuffer) {
                                 val dstWidth = widthPx
                                 val dstHeight = heightPx
                                 val imgWidth = image.width.toFloat()
@@ -321,7 +326,7 @@ fun AnimatedBarChart() {
                      alpha = bubblesVisible.value
                 },
             icon = Icons.Default.Favorite,
-            count = (100 * mainProgress.value).toInt(),
+            count = { (100 * mainProgress.value).toInt() },
             color = Color(0xFFE84E66),
             shadowColor = Color(0xFFA62C41)
         )
@@ -337,7 +342,7 @@ fun AnimatedBarChart() {
                      alpha = bubblesVisible.value
                 },
             icon = Icons.Default.Person,
-            count = (250 * mainProgress.value).toInt(), // Different scale example
+            count = { (250 * mainProgress.value).toInt() }, // Different scale example
             color = Color(0xFF2DB3F9),
             shadowColor = Color(0xFFA62C41)
         )

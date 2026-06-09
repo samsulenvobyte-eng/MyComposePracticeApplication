@@ -60,7 +60,10 @@ sealed class ChartOverlay(
  * Handles Circle, Pill, and ProfileCard variants with appropriate shapes.
  */
 @Composable
-fun OverlayRenderer(overlay: ChartOverlay) {
+fun OverlayRenderer(
+    overlay: ChartOverlay,
+    modifier: Modifier = Modifier
+) {
     val painter = painterResource(id = overlay.res)
 
     when (overlay) {
@@ -69,7 +72,7 @@ fun OverlayRenderer(overlay: ChartOverlay) {
                 painter = painter,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
-                modifier = Modifier
+                modifier = modifier
                     .offset(x = -overlay.radius, y = -overlay.radius)
                     .size(overlay.radius * 2)
                     .clip(CircleShape)
@@ -81,7 +84,7 @@ fun OverlayRenderer(overlay: ChartOverlay) {
                 painter = painter,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
-                modifier = Modifier
+                modifier = modifier
                     .offset(x = -overlay.width / 2, y = -overlay.height / 2)
                     .size(overlay.width, overlay.height)
                     .clip(RoundedCornerShape(percent = 50))
@@ -93,7 +96,7 @@ fun OverlayRenderer(overlay: ChartOverlay) {
                 painter = painter,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
-                modifier = Modifier
+                modifier = modifier
                     .offset(x = -overlay.width / 2, y = -overlay.height / 2)
                     .size(overlay.width, overlay.height)
                     .clip(RoundedCornerShape(16.dp))

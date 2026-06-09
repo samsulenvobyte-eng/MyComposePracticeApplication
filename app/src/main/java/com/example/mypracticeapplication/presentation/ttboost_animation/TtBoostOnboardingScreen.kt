@@ -45,9 +45,11 @@ import kotlinx.coroutines.delay
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TtBoostOnboardingScreen(
+    modifier: Modifier = Modifier,
     onNavigateBack: () -> Unit
 ) {
     Scaffold(
+        modifier = modifier,
         topBar = {
             TopAppBar(
                 title = {
@@ -162,16 +164,15 @@ private fun TtBoostContent() {
         // Animated Bar Chart
         AnimatedBarChart(
             barData = barData,
-            entranceProgress = mainProgress.value,
+            entranceProgress = { mainProgress.value },
             barWidth = barWidth,
             barSpacing = spacing,
             modifier = Modifier.fillMaxSize()
         )
 
         // Draw Overlays
-        if (overlayVisible.value > 0f) {
-            val scale = overlayVisible.value
-
+        val isOverlayVisible = remember { androidx.compose.runtime.derivedStateOf { overlayVisible.value > 0f } }
+        if (isOverlayVisible.value) {
             overlays.forEach { overlay ->
                 // Calculate position
                 val barCenterX =
@@ -185,6 +186,7 @@ private fun TtBoostContent() {
                         .align(Alignment.TopStart)
                         .offset(x = barCenterX.dp, y = centerY.dp)
                         .graphicsLayer {
+                            val scale = overlayVisible.value
                             scaleX = scale
                             scaleY = scale
                             alpha = scale
@@ -208,7 +210,7 @@ private fun TtBoostContent() {
                     alpha = bubblesVisible.value
                 },
             icon = Icons.Default.Favorite,
-            count = (100 * mainProgress.value).toInt(),
+            count = { (100 * mainProgress.value).toInt() },
             color = TtBoostTheme.Bubble.HeartColor,
             shadowColor = TtBoostTheme.Bubble.HeartShadow
         )
@@ -225,7 +227,7 @@ private fun TtBoostContent() {
                     alpha = bubblesVisible.value
                 },
             icon = Icons.Default.Person,
-            count = (250 * mainProgress.value).toInt(),
+            count = { (250 * mainProgress.value).toInt() },
             color = TtBoostTheme.Bubble.PersonColor,
             shadowColor = TtBoostTheme.Bubble.PersonShadow
         )
