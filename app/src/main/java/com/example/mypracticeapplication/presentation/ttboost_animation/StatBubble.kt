@@ -74,17 +74,17 @@ private fun createBubbleShape(): GenericShape {
 /**
  * A 3D rotating stat bubble with an icon and animated counter.
  * 
+ * @param modifier Modifier for positioning and styling
  * @param icon The icon to display
- * @param count The current count value
+ * @param countProvider Lambda providing the current count value
  * @param color The bubble background color
  * @param shadowColor The shadow/depth color (currently unused but kept for API compatibility)
- * @param modifier Modifier for positioning and styling
  * @param onClick Optional callback when bubble is clicked
  */
 @Composable
 fun StatBubble(
     icon: ImageVector,
-    count: Int,
+    countProvider: () -> Int,
     color: Color,
     shadowColor: Color,
     modifier: Modifier = Modifier,
@@ -149,7 +149,7 @@ fun StatBubble(
                     Spacer(modifier = Modifier.width(8.dp))
 
                     AnimatedContent(
-                        targetState = count,
+                        targetState = countProvider(),
                         transitionSpec = {
                             if (targetState > initialState) {
                                 (slideInVertically { height -> height } + fadeIn()).togetherWith(
