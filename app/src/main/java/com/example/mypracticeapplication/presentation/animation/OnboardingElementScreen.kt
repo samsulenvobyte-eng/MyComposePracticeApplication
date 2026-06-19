@@ -96,17 +96,22 @@ fun HeartBubble3D() {
     
     DynamicStatBubble(
         icon = Icons.Default.Favorite,
-        count = count,
+        count = { count },
         color = Color(0xFFE84E66),
         shadowColor = Color(0xFFA62C41),
         onCountChange = { count++ }
     )
 }
 
+/**
+ * A 3D rotating stat bubble with an icon and animated counter.
+ * Using a lambda for [count] ensures that animation state reads are deferred,
+ * preventing parent screen recomposition on every frame.
+ */
 @Composable
 fun DynamicStatBubble(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
-    count: Int,
+    count: () -> Int,
     color: Color,
     shadowColor: Color,
     modifier: Modifier = Modifier,
@@ -180,7 +185,7 @@ fun DynamicStatBubble(
                 Spacer(modifier = Modifier.width(8.dp))
                 
                 AnimatedContent(
-                    targetState = count,
+                    targetState = count(),
                     transitionSpec = {
                         if (targetState > initialState) {
                             (slideInVertically { height -> height } + fadeIn()).togetherWith(
