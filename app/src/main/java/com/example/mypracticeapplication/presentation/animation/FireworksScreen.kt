@@ -34,6 +34,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
@@ -41,7 +42,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import kotlin.math.cos
-import kotlin.math.pow
 import kotlin.math.sin
 import kotlin.random.Random
 
@@ -63,6 +63,8 @@ private val FireworkColors = listOf(
 private data class BurstParticle(
     val id: Int,
     val angle: Float, // Direction in radians
+    val cosAngle: Float,
+    val sinAngle: Float,
     val speed: Float,
     val color: Color,
     val size: Float,
@@ -78,12 +80,16 @@ private data class Firework(
     val color: Color,
     val explosionDelay: Float, // When it explodes (0-1)
     val particleCount: Int,
-    val trailLength: Int
+    val trailLength: Int,
+    val sparks: List<FireworkSpark> = emptyList(),
+    val trailPath: Path = Path()
 )
 
 // Firework spark particle
 private data class FireworkSpark(
     val angle: Float,
+    val cosAngle: Float,
+    val sinAngle: Float,
     val speed: Float,
     val color: Color,
     val size: Float,
@@ -92,6 +98,7 @@ private data class FireworkSpark(
 
 @Composable
 fun FireworksScreen(
+    modifier: Modifier = Modifier,
     onNavigateBack: () -> Unit = {}
 ) {
     var isPlaying by remember { mutableStateOf(false) }
@@ -118,12 +125,15 @@ fun FireworksScreen(
     }
     
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
         // Header
-        FireworksHeader(onNavigateBack = onNavigateBack)
+        FireworksHeader(
+            onNavigateBack = onNavigateBack,
+            modifier = Modifier.fillMaxWidth()
+        )
         
         // Content
         Box(
@@ -146,21 +156,30 @@ fun FireworksScreen(
                     )
             )
             
-            // Stars background
-            Canvas(modifier = Modifier.fillMaxSize()) {
-                val starCount = 50
-                val random = Random(42) // Fixed seed for consistent stars
-                repeat(starCount) {
-                    val x = random.nextFloat() * size.width
-                    val y = random.nextFloat() * size.height * 0.7f
-                    val starSize = random.nextFloat() * 2 + 1
-                    drawCircle(
-                        color = Color.White.copy(alpha = random.nextFloat() * 0.5f + 0.3f),
-                        radius = starSize,
-                        center = Offset(x, y)
-                    )
-                }
-            }
+            // Stars background - Cached
+            Spacer(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .drawWithCache {
+                        val starCount = 50
+                        val random = Random(42) // Fixed seed for consistent stars
+                        val xRatios = FloatArray(starCount) { random.nextFloat() }
+                        val yRatios = FloatArray(starCount) { random.nextFloat() * 0.7f }
+                        val starSizes = FloatArray(starCount) { random.nextFloat() * 2 + 1 }
+                        val alphas = FloatArray(starCount) { random.nextFloat() * 0.5f + 0.3f }
+
+                        onDrawBehind {
+                            for (i in 0 until starCount) {
+                                drawCircle(
+                                    color = Color.White,
+                                    alpha = alphas[i],
+                                    radius = starSizes[i],
+                                    center = Offset(xRatios[i] * size.width, yRatios[i] * size.height)
+                                )
+                            }
+                        }
+                    }
+            )
             
             // Fireworks and Burst Animation
             if (isPlaying) {
@@ -174,66 +193,71 @@ fun FireworksScreen(
                     // ═══════════════════════════════════════════════════════════
                     if (progress < 0.7f) {
                         val burstProgress = (progress / 0.7f).coerceIn(0f, 1f)
-                        
-                        burstParticles.forEach { particle ->
-                            val distance = particle.speed * burstProgress * 400 * 
-                                (1 - burstProgress * particle.decay * 0.5f)
-                            
-                            val gravity = burstProgress.pow(2) * 200
-                            
-                            val x = centerX + cos(particle.angle) * distance
-                            val y = centerY + sin(particle.angle) * distance + gravity
-                            
-                            val alpha = (1f - burstProgress * 0.8f).coerceIn(0f, 1f)
-                            val currentSize = particle.size * (1 - burstProgress * 0.3f)
-                            
+                        val burstProgressSq = burstProgress * burstProgress
+                        val gravity = burstProgressSq * 200
+                        val alpha = (1f - burstProgress * 0.8f).coerceIn(0f, 1f)
+                        val sizeMultiplier = (1 - burstProgress * 0.3f)
+
+                        for (i in burstParticles.indices) {
+                            val particle = burstParticles[i]
+                            val distance = particle.speed * burstProgress * 400 *
+                                    (1f - burstProgress * particle.decay * 0.5f)
+
+                            val x = centerX + particle.cosAngle * distance
+                            val y = centerY + particle.sinAngle * distance + gravity
+
+                            val currentSize = particle.size * sizeMultiplier
+
                             // Draw particle
                             drawCircle(
-                                color = particle.color.copy(alpha = alpha),
+                                color = particle.color,
+                                alpha = alpha,
                                 radius = currentSize,
                                 center = Offset(x, y)
                             )
-                            
+
                             // Sparkle trail
                             if (burstProgress < 0.5f) {
-                                val trailX = centerX + cos(particle.angle) * distance * 0.8f
-                                val trailY = centerY + sin(particle.angle) * distance * 0.8f + gravity * 0.6f
+                                val trailX = centerX + particle.cosAngle * distance * 0.8f
+                                val trailY = centerY + particle.sinAngle * distance * 0.8f + gravity * 0.6f
                                 drawCircle(
-                                    color = Color.White.copy(alpha = alpha * 0.5f),
+                                    color = Color.White,
+                                    alpha = alpha * 0.5f,
                                     radius = currentSize * 0.5f,
                                     center = Offset(trailX, trailY)
                                 )
                             }
                         }
                     }
-                    
+
                     // ═══════════════════════════════════════════════════════════
                     // FIREWORKS
                     // ═══════════════════════════════════════════════════════════
-                    fireworks.forEach { firework ->
+                    for (f in fireworks.indices) {
+                        val firework = fireworks[f]
                         val fireworkProgress = progress
-                        
+
                         // Launch phase
                         if (fireworkProgress < firework.explosionDelay) {
                             val launchProgress = fireworkProgress / firework.explosionDelay
                             val startY = size.height + 50
                             val currentY = startY - (startY - firework.targetY) * launchProgress
-                            
+
                             // Draw rocket trail
-                            val trailPath = Path().apply {
-                                moveTo(firework.startX, currentY)
-                                for (i in 1..firework.trailLength) {
-                                    val trailY = currentY + i * 8f
-                                    val wobble = sin(i * 0.5f + fireworkProgress * 20) * 3
-                                    lineTo(firework.startX + wobble, trailY)
-                                }
+                            firework.trailPath.reset()
+                            firework.trailPath.moveTo(firework.startX, currentY)
+                            for (i in 1..firework.trailLength) {
+                                val trailY = currentY + i * 8f
+                                val wobble = sin(i * 0.5f + fireworkProgress * 20) * 3
+                                firework.trailPath.lineTo(firework.startX + wobble, trailY)
                             }
                             drawPath(
-                                path = trailPath,
-                                color = firework.color.copy(alpha = 0.8f),
+                                path = firework.trailPath,
+                                color = firework.color,
+                                alpha = 0.8f,
                                 style = Stroke(width = 3f)
                             )
-                            
+
                             // Draw rocket head
                             drawCircle(
                                 color = Color.White,
@@ -243,56 +267,51 @@ fun FireworksScreen(
                         }
                         // Explosion phase
                         else {
-                            val explosionProgress = ((fireworkProgress - firework.explosionDelay) / 
-                                (1f - firework.explosionDelay)).coerceIn(0f, 1f)
-                            
-                            // Generate sparks for this firework
-                            val sparks = List(firework.particleCount) { i ->
-                                FireworkSpark(
-                                    angle = (i.toFloat() / firework.particleCount) * 2 * Math.PI.toFloat() +
-                                        Random(firework.id * 100 + i).nextFloat() * 0.3f,
-                                    speed = 0.5f + Random(firework.id * 100 + i + 50).nextFloat() * 0.8f,
-                                    color = if (Random(firework.id * 100 + i + 100).nextFloat() > 0.7f) 
-                                        Color.White else firework.color,
-                                    size = 2f + Random(firework.id * 100 + i + 150).nextFloat() * 4f,
-                                    sparkle = Random(firework.id * 100 + i + 200).nextFloat() > 0.5f
-                                )
-                            }
-                            
-                            sparks.forEach { spark ->
-                                val distance = spark.speed * explosionProgress * 150
-                                val gravity = explosionProgress.pow(2) * 100
-                                
-                                val sparkX = firework.startX + cos(spark.angle) * distance
-                                val sparkY = firework.targetY + sin(spark.angle) * distance + gravity
-                                
-                                val alpha = (1f - explosionProgress).coerceIn(0f, 1f)
+                            val explosionProgress = ((fireworkProgress - firework.explosionDelay) /
+                                    (1f - firework.explosionDelay)).coerceIn(0f, 1f)
+                            val explosionProgressSq = explosionProgress * explosionProgress
+
+                            val distanceBase = explosionProgress * 150
+                            val gravity = explosionProgressSq * 100
+                            val alpha = (1f - explosionProgress).coerceIn(0f, 1f)
+                            val sizeMultiplier = (1 - explosionProgress * 0.5f)
+
+                            for (s in firework.sparks.indices) {
+                                val spark = firework.sparks[s]
+                                val distance = spark.speed * distanceBase
+
+                                val sparkX = firework.startX + spark.cosAngle * distance
+                                val sparkY = firework.targetY + spark.sinAngle * distance + gravity
+
                                 val sparkleAlpha = if (spark.sparkle) {
                                     alpha * (0.5f + sin(explosionProgress * 20) * 0.5f).coerceIn(0f, 1f)
                                 } else alpha
-                                
+
                                 // Draw spark
                                 drawCircle(
-                                    color = spark.color.copy(alpha = sparkleAlpha),
-                                    radius = spark.size * (1 - explosionProgress * 0.5f),
+                                    color = spark.color,
+                                    alpha = sparkleAlpha,
+                                    radius = spark.size * sizeMultiplier,
                                     center = Offset(sparkX, sparkY)
                                 )
-                                
+
                                 // Trailing glow
                                 if (explosionProgress < 0.6f) {
                                     drawCircle(
-                                        color = spark.color.copy(alpha = sparkleAlpha * 0.3f),
+                                        color = spark.color,
+                                        alpha = sparkleAlpha * 0.3f,
                                         radius = spark.size * 2,
                                         center = Offset(sparkX, sparkY)
                                     )
                                 }
                             }
-                            
+
                             // Central flash at explosion start
                             if (explosionProgress < 0.15f) {
                                 val flashAlpha = (1f - explosionProgress / 0.15f)
                                 drawCircle(
-                                    color = Color.White.copy(alpha = flashAlpha * 0.8f),
+                                    color = Color.White,
+                                    alpha = flashAlpha * 0.8f,
                                     radius = 30f * (1 + explosionProgress * 2),
                                     center = Offset(firework.startX, firework.targetY)
                                 )
@@ -356,9 +375,12 @@ fun FireworksScreen(
 }
 
 @Composable
-private fun FireworksHeader(onNavigateBack: () -> Unit) {
+private fun FireworksHeader(
+    modifier: Modifier = Modifier,
+    onNavigateBack: () -> Unit = {}
+) {
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .background(
                 Brush.horizontalGradient(
@@ -396,9 +418,12 @@ private fun FireworksHeader(onNavigateBack: () -> Unit) {
 
 private fun generateBurstParticles(count: Int): List<BurstParticle> {
     return List(count) { index ->
+        val angle = Random.nextFloat() * 2 * Math.PI.toFloat()
         BurstParticle(
             id = index,
-            angle = Random.nextFloat() * 2 * Math.PI.toFloat(),
+            angle = angle,
+            cosAngle = cos(angle),
+            sinAngle = sin(angle),
             speed = Random.nextFloat() * 0.8f + 0.4f,
             color = FireworkColors.random(),
             size = Random.nextFloat() * 8 + 4,
@@ -410,14 +435,35 @@ private fun generateBurstParticles(count: Int): List<BurstParticle> {
 
 private fun generateFireworks(count: Int): List<Firework> {
     return List(count) { index ->
+        val color = FireworkColors.random()
+        val particleCount = Random.nextInt(30, 60)
+        val fireworkId = index
+
+        val sparks = List(particleCount) { i ->
+            val angle = (i.toFloat() / particleCount) * 2 * Math.PI.toFloat() +
+                    Random(fireworkId * 100 + i).nextFloat() * 0.3f
+            FireworkSpark(
+                angle = angle,
+                cosAngle = cos(angle),
+                sinAngle = sin(angle),
+                speed = 0.5f + Random(fireworkId * 100 + i + 50).nextFloat() * 0.8f,
+                color = if (Random(fireworkId * 100 + i + 100).nextFloat() > 0.7f)
+                    Color.White else color,
+                size = 2f + Random(fireworkId * 100 + i + 150).nextFloat() * 4f,
+                sparkle = Random(fireworkId * 100 + i + 200).nextFloat() > 0.5f
+            )
+        }
+
         Firework(
-            id = index,
+            id = fireworkId,
             startX = Random.nextFloat() * 800 + 100,
             targetY = Random.nextFloat() * 300 + 150,
-            color = FireworkColors.random(),
+            color = color,
             explosionDelay = 0.15f + index * 0.15f, // Stagger explosions
-            particleCount = Random.nextInt(30, 60),
-            trailLength = Random.nextInt(8, 15)
+            particleCount = particleCount,
+            trailLength = Random.nextInt(8, 15),
+            sparks = sparks,
+            trailPath = Path()
         )
     }
 }
