@@ -10,7 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -26,22 +26,26 @@ import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.random.Random
 
+private val GoldColor = Color(0xFFFFD700)
+private val LightGoldColor = Color(0xFFFFE57C)
+private val DetailColor = Color(0xFFC5A000)
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // STATE MANAGEMENT
 // ═══════════════════════════════════════════════════════════════════════════════
 
 @Stable
 class CoinHarvestState {
-    // We use a list that can be updated. 
-    // For high performance particle systems, a custom data structure is better, 
-    // but for < 1000 items, a MutableList is fine in Compose if handled carefully.
-    private val _particles = mutableStateListOf<CoinParticle>()
+    // We use a plain ArrayList to avoid Snapshot overhead,
+    // as redraws are manually triggered by the timeNanos state update.
+    private val _particles = ArrayList<CoinParticle>()
     val particles: List<CoinParticle> get() = _particles
 
     var targetPosition by mutableStateOf(Offset.Zero)
-    
-    // FRAME TIME STATE: Forces Canvas redraw on every frame update
-    var timeNanos by mutableStateOf(0L)
+
+    // FRAME TIME STATE: Forces Canvas redraw on every frame update.
+    // Using mutableLongStateOf to avoid boxing.
+    var timeNanos by mutableLongStateOf(0L)
         private set
 
     // Animation Loop Trigger
@@ -50,10 +54,9 @@ class CoinHarvestState {
     fun harvest(startPosition: Offset, amount: Int = 10) {
         if (targetPosition == Offset.Zero) return // No target yet
 
-        val newParticles = List(amount) {
-            createParticle(startPosition, targetPosition)
+        repeat(amount) {
+            _particles.add(createParticle(startPosition, targetPosition))
         }
-        _particles.addAll(newParticles)
     }
 
     private fun createParticle(start: Offset, target: Offset): CoinParticle {
@@ -83,22 +86,24 @@ class CoinHarvestState {
     fun updateParticles(frameTimeNanos: Long) {
         // Update Time State to trigger recomposition
         timeNanos = frameTimeNanos
-        
-        // Remove finished particles
-        _particles.removeAll { particle ->
+
+        // Remove finished particles using a manual backward loop to avoid iterator allocations
+        for (i in _particles.size - 1 downTo 0) {
+            val particle = _particles[i]
             val elapsed = (frameTimeNanos - particle.startTime) / 1_000_000f // ms
-            elapsed >= particle.durationMs
+            if (elapsed >= particle.durationMs) {
+                _particles.removeAt(i)
+            }
         }
     }
-    
+
     // Helper to set start time for new particles correctly in the loop
     fun spawn(start: Offset, amount: Int, currentTimeNanos: Long) {
-         if (targetPosition == Offset.Zero) return
+        if (targetPosition == Offset.Zero) return
 
-        val newParticles = List(amount) {
-            createParticle(start, targetPosition).copy(startTime = currentTimeNanos)
+        repeat(amount) {
+            _particles.add(createParticle(start, targetPosition).copy(startTime = currentTimeNanos))
         }
-        _particles.addAll(newParticles)
     }
 }
 
@@ -135,14 +140,17 @@ fun CoinHarvestHost(
     Box(modifier = modifier) {
         // 1. The Screen Content
         content()
-        
+
         // 2. The Animation Overlay
-        CoinHarvestOverlay(state)
+        CoinHarvestOverlay(state = state)
     }
 }
 
 @Composable
-private fun CoinHarvestOverlay(state: CoinHarvestState) {
+private fun CoinHarvestOverlay(
+    state: CoinHarvestState,
+    modifier: Modifier = Modifier
+) {
     // Animation Loop
     LaunchedEffect(state) {
         while (true) {
@@ -152,11 +160,14 @@ private fun CoinHarvestOverlay(state: CoinHarvestState) {
         }
     }
 
-    Canvas(modifier = Modifier.fillMaxSize()) {
+    Canvas(modifier = modifier.fillMaxSize()) {
         // Read State Time to ensure we redraw every frame!
         val currentTime = state.timeNanos
-        
-        state.particles.forEach { particle ->
+        val particles = state.particles
+
+        // Manual indexed loop to avoid iterator allocations
+        for (i in particles.indices) {
+            val particle = particles[i]
 
             // Calculate progress
             // Note: In a real app we'd pass the frame time from LaunchedEffect to Canvas 
@@ -206,26 +217,27 @@ private fun calculateBezierPoint(t: Float, p0: Offset, p1: Offset, p2: Offset): 
 private fun DrawScope.drawCoin(center: Offset, scale: Float) {
     val radius = 25f * scale
     if (radius <= 0) return
-    
+
     // Outer Gold Ring
     drawCircle(
-        color = Color(0xFFFFD700),
+        color = GoldColor,
         radius = radius,
         center = center
     )
-    
+
     // Inner Light Gold (Shine)
     drawCircle(
-        color = Color(0xFFFFE57C),
+        color = LightGoldColor,
         radius = radius * 0.8f,
         center = center
     )
-    
+
     // Detail
     drawRect(
-        color = Color(0xFFC5A000).copy(alpha = 0.5f),
+        color = DetailColor,
         topLeft = Offset(center.x - radius * 0.2f, center.y - radius * 0.5f),
-        size = Size(radius * 0.4f, radius * 1f)
+        size = Size(radius * 0.4f, radius * 1f),
+        alpha = 0.5f
     )
 }
 

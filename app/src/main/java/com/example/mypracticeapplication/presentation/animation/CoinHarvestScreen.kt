@@ -42,20 +42,23 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun CoinHarvestScreen(
+    modifier: Modifier = Modifier,
     onNavigateBack: () -> Unit = {}
 ) {
     // 1. Create the Host State
     val harvestState = rememberCoinHarvestState()
-    
+
     // We wrap everything in the CoinHarvestHost
     CoinHarvestHost(
         state = harvestState,
-        modifier = Modifier.fillMaxSize().background(Color(0xFF121212))
+        modifier = modifier
+            .fillMaxSize()
+            .background(Color(0xFF121212))
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
             // Header
-            Header(onNavigateBack)
-            
+            Header(onNavigateBack = onNavigateBack)
+
             // Content Area
             Box(modifier = Modifier.fillMaxSize()) {
                 
@@ -129,29 +132,29 @@ fun CoinHarvestScreen(
                 
                 // Source 1: Center
                 HarvestButton(
-                    text = "HARVEST CENTER",
+                    onHarvest = { pos -> harvestState.harvest(pos, 10) },
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .padding(bottom = 100.dp),
-                    onHarvest = { pos -> harvestState.harvest(pos, 10) }
+                    text = "HARVEST CENTER"
                 )
-                
+
                 // Source 2: Left
                 HarvestButton(
-                    text = "LEFT",
+                    onHarvest = { pos -> harvestState.harvest(pos, 5) },
                     modifier = Modifier
                         .align(Alignment.CenterStart)
                         .padding(start = 24.dp),
-                    onHarvest = { pos -> harvestState.harvest(pos, 5) }
+                    text = "LEFT"
                 )
-                
+
                 // Source 3: Right
                 HarvestButton(
-                    text = "RIGHT",
+                    onHarvest = { pos -> harvestState.harvest(pos, 5) },
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
                         .padding(end = 24.dp),
-                    onHarvest = { pos -> harvestState.harvest(pos, 5) }
+                    text = "RIGHT"
                 )
                 
                 // Source 4: Random Card
@@ -179,17 +182,17 @@ fun CoinHarvestScreen(
 
 @Composable
 fun HarvestButton(
-    text: String,
+    onHarvest: (Offset) -> Unit,
     modifier: Modifier = Modifier,
-    onHarvest: (Offset) -> Unit
+    text: String = ""
 ) {
     // We track the global position of this button
     var centerPos = remember { Offset.Zero }
-    
+
     Button(
-        onClick = { 
+        onClick = {
             // Trigger harvest from the tracked center
-            onHarvest(centerPos) 
+            onHarvest(centerPos)
         },
         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFD700)),
         modifier = modifier
@@ -224,9 +227,12 @@ fun Modifier.harvestClickable(onHarvest: (Offset) -> Unit): Modifier {
 }
 
 @Composable
-private fun Header(onNavigateBack: () -> Unit) {
+private fun Header(
+    onNavigateBack: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .background(Color(0xFF1E1E1E))
             .padding(horizontal = 4.dp, vertical = 12.dp),
@@ -251,7 +257,7 @@ private fun Header(onNavigateBack: () -> Unit) {
 
 @Preview
 @Composable
-fun CoinHarvestScreenPreview() {
+private fun CoinHarvestScreenPreview() {
     CoinHarvestScreen()
 }
 
