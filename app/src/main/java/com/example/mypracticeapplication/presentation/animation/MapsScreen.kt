@@ -1,4 +1,4 @@
-﻿package com.example.mypracticeapplication.presentation.animation
+package com.example.mypracticeapplication.presentation.animation
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -31,12 +31,15 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -63,11 +66,91 @@ private val BangladeshRed = Color(0xFFF42A41)
 /**
  * Data class for city markers on the map
  */
+@Immutable
 data class CityMarker(
     val name: String,
     val x: Float,
     val y: Float,
     val isCapital: Boolean = false
+)
+
+private val MajorCities = listOf(
+    CityMarker("Dhaka", 0.52f, 0.48f, isCapital = true),
+    CityMarker("Chittagong", 0.75f, 0.68f),
+    CityMarker("Khulna", 0.32f, 0.58f),
+    CityMarker("Rajshahi", 0.18f, 0.32f),
+    CityMarker("Sylhet", 0.72f, 0.25f),
+    CityMarker("Rangpur", 0.25f, 0.12f),
+    CityMarker("Barisal", 0.42f, 0.68f),
+    CityMarker("Mymensingh", 0.55f, 0.35f)
+)
+
+private val BangladeshiBorderPoints = listOf(
+    // Start at Rangpur region (northwest) - the distinctive bulge
+    Pair(0.12f, 0.18f),
+    Pair(0.08f, 0.14f),
+    Pair(0.10f, 0.08f),
+    Pair(0.18f, 0.04f),
+    Pair(0.28f, 0.02f),
+    Pair(0.35f, 0.06f),
+
+    // Northern border moving east
+    Pair(0.42f, 0.12f),
+    Pair(0.48f, 0.16f),
+    Pair(0.52f, 0.14f),
+    Pair(0.58f, 0.18f),
+
+    // Sylhet region (northeast) - bump outward
+    Pair(0.65f, 0.15f),
+    Pair(0.72f, 0.12f),
+    Pair(0.80f, 0.14f),
+    Pair(0.88f, 0.18f),
+    Pair(0.92f, 0.24f),
+    Pair(0.88f, 0.30f),
+    Pair(0.82f, 0.32f),
+
+    // Eastern border - moves south with indentations
+    Pair(0.78f, 0.38f),
+    Pair(0.72f, 0.42f),
+    Pair(0.68f, 0.48f),
+    Pair(0.72f, 0.52f),
+    Pair(0.78f, 0.55f),
+
+    // Chittagong region - distinctive eastern protrusion
+    Pair(0.82f, 0.58f),
+    Pair(0.85f, 0.62f),
+    Pair(0.88f, 0.68f),
+    Pair(0.86f, 0.75f),
+    Pair(0.82f, 0.82f),
+    Pair(0.78f, 0.88f),
+    Pair(0.75f, 0.94f),
+    Pair(0.70f, 0.98f),
+
+    // Southern coast - Bay of Bengal with delta features
+    Pair(0.62f, 0.95f),
+    Pair(0.55f, 0.88f),
+    Pair(0.50f, 0.82f),
+    Pair(0.45f, 0.78f),
+    Pair(0.42f, 0.85f),
+    Pair(0.38f, 0.90f),
+
+    // Sundarbans delta region (southwest) - multiple channels
+    Pair(0.32f, 0.92f),
+    Pair(0.28f, 0.88f),
+    Pair(0.22f, 0.90f),
+    Pair(0.18f, 0.85f),
+    Pair(0.15f, 0.80f),
+    Pair(0.12f, 0.75f),
+
+    // Western border - moving north along India border
+    Pair(0.08f, 0.68f),
+    Pair(0.05f, 0.60f),
+    Pair(0.08f, 0.52f),
+    Pair(0.12f, 0.45f),
+    Pair(0.08f, 0.38f),
+    Pair(0.05f, 0.32f),
+    Pair(0.08f, 0.25f),
+    Pair(0.12f, 0.18f)
 )
 
 /**
@@ -85,6 +168,18 @@ fun AnimatedBangladeshMap(
 ) {
     val textMeasurer = rememberTextMeasurer()
     
+    // Pre-measure labels to avoid expensive measurement in the draw loop
+    val labelLayoutResults = remember(textMeasurer) {
+        MajorCities.map { city ->
+            val textStyle = TextStyle(
+                fontSize = if (city.isCapital) 11.sp else 9.sp,
+                fontWeight = if (city.isCapital) FontWeight.Bold else FontWeight.Normal,
+                color = Color.DarkGray
+            )
+            textMeasurer.measure(city.name, textStyle)
+        }
+    }
+
     val drawProgress = remember { Animatable(if (showAnimation) 0f else 1f) }
     val fillProgress = remember { Animatable(if (showAnimation) 0f else 1f) }
     val cityProgress = remember { Animatable(if (showAnimation) 0f else 1f) }
@@ -110,152 +205,76 @@ fun AnimatedBangladeshMap(
         }
     }
     
-    // Major cities with corrected positions
-    val cities = listOf(
-        CityMarker("Dhaka", 0.52f, 0.48f, isCapital = true),
-        CityMarker("Chittagong", 0.75f, 0.68f),
-        CityMarker("Khulna", 0.32f, 0.58f),
-        CityMarker("Rajshahi", 0.18f, 0.32f),
-        CityMarker("Sylhet", 0.72f, 0.25f),
-        CityMarker("Rangpur", 0.25f, 0.12f),
-        CityMarker("Barisal", 0.42f, 0.68f),
-        CityMarker("Mymensingh", 0.55f, 0.35f)
-    )
-    
-    Canvas(modifier = modifier) {
-        val canvasWidth = size.width
-        val canvasHeight = size.height
-        val padding = 16.dp.toPx()
-        
-        val mapWidth = canvasWidth - padding * 2
-        val mapHeight = canvasHeight - padding * 2
-        
-        // Accurate Bangladesh border coordinates based on the reference image
-        // The shape resembles a person with arms spread, with distinctive features:
-        // - Rangpur region (northwest bulge)
-        // - Sylhet region (northeast)  
-        // - Chittagong Hill Tracts (southeast, extending south)
-        // - Sundarbans delta (southwest)
-        
-        val borderPoints = listOf(
-            // Start at Rangpur region (northwest) - the distinctive bulge
-            Pair(0.12f, 0.18f),
-            Pair(0.08f, 0.14f),
-            Pair(0.10f, 0.08f),
-            Pair(0.18f, 0.04f),
-            Pair(0.28f, 0.02f),
-            Pair(0.35f, 0.06f),
+    Canvas(
+        modifier = modifier.drawWithCache {
+            val padding = 16.dp.toPx()
+            val mapWidth = size.width - padding * 2
+            val mapHeight = size.height - padding * 2
             
-            // Northern border moving east
-            Pair(0.42f, 0.12f),
-            Pair(0.48f, 0.16f),
-            Pair(0.52f, 0.14f),
-            Pair(0.58f, 0.18f),
-            
-            // Sylhet region (northeast) - bump outward
-            Pair(0.65f, 0.15f),
-            Pair(0.72f, 0.12f),
-            Pair(0.80f, 0.14f),
-            Pair(0.88f, 0.18f),
-            Pair(0.92f, 0.24f),
-            Pair(0.88f, 0.30f),
-            Pair(0.82f, 0.32f),
-            
-            // Eastern border - moves south with indentations
-            Pair(0.78f, 0.38f),
-            Pair(0.72f, 0.42f),
-            Pair(0.68f, 0.48f),
-            Pair(0.72f, 0.52f),
-            Pair(0.78f, 0.55f),
-            
-            // Chittagong region - distinctive eastern protrusion
-            Pair(0.82f, 0.58f),
-            Pair(0.85f, 0.62f),
-            Pair(0.88f, 0.68f),
-            Pair(0.86f, 0.75f),
-            Pair(0.82f, 0.82f),
-            Pair(0.78f, 0.88f),
-            Pair(0.75f, 0.94f),
-            Pair(0.70f, 0.98f),
-            
-            // Southern coast - Bay of Bengal with delta features
-            Pair(0.62f, 0.95f),
-            Pair(0.55f, 0.88f),
-            Pair(0.50f, 0.82f),
-            Pair(0.45f, 0.78f),
-            Pair(0.42f, 0.85f),
-            Pair(0.38f, 0.90f),
-            
-            // Sundarbans delta region (southwest) - multiple channels
-            Pair(0.32f, 0.92f),
-            Pair(0.28f, 0.88f),
-            Pair(0.22f, 0.90f),
-            Pair(0.18f, 0.85f),
-            Pair(0.15f, 0.80f),
-            Pair(0.12f, 0.75f),
-            
-            // Western border - moving north along India border
-            Pair(0.08f, 0.68f),
-            Pair(0.05f, 0.60f),
-            Pair(0.08f, 0.52f),
-            Pair(0.12f, 0.45f),
-            Pair(0.08f, 0.38f),
-            Pair(0.05f, 0.32f),
-            Pair(0.08f, 0.25f),
-            Pair(0.12f, 0.18f)
-        )
-        
-        // Create the map path
-        val mapPath = Path().apply {
-            val firstPoint = borderPoints.first()
-            moveTo(
-                padding + firstPoint.first * mapWidth,
-                padding + firstPoint.second * mapHeight
-            )
-            
-            for (i in 1 until borderPoints.size) {
-                val curr = borderPoints[i]
-                val currX = padding + curr.first * mapWidth
-                val currY = padding + curr.second * mapHeight
-                lineTo(currX, currY)
+            val mapPath = Path().apply {
+                val firstPoint = BangladeshiBorderPoints.first()
+                moveTo(
+                    padding + firstPoint.first * mapWidth,
+                    padding + firstPoint.second * mapHeight
+                )
+
+                for (i in 1 until BangladeshiBorderPoints.size) {
+                    val curr = BangladeshiBorderPoints[i]
+                    val currX = padding + curr.first * mapWidth
+                    val currY = padding + curr.second * mapHeight
+                    lineTo(currX, currY)
+                }
+                close()
             }
-            close()
-        }
-        
-        // Draw filled map
-        if (fillProgress.value > 0) {
-            drawPath(
-                path = mapPath,
-                brush = Brush.verticalGradient(
-                    colors = listOf(
-                        fillColor.copy(alpha = fillColor.alpha * fillProgress.value),
-                        fillColor.copy(alpha = fillColor.alpha * 0.6f * fillProgress.value)
+            
+            val fillBrush = Brush.verticalGradient(
+                colors = listOf(
+                    fillColor,
+                    fillColor.copy(alpha = fillColor.alpha * 0.6f)
+                )
+            )
+            
+            val strokeWidth = 2.5f.dp.toPx()
+
+            onDrawBehind {
+                // Draw filled map
+                if (fillProgress.value > 0) {
+                    drawPath(
+                        path = mapPath,
+                        brush = fillBrush,
+                        alpha = fillProgress.value,
+                        style = Fill
                     )
-                ),
-                style = Fill
-            )
+                }
+
+                // Draw map outline with animation
+                val clipWidth = size.width * drawProgress.value
+                clipRect(left = 0f, top = 0f, right = clipWidth, bottom = size.height) {
+                    drawPath(
+                        path = mapPath,
+                        color = strokeColor,
+                        style = Stroke(width = strokeWidth, cap = StrokeCap.Round, join = StrokeJoin.Round)
+                    )
+                }
+            }
         }
-        
-        // Draw map outline with animation
-        val clipWidth = canvasWidth * drawProgress.value
-        clipRect(left = 0f, top = 0f, right = clipWidth, bottom = canvasHeight) {
-            drawPath(
-                path = mapPath,
-                color = strokeColor,
-                style = Stroke(width = 2.5f.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round)
-            )
-        }
+    ) {
+        val padding = 16.dp.toPx()
+        val mapWidth = size.width - padding * 2
+        val mapHeight = size.height - padding * 2
         
         // Draw cities
         if (showCities && cityProgress.value > 0) {
-            cities.forEach { city ->
+            for (i in MajorCities.indices) {
+                val city = MajorCities[i]
                 val cityX = padding + city.x * mapWidth
                 val cityY = padding + city.y * mapHeight
                 val markerSize = if (city.isCapital) 10.dp.toPx() else 6.dp.toPx()
                 val animatedSize = markerSize * cityProgress.value
                 
                 drawCircle(
-                    color = if (city.isCapital) BangladeshRed else cityColor.copy(alpha = 0.8f),
+                    color = if (city.isCapital) BangladeshRed else cityColor,
+                    alpha = if (city.isCapital) 1f else 0.8f,
                     radius = animatedSize / 2,
                     center = Offset(cityX, cityY)
                 )
@@ -270,15 +289,11 @@ fun AnimatedBangladeshMap(
                 
                 if (cityProgress.value > 0.5f) {
                     val textAlpha = ((cityProgress.value - 0.5f) * 2f).coerceIn(0f, 1f)
-                    val textStyle = TextStyle(
-                        fontSize = if (city.isCapital) 11.sp else 9.sp,
-                        fontWeight = if (city.isCapital) FontWeight.Bold else FontWeight.Normal,
-                        color = Color.DarkGray.copy(alpha = textAlpha)
-                    )
-                    val textLayoutResult = textMeasurer.measure(city.name, textStyle)
+                    val textLayoutResult = labelLayoutResults[i]
                     
                     drawText(
                         textLayoutResult = textLayoutResult,
+                        alpha = textAlpha,
                         topLeft = Offset(
                             cityX - textLayoutResult.size.width / 2,
                             cityY + animatedSize / 2 + 3.dp.toPx()
@@ -292,10 +307,11 @@ fun AnimatedBangladeshMap(
 
 @Composable
 fun MapsScreen(
+    modifier: Modifier = Modifier,
     onNavigateBack: () -> Unit = {}
 ) {
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
@@ -406,8 +422,13 @@ fun MapsScreen(
 }
 
 @Composable
-private fun LegendItem(color: Color, label: String) {
+private fun LegendItem(
+    color: Color,
+    label: String,
+    modifier: Modifier = Modifier
+) {
     Row(
+        modifier = modifier,
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
@@ -417,9 +438,13 @@ private fun LegendItem(color: Color, label: String) {
 }
 
 @Composable
-private fun InfoRow(label: String, value: String) {
+private fun InfoRow(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier
+) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+        modifier = modifier.fillMaxWidth().padding(vertical = 4.dp),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Text(text = label, style = MaterialTheme.typography.bodyMedium, color = Color.Gray)
@@ -432,5 +457,3 @@ private fun InfoRow(label: String, value: String) {
 private fun MapsScreenPreview() {
     MapsScreen()
 }
-
-
