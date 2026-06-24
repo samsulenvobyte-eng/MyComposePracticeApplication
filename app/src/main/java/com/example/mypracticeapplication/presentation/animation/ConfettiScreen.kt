@@ -37,6 +37,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -80,12 +81,32 @@ private enum class ConfettiShape {
 
 @Composable
 fun ConfettiScreen(
+    modifier: Modifier = Modifier,
     onNavigateBack: () -> Unit = {}
 ) {
     var isPlaying by remember { mutableStateOf(false) }
     var particles by remember { mutableStateOf(emptyList<ConfettiParticle>()) }
     val animationProgress = remember { Animatable(0f) }
-    
+
+    // Optimization: Cache path templates to avoid per-frame allocations during animation
+    val trianglePath = remember {
+        Path().apply {
+            moveTo(0f, -0.5f)
+            lineTo(-0.5f, 0.5f)
+            lineTo(0.5f, 0.5f)
+            close()
+        }
+    }
+
+    val starPath = remember {
+        createStarPath(
+            centerX = 0f,
+            centerY = 0f,
+            outerRadius = 0.5f,
+            innerRadius = 0.25f
+        )
+    }
+
     // Generate particles when animation starts
     LaunchedEffect(isPlaying) {
         if (isPlaying) {
@@ -104,7 +125,7 @@ fun ConfettiScreen(
     }
     
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
@@ -136,72 +157,70 @@ fun ConfettiScreen(
             if (isPlaying) {
                 Canvas(modifier = Modifier.fillMaxSize()) {
                     val progress = animationProgress.value
-                    val canvasWidth = size.width
                     val canvasHeight = size.height
-                    
-                    particles.forEach { particle ->
+
+                    // Performance Optimization: Calculate alpha once per frame instead of per-particle
+                    val alpha = (1f - (progress * 0.5f)).coerceIn(0f, 1f)
+
+                    // Performance Optimization: Use manual indexed loop to avoid per-frame iterator allocations
+                    for (i in 0 until particles.size) {
+                        val particle = particles[i]
+
                         // Calculate current position
                         val time = progress * 4f // Scale time
                         val gravity = 0.5f
-                        
-                        val currentX = particle.startX + 
+
+                        val currentX = particle.startX +
                             particle.horizontalDrift * time * 100 +
                             sin(time * particle.oscillationFrequency) * particle.oscillationAmplitude
-                        
-                        val currentY = particle.startY + 
+
+                        val currentY = particle.startY +
                             particle.fallSpeed * time * canvasHeight * 0.3f +
                             gravity * time * time * 200
-                        
+
                         // Skip if out of bounds
-                        if (currentY > canvasHeight + 50) return@forEach
-                        
+                        if (currentY > canvasHeight + 50) continue
+
                         val rotation = time * particle.rotationSpeed * 360
-                        val alpha = (1f - (progress * 0.5f)).coerceIn(0f, 1f)
-                        
-                        rotate(
-                            degrees = rotation,
-                            pivot = Offset(currentX, currentY)
-                        ) {
+
+                        // Performance Optimization: Use withTransform to handle translation, rotation, and scaling.
+                        // This allows reusing cached normalized paths and eliminates per-frame Path and Color allocations.
+                        // Expected Impact: Significant reduction in GC pressure and frame time during 150-particle animation.
+                        withTransform({
+                            translate(currentX, currentY)
+                            rotate(rotation, Offset.Zero)
+                            scale(particle.size, particle.size, Offset.Zero)
+                        }) {
                             when (particle.shape) {
                                 ConfettiShape.RECTANGLE -> {
+                                    // Rectangle is 1x0.5 ratio, centered at origin
                                     drawRect(
-                                        color = particle.color.copy(alpha = alpha),
-                                        topLeft = Offset(
-                                            currentX - particle.size / 2,
-                                            currentY - particle.size / 4
-                                        ),
-                                        size = Size(particle.size, particle.size / 2)
+                                        color = particle.color,
+                                        alpha = alpha,
+                                        topLeft = Offset(-0.5f, -0.25f),
+                                        size = Size(1f, 0.5f)
                                     )
                                 }
                                 ConfettiShape.CIRCLE -> {
                                     drawCircle(
-                                        color = particle.color.copy(alpha = alpha),
-                                        radius = particle.size / 2,
-                                        center = Offset(currentX, currentY)
+                                        color = particle.color,
+                                        alpha = alpha,
+                                        radius = 0.5f,
+                                        center = Offset.Zero
                                     )
                                 }
                                 ConfettiShape.TRIANGLE -> {
-                                    val path = Path().apply {
-                                        moveTo(currentX, currentY - particle.size / 2)
-                                        lineTo(currentX - particle.size / 2, currentY + particle.size / 2)
-                                        lineTo(currentX + particle.size / 2, currentY + particle.size / 2)
-                                        close()
-                                    }
                                     drawPath(
-                                        path = path,
-                                        color = particle.color.copy(alpha = alpha)
+                                        path = trianglePath,
+                                        color = particle.color,
+                                        alpha = alpha
                                     )
                                 }
                                 ConfettiShape.STAR -> {
-                                    val path = createStarPath(
-                                        centerX = currentX,
-                                        centerY = currentY,
-                                        outerRadius = particle.size / 2,
-                                        innerRadius = particle.size / 4
-                                    )
                                     drawPath(
-                                        path = path,
-                                        color = particle.color.copy(alpha = alpha)
+                                        path = starPath,
+                                        color = particle.color,
+                                        alpha = alpha
                                     )
                                 }
                             }
@@ -264,9 +283,12 @@ fun ConfettiScreen(
 }
 
 @Composable
-private fun ConfettiHeader(onNavigateBack: () -> Unit) {
+private fun ConfettiHeader(
+    onNavigateBack: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .background(
                 Brush.horizontalGradient(
@@ -349,7 +371,9 @@ private fun createStarPath(
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 private fun ConfettiScreenPreview() {
-    ConfettiScreen()
+    com.example.mypracticeapplication.presentation.theme.MyPracticeApplicationTheme {
+        ConfettiScreen()
+    }
 }
 
 
