@@ -74,6 +74,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
@@ -86,10 +87,11 @@ private val BlueColor = Color(0xFF3498DB)
 
 @Composable
 fun AnimationTypeScreen(
+    modifier: Modifier = Modifier,
     onNavigateBack: () -> Unit = {}
 ) {
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
@@ -153,9 +155,14 @@ fun AnimationTypeScreen(
 }
 
 @Composable
-private fun DemoCard(title: String, subtitle: String, content: @Composable () -> Unit) {
+private fun DemoCard(
+    title: String,
+    subtitle: String,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit
+) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(4.dp)
@@ -171,10 +178,14 @@ private fun DemoCard(title: String, subtitle: String, content: @Composable () ->
 
 // 1. Fade Animation
 @Composable
-private fun FadeAnimationDemo() {
+private fun FadeAnimationDemo(modifier: Modifier = Modifier) {
     var visible by remember { mutableStateOf(true) }
     
-    DemoCard("Fade Animation", "Opacity transition") {
+    DemoCard(
+        title = "Fade Animation",
+        subtitle = "Opacity transition",
+        modifier = modifier
+    ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             AnimatedVisibility(
                 visible = visible,
@@ -198,7 +209,7 @@ private fun FadeAnimationDemo() {
 
 // 2. Scale Animation
 @Composable
-private fun ScaleAnimationDemo() {
+private fun ScaleAnimationDemo(modifier: Modifier = Modifier) {
     var expanded by remember { mutableStateOf(false) }
     val scale by animateFloatAsState(
         targetValue = if (expanded) 1.5f else 1f,
@@ -206,12 +217,19 @@ private fun ScaleAnimationDemo() {
         label = "scale"
     )
     
-    DemoCard("Scale Animation", "Size transformation with bounce") {
+    DemoCard(
+        title = "Scale Animation",
+        subtitle = "Size transformation with bounce",
+        modifier = modifier
+    ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Box(
                 modifier = Modifier
                     .size(60.dp)
-                    .scale(scale)
+                    .graphicsLayer {
+                        scaleX = scale
+                        scaleY = scale
+                    }
                     .clip(CircleShape)
                     .background(SecondaryColor)
                     .clickable { expanded = !expanded },
@@ -227,10 +245,14 @@ private fun ScaleAnimationDemo() {
 
 // 3. Slide Animation
 @Composable
-private fun SlideAnimationDemo() {
+private fun SlideAnimationDemo(modifier: Modifier = Modifier) {
     var visible by remember { mutableStateOf(true) }
     
-    DemoCard("Slide Animation", "Horizontal slide transition") {
+    DemoCard(
+        title = "Slide Animation",
+        subtitle = "Horizontal slide transition",
+        modifier = modifier
+    ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Box(
                 modifier = Modifier
@@ -263,7 +285,7 @@ private fun SlideAnimationDemo() {
 
 // 4. Rotation Animation
 @Composable
-private fun RotationAnimationDemo() {
+private fun RotationAnimationDemo(modifier: Modifier = Modifier) {
     var rotating by remember { mutableStateOf(false) }
     val rotation by animateFloatAsState(
         targetValue = if (rotating) 360f else 0f,
@@ -272,12 +294,16 @@ private fun RotationAnimationDemo() {
         finishedListener = { rotating = false }
     )
     
-    DemoCard("Rotation Animation", "360° spin effect") {
+    DemoCard(
+        title = "Rotation Animation",
+        subtitle = "360° spin effect",
+        modifier = modifier
+    ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Box(
                 modifier = Modifier
                     .size(70.dp)
-                    .rotate(rotation)
+                    .graphicsLayer { rotationZ = rotation }
                     .clip(RoundedCornerShape(12.dp))
                     .background(AccentColor)
                     .clickable { rotating = true },
@@ -293,7 +319,7 @@ private fun RotationAnimationDemo() {
 
 // 5. Color Animation
 @Composable
-private fun ColorAnimationDemo() {
+private fun ColorAnimationDemo(modifier: Modifier = Modifier) {
     var toggled by remember { mutableStateOf(false) }
     val backgroundColor by animateColorAsState(
         targetValue = if (toggled) PurpleColor else PrimaryColor,
@@ -301,7 +327,11 @@ private fun ColorAnimationDemo() {
         label = "color"
     )
     
-    DemoCard("Color Animation", "Smooth color transition") {
+    DemoCard(
+        title = "Color Animation",
+        subtitle = "Smooth color transition",
+        modifier = modifier
+    ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Box(
                 modifier = Modifier
@@ -319,7 +349,7 @@ private fun ColorAnimationDemo() {
 
 // 6. Bounce Animation
 @Composable
-private fun BounceAnimationDemo() {
+private fun BounceAnimationDemo(modifier: Modifier = Modifier) {
     var bouncing by remember { mutableStateOf(false) }
     val offsetY by animateDpAsState(
         targetValue = if (bouncing) (-20).dp else 0.dp,
@@ -328,11 +358,15 @@ private fun BounceAnimationDemo() {
         finishedListener = { bouncing = false }
     )
     
-    DemoCard("Bounce Animation", "Spring physics bounce") {
+    DemoCard(
+        title = "Bounce Animation",
+        subtitle = "Spring physics bounce",
+        modifier = modifier
+    ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Box(
                 modifier = Modifier
-                    .offset(y = offsetY)
+                    .offset { IntOffset(0, offsetY.roundToPx()) }
                     .size(60.dp)
                     .clip(CircleShape)
                     .background(Brush.verticalGradient(listOf(PrimaryColor, SecondaryColor)))
@@ -349,7 +383,7 @@ private fun BounceAnimationDemo() {
 
 // 7. Pulse Animation
 @Composable
-private fun PulseAnimationDemo() {
+private fun PulseAnimationDemo(modifier: Modifier = Modifier) {
     val infiniteTransition = rememberInfiniteTransition(label = "pulse")
     val scale by infiniteTransition.animateFloat(
         initialValue = 1f,
@@ -364,12 +398,19 @@ private fun PulseAnimationDemo() {
         label = "pulseAlpha"
     )
     
-    DemoCard("Pulse Animation", "Continuous breathing effect") {
+    DemoCard(
+        title = "Pulse Animation",
+        subtitle = "Continuous breathing effect",
+        modifier = modifier
+    ) {
         Box(
             modifier = Modifier
                 .size(70.dp)
-                .scale(scale)
-                .alpha(alpha)
+                .graphicsLayer {
+                    scaleX = scale
+                    scaleY = scale
+                    this.alpha = alpha
+                }
                 .clip(CircleShape)
                 .background(PrimaryColor),
             contentAlignment = Alignment.Center
@@ -381,7 +422,7 @@ private fun PulseAnimationDemo() {
 
 // 8. Shake Animation
 @Composable
-private fun ShakeAnimationDemo() {
+private fun ShakeAnimationDemo(modifier: Modifier = Modifier) {
     var shaking by remember { mutableStateOf(false) }
     val offsetX = remember { Animatable(0f) }
     
@@ -396,11 +437,15 @@ private fun ShakeAnimationDemo() {
         }
     }
     
-    DemoCard("Shake Animation", "Error/attention effect") {
+    DemoCard(
+        title = "Shake Animation",
+        subtitle = "Error/attention effect",
+        modifier = modifier
+    ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Box(
                 modifier = Modifier
-                    .offset(x = offsetX.value.dp)
+                    .offset { IntOffset(offsetX.value.dp.roundToPx(), 0) }
                     .size(80.dp)
                     .clip(RoundedCornerShape(16.dp))
                     .background(Color(0xFFE74C3C))
@@ -417,7 +462,7 @@ private fun ShakeAnimationDemo() {
 
 // 9. Flip Animation
 @Composable
-private fun FlipAnimationDemo() {
+private fun FlipAnimationDemo(modifier: Modifier = Modifier) {
     var flipped by remember { mutableStateOf(false) }
     val rotationY by animateFloatAsState(
         targetValue = if (flipped) 180f else 0f,
@@ -425,7 +470,11 @@ private fun FlipAnimationDemo() {
         label = "flip"
     )
     
-    DemoCard("Flip Animation", "Card flip effect") {
+    DemoCard(
+        title = "Flip Animation",
+        subtitle = "Card flip effect",
+        modifier = modifier
+    ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Box(
                 modifier = Modifier
@@ -450,10 +499,14 @@ private fun FlipAnimationDemo() {
 
 // 10. Wave Animation
 @Composable
-private fun WaveAnimationDemo() {
+private fun WaveAnimationDemo(modifier: Modifier = Modifier) {
     val infiniteTransition = rememberInfiniteTransition(label = "wave")
     
-    DemoCard("Wave Animation", "Staggered wave effect") {
+    DemoCard(
+        title = "Wave Animation",
+        subtitle = "Staggered wave effect",
+        modifier = modifier
+    ) {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             repeat(5) { index ->
                 val offsetY by infiniteTransition.animateFloat(
@@ -467,7 +520,7 @@ private fun WaveAnimationDemo() {
                 )
                 Box(
                     modifier = Modifier
-                        .offset(y = offsetY.dp)
+                        .offset { IntOffset(0, offsetY.dp.roundToPx()) }
                         .size(width = 16.dp, height = 50.dp)
                         .clip(RoundedCornerShape(8.dp))
                         .background(
