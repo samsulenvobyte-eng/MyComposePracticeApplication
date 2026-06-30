@@ -50,8 +50,11 @@ fun AnimatedBarChart(
     Canvas(modifier = modifier.fillMaxSize()) {
         val barWidthPx = barWidth.toPx()
         val spacingPx = barSpacing.toPx()
+        val canvasHeight = size.height
+        val barDataCount = barData.size
 
-        barData.forEachIndexed { index, targetRelativeHeight ->
+        for (index in 0 until barDataCount) {
+            val targetRelativeHeight = barData[index]
             // Calculate ambient offset using sine wave based on phase and index
             val ambientOffset = if (entranceProgress > 0.95f) {
                 sin(breathingPhase + index * 0.5f) * 0.03f
@@ -63,16 +66,16 @@ fun AnimatedBarChart(
             val finalRelativeHeight =
                 (targetRelativeHeight * entranceProgress + ambientOffset).coerceAtLeast(0.01f)
 
-            val barHeight = size.height * finalRelativeHeight
+            val barHeight = canvasHeight * finalRelativeHeight
             val xOffset = index * (barWidthPx + spacingPx)
-            val yOffset = size.height - barHeight // Draw from bottom up
+            val yOffset = canvasHeight - barHeight // Draw from bottom up
 
             // Draw bar with gradient
             drawRoundRect(
                 brush = Brush.verticalGradient(
                     colors = TtBoostTheme.BarGradient,
                     startY = yOffset,
-                    endY = size.height
+                    endY = canvasHeight
                 ),
                 alpha = 0.3f,
                 topLeft = Offset(xOffset, yOffset),

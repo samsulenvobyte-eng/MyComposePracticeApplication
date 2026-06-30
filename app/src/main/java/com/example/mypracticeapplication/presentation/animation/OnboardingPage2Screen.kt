@@ -60,9 +60,11 @@ private val BarGradient = listOf(BarTopColor, BarBottomColor)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OnboardingPage2Screen(
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Scaffold(
+        modifier = modifier,
         topBar = {
             TopAppBar(
                 title = {
@@ -95,14 +97,16 @@ fun OnboardingPage2Screen(
                 .background(DarkBackground),
             contentAlignment = Alignment.Center
         ) {
-            AnimatedBarChartV2()
+            AnimatedBarChartV2(modifier = Modifier)
         }
     }
 }
 
 
 @Composable
-fun AnimatedBarChartV2() {
+fun AnimatedBarChartV2(
+    modifier: Modifier = Modifier
+) {
     // Data definition: Relative heights [0.0 - 1.0]
     val barData = remember { listOf(0.4f, 0.55f, 0.65f, 0.85f, 0.95f) }
 
@@ -177,7 +181,7 @@ fun AnimatedBarChartV2() {
     }
 
     androidx.compose.foundation.layout.BoxWithConstraints(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .height(300.dp)
     ) {
@@ -191,13 +195,18 @@ fun AnimatedBarChartV2() {
             modifier = Modifier.fillMaxSize()
         ) {
             // Draw Bars
-            barData.forEachIndexed { index, targetRelativeHeight ->
+            val barWidthPx = barWidth.toPx()
+            val spacingPx = spacing.toPx()
+            val canvasHeight = size.height
+            val barDataCount = barData.size
+
+            for (index in 0 until barDataCount) {
+                val targetRelativeHeight = barData[index]
                 val entranceProgress = mainProgress.value
 
                 // Calculate ambient offset using sine wave based on time (phase) and index
                 val ambientOffset = if (entranceProgress > 0.95f) {
-                    val offset = sin(breathingPhase + index * 0.5f) * 0.03f
-                    offset
+                    sin(breathingPhase + index * 0.5f) * 0.03f
                 } else {
                     0f
                 }
@@ -206,48 +215,52 @@ fun AnimatedBarChartV2() {
                 val finalRelativeHeight =
                     (targetRelativeHeight * entranceProgress + ambientOffset).coerceAtLeast(0.01f)
 
-                val barHeight = size.height * finalRelativeHeight
-                val xOffset = index * (barWidth.toPx() + spacing.toPx())
-                val yOffset = size.height - barHeight // Draw from bottom up
+                val barHeight = canvasHeight * finalRelativeHeight
+                val xOffset = index * (barWidthPx + spacingPx)
+                val yOffset = canvasHeight - barHeight // Draw from bottom up
 
                 // Draw Bar
                 drawRoundRect(
                     brush = Brush.verticalGradient(
                         colors = BarGradient,
                         startY = yOffset,
-                        endY = size.height
+                        endY = canvasHeight
                     ), alpha = 0.3f,
                     topLeft = Offset(xOffset, yOffset),
-                    size = Size(barWidth.toPx(), barHeight),
+                    size = Size(barWidthPx, barHeight),
                     cornerRadius = CornerRadius(35f, 35f) // Fully rounded top
                 )
             }
         }
 
         // Draw Overlays as Components
-        if (overlayVisible.value > 0f) {
-            val scale = overlayVisible.value
+        val overlaysCount = overlays.size
+        for (i in 0 until overlaysCount) {
+            val overlay = overlays[i]
+            // Calculate position
+            val barCenterX =
+                (overlay.xIndex * (barWidth.value + spacing.value)) + (barWidth.value / 2)
+            val fullHeightVal = availableHeight.value
+            val centerY = fullHeightVal - (fullHeightVal * overlay.yPercent)
 
-            overlays.forEach { overlay ->
-                // Calculate position
-                val barCenterX =
-                    (overlay.xIndex * (barWidth.value + spacing.value)) + (barWidth.value / 2)
-                val fullHeightVal = availableHeight.value
-                val centerY = fullHeightVal - (fullHeightVal * overlay.yPercent)
-
-                // Render component based on type
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.TopStart)
-                        .offset(x = barCenterX.dp, y = centerY.dp)
-                        .graphicsLayer {
-                            scaleX = scale
-                            scaleY = scale
-                            alpha = scale
-                        }
-                ) {
-                    OverlayComponent(overlay)
-                }
+            // Render component based on type
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .offset {
+                        androidx.compose.ui.unit.IntOffset(
+                            barCenterX.dp.roundToPx(),
+                            centerY.dp.roundToPx()
+                        )
+                    }
+                    .graphicsLayer {
+                        val scale = overlayVisible.value
+                        scaleX = scale
+                        scaleY = scale
+                        alpha = scale
+                    }
+            ) {
+                OverlayComponent(overlay = overlay, modifier = Modifier)
             }
         }
 
@@ -263,7 +276,7 @@ fun AnimatedBarChartV2() {
                     alpha = bubblesVisible.value
                 },
             icon = Icons.Default.Favorite,
-            count = (100 * mainProgress.value).toInt(),
+            count = { (100 * mainProgress.value).toInt() },
             color = Color(0xFFE84E66),
             shadowColor = Color(0xFFA62C41)
         )
@@ -279,7 +292,7 @@ fun AnimatedBarChartV2() {
                     alpha = bubblesVisible.value
                 },
             icon = Icons.Default.Person,
-            count = (250 * mainProgress.value).toInt(), // Different scale example
+            count = { (250 * mainProgress.value).toInt() }, // Different scale example
             color = Color(0xFF2DB3F9),
             shadowColor = Color(0xFFA62C41)
         )
@@ -287,7 +300,10 @@ fun AnimatedBarChartV2() {
 }
 
 @Composable
-fun OverlayComponent(overlay: ChartOverlayV2) {
+fun OverlayComponent(
+    overlay: ChartOverlayV2,
+    modifier: Modifier = Modifier
+) {
     val painter = androidx.compose.ui.res.painterResource(id = overlay.res)
 
     when (overlay) {
@@ -296,7 +312,7 @@ fun OverlayComponent(overlay: ChartOverlayV2) {
                 painter = painter,
                 contentDescription = null,
                 contentScale = androidx.compose.ui.layout.ContentScale.Crop,
-                modifier = Modifier
+                modifier = modifier
                     .offset(x = -overlay.radius, y = -overlay.radius)
                     .size(overlay.radius * 2)
                     .clip(androidx.compose.foundation.shape.CircleShape)
@@ -308,7 +324,7 @@ fun OverlayComponent(overlay: ChartOverlayV2) {
                 painter = painter,
                 contentDescription = null,
                 contentScale = androidx.compose.ui.layout.ContentScale.Crop,
-                modifier = Modifier
+                modifier = modifier
                     .offset(x = -overlay.width / 2, y = -overlay.height / 2)
                     .size(overlay.width, overlay.height)
                     .clip(androidx.compose.foundation.shape.RoundedCornerShape(percent = 50))
@@ -320,7 +336,7 @@ fun OverlayComponent(overlay: ChartOverlayV2) {
                 painter = painter,
                 contentDescription = null,
                 contentScale = androidx.compose.ui.layout.ContentScale.Crop,
-                modifier = Modifier
+                modifier = modifier
                     .offset(x = -overlay.width / 2, y = -overlay.height / 2)
                     .size(overlay.width, overlay.height)
                     .clip(androidx.compose.foundation.shape.RoundedCornerShape(16.dp))
