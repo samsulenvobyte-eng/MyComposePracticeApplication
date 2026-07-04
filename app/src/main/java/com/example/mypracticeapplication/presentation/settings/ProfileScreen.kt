@@ -98,8 +98,8 @@ sealed interface PremiumUiEvent {
 }
 
 @Composable
-
 fun PremiumScreen(
+    modifier: Modifier = Modifier,
     onClose: () -> Unit = {},
     onNavigateToTrial: () -> Unit = {}
 ) {
@@ -116,17 +116,16 @@ fun PremiumScreen(
                 is PremiumUiEvent.OnPlanSelected -> uiState =
                     uiState.copy(selectedPlan = event.plan)
             }
-        }
+        },
+        modifier = modifier
     )
 }
-
 
 @Composable
 fun PremiumContent(
     state: PremiumUiState,
-    modifier: Modifier = Modifier,
-    onEvent: (PremiumUiEvent) -> Unit
-
+    onEvent: (PremiumUiEvent) -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val scrollState = rememberScrollState()
 
@@ -160,11 +159,11 @@ fun PremiumContent(
                 Spacer(modifier = Modifier.height(20.dp))
 
                 Spacer(modifier = Modifier.weight(1f))
-                PurchaseOptions(state, onEvent)
+                PurchaseOptions(state = state, onEvent = onEvent)
                 Spacer(modifier = Modifier.weight(1f))
 
                 Spacer(modifier = Modifier.height(20.dp))
-                Footer(onEvent)
+                Footer(onEvent = onEvent)
                 Spacer(modifier = Modifier.height(12.dp))
             }
         }
@@ -172,10 +171,11 @@ fun PremiumContent(
 }
 
 @Composable
-
-private fun FeatureList() {
+private fun FeatureList(
+    modifier: Modifier = Modifier
+) {
     Column(
-        modifier = Modifier
+        modifier = modifier
             .padding(horizontal = 16.dp)
             .fillMaxWidth()
             .background(
@@ -196,28 +196,29 @@ private fun FeatureList() {
 @Composable
 private fun PurchaseOptions(
     state: PremiumUiState,
-    onEvent: (PremiumUiEvent) -> Unit
+    onEvent: (PremiumUiEvent) -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Column(
-        modifier = Modifier.padding(horizontal = 16.dp),
+        modifier = modifier.padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(13.dp)
     ) {
         PlanCard(
+            iconBgColor = Color(0x1AF554FF),
+            isSelected = state.selectedPlan == PlanType.Monthly,
             title = "Monthly Plan",
             price = state.monthlyPrice,
             icon = R.drawable.ic_box_monthly,
-            iconBgColor = Color(0x1AF554FF),
-            isSelected = state.selectedPlan == PlanType.Monthly,
             onClick = { onEvent(PremiumUiEvent.OnPlanSelected(PlanType.Monthly)) }
         )
         Box(modifier = Modifier.fillMaxWidth()) {
             PlanCard(
-                title = "Yearly Plan",
-                price = state.yearlyPrice,
-                icon = R.drawable.ic_star,
                 iconBgColor = StarBg,
                 isSelected = state.selectedPlan == PlanType.Yearly,
                 modifier = Modifier.padding(top = 8.dp),
+                title = "Yearly Plan",
+                price = state.yearlyPrice,
+                icon = R.drawable.ic_star,
                 onClick = { onEvent(PremiumUiEvent.OnPlanSelected(PlanType.Yearly)) }
             )
             Badge60Percent(
@@ -233,15 +234,18 @@ private fun PurchaseOptions(
 
 
 @Composable
-private fun Footer(onEvent: (PremiumUiEvent) -> Unit) {
-
-
-    val gradient = Brush.horizontalGradient(
-        colors = listOf(Color(0xFFF554FF), Color(0xFF434AFF))
-    )
+private fun Footer(
+    onEvent: (PremiumUiEvent) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val gradient = remember {
+        Brush.horizontalGradient(
+            colors = listOf(Color(0xFFF554FF), Color(0xFF434AFF))
+        )
+    }
 
     Column(
-        modifier = Modifier.padding(horizontal = 16.dp),
+        modifier = modifier.padding(horizontal = 16.dp),
     ) {
 
         Button(
@@ -286,16 +290,20 @@ private fun Footer(onEvent: (PremiumUiEvent) -> Unit) {
 }
 
 @Composable
-fun PremiumHeaderSection(onClose: () -> Unit, modifier: Modifier = Modifier) {
-
-    val gradient45 = Brush.linearGradient(
-        colors = listOf(
-            Color(0xFFF554FF),
-            Color(0xFF434AFF)
-        ),
-        start = Offset(0f, 0f),
-        end = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)
-    )
+fun PremiumHeaderSection(
+    onClose: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val gradient45 = remember {
+        Brush.linearGradient(
+            colors = listOf(
+                Color(0xFFF554FF),
+                Color(0xFF434AFF)
+            ),
+            start = Offset(0f, 0f),
+            end = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)
+        )
+    }
 
     Box(
         modifier = modifier
@@ -498,8 +506,7 @@ fun DirectionalLine(
 
 @Composable
 fun FloatingIcon(
-    @DrawableRes
-    image: Int,
+    @DrawableRes image: Int,
     size: Dp,
     modifier: Modifier = Modifier
 ) {
@@ -518,10 +525,11 @@ fun FeatureRow(
     modifier: Modifier = Modifier,
     showDivider: Boolean = true
 ) {
-
-    val gradient = Brush.verticalGradient(
-        colors = listOf(Color(0xFFF554FF), Color(0xFF434AFF))
-    )
+    val gradient = remember {
+        Brush.verticalGradient(
+            colors = listOf(Color(0xFFF554FF), Color(0xFF434AFF))
+        )
+    }
     Column(
         modifier = modifier
             .padding(horizontal = 16.dp)
@@ -580,10 +588,11 @@ fun PlanCard(
     @DrawableRes icon: Int = R.drawable.ic_star,
     onClick: () -> Unit = {}
 ) {
-
-    val gradient = Brush.verticalGradient(
-        colors = listOf(Color(0xFFF554FF), Color(0xFF434AFF))
-    )
+    val gradient = remember {
+        Brush.verticalGradient(
+            colors = listOf(Color(0xFFF554FF), Color(0xFF434AFF))
+        )
+    }
     val borderColor = if (isSelected) BrandBlue else Color(0xFFE0E0E0) // Todo: why am I using if statement here?
     val borderWidth = if (isSelected) 2.dp else 1.dp
 
@@ -666,12 +675,15 @@ fun PlanCard(
 
 
 @Composable
-fun Badge60Percent(modifier: Modifier = Modifier, offPercent: String = "60% OFF") {
-
-
-    val gradient = Brush.verticalGradient(
-        colors = listOf(Color(0xFFF554FF), Color(0xFF434AFF))
-    )
+fun Badge60Percent(
+    modifier: Modifier = Modifier,
+    offPercent: String = "60% OFF"
+) {
+    val gradient = remember {
+        Brush.verticalGradient(
+            colors = listOf(Color(0xFFF554FF), Color(0xFF434AFF))
+        )
+    }
 
     Surface(
         color = Color.Transparent,
