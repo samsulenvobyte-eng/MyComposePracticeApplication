@@ -69,6 +69,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
@@ -85,6 +86,7 @@ import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.mypracticeapplication.R
@@ -97,6 +99,7 @@ private val AccentColor = Color(0xFFFFE66D)
 
 @Composable
 fun AnimationScreen(
+    modifier: Modifier = Modifier,
     onNavigateBack: () -> Unit = {},
     onNavigateToGraphs: () -> Unit = {},
     onNavigateToMaps: () -> Unit = {},
@@ -117,12 +120,14 @@ fun AnimationScreen(
     onNavigateToTtBoostOnboarding: () -> Unit = {}
 ) {
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
         // Header
-        Header(onNavigateBack = onNavigateBack)
+        Header(
+            onNavigateBack = onNavigateBack
+        )
         
         Column(
             modifier = Modifier
@@ -275,9 +280,12 @@ fun AnimationScreen(
 }
 
 @Composable
-private fun Header(onNavigateBack: () -> Unit) {
+private fun Header(
+    onNavigateBack: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .background(
                 Brush.horizontalGradient(
@@ -395,8 +403,12 @@ private fun AnimateAsStateDemo() {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Box(
                 modifier = Modifier
-                    .size(size)
-                    .rotate(rotation)
+                    .graphicsLayer {
+                        scaleX = size.value / 80f
+                        scaleY = size.value / 80f
+                        rotationZ = rotation
+                    }
+                    .size(80.dp)
                     .clip(RoundedCornerShape(16.dp))
                     .background(backgroundColor)
                     .clickable { isSelected = !isSelected },
@@ -526,8 +538,6 @@ private fun InfiniteTransitionDemo() {
         label = "color"
     )
     
-    val animatedColor = lerp(PrimaryColor, SecondaryColor, colorShift)
-    
     DemoCard(
         title = "4️⃣ InfiniteTransition",
         subtitle = "Continuous pulse, rotation & color shift"
@@ -540,7 +550,10 @@ private fun InfiniteTransitionDemo() {
             Box(
                 modifier = Modifier
                     .size(60.dp)
-                    .scale(scale)
+                    .graphicsLayer {
+                        scaleX = scale
+                        scaleY = scale
+                    }
                     .clip(CircleShape)
                     .background(PrimaryColor),
                 contentAlignment = Alignment.Center
@@ -556,7 +569,9 @@ private fun InfiniteTransitionDemo() {
             Box(
                 modifier = Modifier
                     .size(60.dp)
-                    .rotate(rotation)
+                    .graphicsLayer {
+                        rotationZ = rotation
+                    }
                     .clip(RoundedCornerShape(8.dp))
                     .background(SecondaryColor),
                 contentAlignment = Alignment.Center
@@ -573,7 +588,15 @@ private fun InfiniteTransitionDemo() {
                 modifier = Modifier
                     .size(60.dp)
                     .clip(CircleShape)
-                    .background(animatedColor),
+                    .drawBehind {
+                        drawCircle(
+                            color = androidx.compose.ui.graphics.lerp(
+                                PrimaryColor,
+                                SecondaryColor,
+                                colorShift
+                            )
+                        )
+                    },
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
@@ -627,7 +650,7 @@ private fun AnimatableDemo() {
             ) {
                 Box(
                     modifier = Modifier
-                        .offset(x = offsetX.value.dp)
+                        .offset { IntOffset(x = offsetX.value.toInt().dp.roundToPx(), y = 0) }
                         .size(50.dp)
                         .clip(CircleShape)
                         .background(
@@ -771,7 +794,9 @@ private fun LinkUnlinkDemo() {
                 modifier = Modifier
                     .size(160.dp)
                     .clip(RoundedCornerShape(24.dp))
-                    .background(backgroundColor)
+                    .drawBehind {
+                        drawRect(backgroundColor)
+                    }
                     .clickable { isLinked = !isLinked },
                 contentAlignment = Alignment.Center
             ) {
@@ -781,21 +806,18 @@ private fun LinkUnlinkDemo() {
                         .size(120.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    // Calculate alpha for crossfade effect
-                    // Link icons fade out, circle icons fade in
-                    val linkAlpha = 1f - (separationOffset.value / 40f).coerceIn(0f, 1f)
-                    val circleAlpha = ((separationOffset.value / 40f) - 0.3f).coerceIn(0f, 1f) / 0.7f
-                    
                     // ═══════════════════════════════════════════════════════════
                     // TOP POSITION - Link fades to Circle
                     // ═══════════════════════════════════════════════════════════
                     Box(
                         modifier = Modifier
                             .size(width = 72.dp, height = 48.dp)
-                            .offset(
-                                x = 0.dp,
-                                y = -separationOffset / 2 - 8.dp
-                            )
+                            .offset {
+                                IntOffset(
+                                    x = 0,
+                                    y = (-separationOffset.toPx() / 2 - 8.dp.toPx()).toInt()
+                                )
+                            }
                     ) {
                         // Top link (fades out when unlinked)
                         Image(
@@ -803,7 +825,9 @@ private fun LinkUnlinkDemo() {
                             contentDescription = "Top link",
                             modifier = Modifier
                                 .fillMaxSize()
-                                .graphicsLayer { alpha = linkAlpha },
+                                .graphicsLayer {
+                                    alpha = 1f - (separationOffset.value / 40f).coerceIn(0f, 1f)
+                                },
                             colorFilter = ColorFilter.tint(iconColor)
                         )
                         
@@ -813,7 +837,9 @@ private fun LinkUnlinkDemo() {
                             contentDescription = "Circle",
                             modifier = Modifier
                                 .fillMaxSize()
-                                .graphicsLayer { alpha = circleAlpha },
+                                .graphicsLayer {
+                                    alpha = ((separationOffset.value / 40f) - 0.3f).coerceIn(0f, 1f) / 0.7f
+                                },
                             colorFilter = ColorFilter.tint(iconColor)
                         )
                     }
@@ -824,10 +850,12 @@ private fun LinkUnlinkDemo() {
                     Box(
                         modifier = Modifier
                             .size(width = 72.dp, height = 48.dp)
-                            .offset(
-                                x = 33.dp,
-                                y = separationOffset / 2 + 10.dp
-                            )
+                            .offset {
+                                IntOffset(
+                                    x = 33.dp.roundToPx(),
+                                    y = (separationOffset.toPx() / 2 + 10.dp.toPx()).toInt()
+                                )
+                            }
                     ) {
                         // Bottom link (fades out when unlinked)
                         Image(
@@ -835,7 +863,9 @@ private fun LinkUnlinkDemo() {
                             contentDescription = "Bottom link",
                             modifier = Modifier
                                 .fillMaxSize()
-                                .graphicsLayer { alpha = linkAlpha },
+                                .graphicsLayer {
+                                    alpha = 1f - (separationOffset.value / 40f).coerceIn(0f, 1f)
+                                },
                             colorFilter = ColorFilter.tint(iconColor)
                         )
                         
@@ -845,7 +875,9 @@ private fun LinkUnlinkDemo() {
                             contentDescription = "Circle",
                             modifier = Modifier
                                 .fillMaxSize()
-                                .graphicsLayer { alpha = circleAlpha },
+                                .graphicsLayer {
+                                    alpha = ((separationOffset.value / 40f) - 0.3f).coerceIn(0f, 1f) / 0.7f
+                                },
                             colorFilter = ColorFilter.tint(iconColor)
                         )
                     }
@@ -911,10 +943,11 @@ private fun LinkUnlinkDemo() {
 private fun NavigationCard(
     title: String,
     subtitle: String,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Card(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .clickable { onClick() },
         shape = RoundedCornerShape(16.dp),
@@ -955,10 +988,11 @@ private fun NavigationCard(
 private fun DemoCard(
     title: String,
     subtitle: String,
+    modifier: Modifier = Modifier,
     content: @Composable () -> Unit
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
@@ -988,15 +1022,6 @@ private fun DemoCard(
     }
 }
 
-// Color interpolation helper
-private fun lerp(start: Color, stop: Color, fraction: Float): Color {
-    return Color(
-        red = start.red + (stop.red - start.red) * fraction,
-        green = start.green + (stop.green - start.green) * fraction,
-        blue = start.blue + (stop.blue - start.blue) * fraction,
-        alpha = start.alpha + (stop.alpha - start.alpha) * fraction
-    )
-}
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
