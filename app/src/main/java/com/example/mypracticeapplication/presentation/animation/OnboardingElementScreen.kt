@@ -96,7 +96,7 @@ fun HeartBubble3D() {
     
     DynamicStatBubble(
         icon = Icons.Default.Favorite,
-        count = count,
+        count = { count },
         color = Color(0xFFE84E66),
         shadowColor = Color(0xFFA62C41),
         onCountChange = { count++ }
@@ -106,7 +106,7 @@ fun HeartBubble3D() {
 @Composable
 fun DynamicStatBubble(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
-    count: Int,
+    count: () -> Int,
     color: Color,
     shadowColor: Color,
     modifier: Modifier = Modifier,
@@ -180,7 +180,7 @@ fun DynamicStatBubble(
                 Spacer(modifier = Modifier.width(8.dp))
                 
                 AnimatedContent(
-                    targetState = count,
+                    targetState = count(),
                     transitionSpec = {
                         if (targetState > initialState) {
                             (slideInVertically { height -> height } + fadeIn()).togetherWith(

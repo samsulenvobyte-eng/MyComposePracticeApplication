@@ -45,9 +45,11 @@ import kotlinx.coroutines.delay
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TtBoostOnboardingScreen(
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Scaffold(
+        modifier = modifier,
         topBar = {
             TopAppBar(
                 title = {
@@ -80,13 +82,19 @@ fun TtBoostOnboardingScreen(
                 .background(TtBoostTheme.DarkBackground),
             contentAlignment = Alignment.Center
         ) {
-            TtBoostContent()
+            TtBoostContent(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(300.dp)
+            )
         }
     }
 }
 
 @Composable
-private fun TtBoostContent() {
+private fun TtBoostContent(
+    modifier: Modifier = Modifier
+) {
     // Data definition: Relative heights [0.0 - 1.0]
     val barData = remember { listOf(0.4f, 0.55f, 0.65f, 0.85f, 0.95f) }
 
@@ -149,9 +157,7 @@ private fun TtBoostContent() {
     }
 
     BoxWithConstraints(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(300.dp)
+        modifier = modifier
     ) {
         val availableWidth = maxWidth
         val availableHeight = maxHeight
@@ -208,7 +214,7 @@ private fun TtBoostContent() {
                     alpha = bubblesVisible.value
                 },
             icon = Icons.Default.Favorite,
-            count = (100 * mainProgress.value).toInt(),
+            count = { (100 * mainProgress.value).toInt() },
             color = TtBoostTheme.Bubble.HeartColor,
             shadowColor = TtBoostTheme.Bubble.HeartShadow
         )
@@ -225,7 +231,7 @@ private fun TtBoostContent() {
                     alpha = bubblesVisible.value
                 },
             icon = Icons.Default.Person,
-            count = (250 * mainProgress.value).toInt(),
+            count = { (250 * mainProgress.value).toInt() },
             color = TtBoostTheme.Bubble.PersonColor,
             shadowColor = TtBoostTheme.Bubble.PersonShadow
         )
