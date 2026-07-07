@@ -60,9 +60,11 @@ private val BarGradient = listOf(BarTopColor, BarBottomColor)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OnboardingPage2Screen(
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Scaffold(
+        modifier = modifier,
         topBar = {
             TopAppBar(
                 title = {
@@ -95,14 +97,20 @@ fun OnboardingPage2Screen(
                 .background(DarkBackground),
             contentAlignment = Alignment.Center
         ) {
-            AnimatedBarChartV2()
+            AnimatedBarChartV2(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(300.dp)
+            )
         }
     }
 }
 
 
 @Composable
-fun AnimatedBarChartV2() {
+fun AnimatedBarChartV2(
+    modifier: Modifier = Modifier
+) {
     // Data definition: Relative heights [0.0 - 1.0]
     val barData = remember { listOf(0.4f, 0.55f, 0.65f, 0.85f, 0.95f) }
 
@@ -177,9 +185,7 @@ fun AnimatedBarChartV2() {
     }
 
     androidx.compose.foundation.layout.BoxWithConstraints(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(300.dp)
+        modifier = modifier
     ) {
         val availableWidth = maxWidth
         val availableHeight = maxHeight
@@ -236,7 +242,8 @@ fun AnimatedBarChartV2() {
                 val centerY = fullHeightVal - (fullHeightVal * overlay.yPercent)
 
                 // Render component based on type
-                Box(
+                OverlayComponent(
+                    overlay = overlay,
                     modifier = Modifier
                         .align(Alignment.TopStart)
                         .offset(x = barCenterX.dp, y = centerY.dp)
@@ -245,9 +252,7 @@ fun AnimatedBarChartV2() {
                             scaleY = scale
                             alpha = scale
                         }
-                ) {
-                    OverlayComponent(overlay)
-                }
+                )
             }
         }
 
@@ -263,7 +268,7 @@ fun AnimatedBarChartV2() {
                     alpha = bubblesVisible.value
                 },
             icon = Icons.Default.Favorite,
-            count = (100 * mainProgress.value).toInt(),
+            count = { (100 * mainProgress.value).toInt() },
             color = Color(0xFFE84E66),
             shadowColor = Color(0xFFA62C41)
         )
@@ -279,7 +284,7 @@ fun AnimatedBarChartV2() {
                     alpha = bubblesVisible.value
                 },
             icon = Icons.Default.Person,
-            count = (250 * mainProgress.value).toInt(), // Different scale example
+            count = { (250 * mainProgress.value).toInt() }, // Different scale example
             color = Color(0xFF2DB3F9),
             shadowColor = Color(0xFFA62C41)
         )
@@ -287,7 +292,10 @@ fun AnimatedBarChartV2() {
 }
 
 @Composable
-fun OverlayComponent(overlay: ChartOverlayV2) {
+fun OverlayComponent(
+    overlay: ChartOverlayV2,
+    modifier: Modifier = Modifier
+) {
     val painter = androidx.compose.ui.res.painterResource(id = overlay.res)
 
     when (overlay) {
@@ -296,7 +304,7 @@ fun OverlayComponent(overlay: ChartOverlayV2) {
                 painter = painter,
                 contentDescription = null,
                 contentScale = androidx.compose.ui.layout.ContentScale.Crop,
-                modifier = Modifier
+                modifier = modifier
                     .offset(x = -overlay.radius, y = -overlay.radius)
                     .size(overlay.radius * 2)
                     .clip(androidx.compose.foundation.shape.CircleShape)
@@ -308,7 +316,7 @@ fun OverlayComponent(overlay: ChartOverlayV2) {
                 painter = painter,
                 contentDescription = null,
                 contentScale = androidx.compose.ui.layout.ContentScale.Crop,
-                modifier = Modifier
+                modifier = modifier
                     .offset(x = -overlay.width / 2, y = -overlay.height / 2)
                     .size(overlay.width, overlay.height)
                     .clip(androidx.compose.foundation.shape.RoundedCornerShape(percent = 50))
@@ -320,7 +328,7 @@ fun OverlayComponent(overlay: ChartOverlayV2) {
                 painter = painter,
                 contentDescription = null,
                 contentScale = androidx.compose.ui.layout.ContentScale.Crop,
-                modifier = Modifier
+                modifier = modifier
                     .offset(x = -overlay.width / 2, y = -overlay.height / 2)
                     .size(overlay.width, overlay.height)
                     .clip(androidx.compose.foundation.shape.RoundedCornerShape(16.dp))

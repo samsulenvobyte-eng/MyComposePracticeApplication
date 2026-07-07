@@ -61,9 +61,11 @@ private val BarGradient = listOf(BarTopColor, BarBottomColor)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OnboardingPage1Screen(
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Scaffold(
+        modifier = modifier,
         topBar = {
             TopAppBar(
                 title = { 
@@ -96,13 +98,19 @@ fun OnboardingPage1Screen(
                 .background(DarkBackground),
             contentAlignment = Alignment.Center
         ) {
-            AnimatedBarChart()
+            AnimatedBarChart(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(300.dp)
+            )
         }
     }
 }
 
 @Composable
-fun AnimatedBarChart() {
+fun AnimatedBarChart(
+    modifier: Modifier = Modifier
+) {
     // Data definition: Relative heights [0.0 - 1.0]
     val barData = remember { listOf(0.4f, 0.55f, 0.65f, 0.85f, 0.95f) }
     
@@ -191,13 +199,13 @@ fun AnimatedBarChart() {
         }
     }
 
-    Box(){
+    val sharedPath = remember { androidx.compose.ui.graphics.Path() }
+
+    Box(modifier = modifier){
 
         Canvas(
             modifier = Modifier
-                .fillMaxWidth()
-                .height(300.dp)
-                .padding(horizontal = 0.dp)
+                .fillMaxSize()
         ) {
             val barCount = barData.size
 
@@ -250,15 +258,14 @@ fun AnimatedBarChart() {
                     when (overlay) {
                         is ChartOverlay.Circle -> {
                             val radiusPx = overlay.radius.toPx() * scale
-                            val path = androidx.compose.ui.graphics.Path().apply {
-                                addOval(
-                                    androidx.compose.ui.geometry.Rect(
-                                        center = Offset(barCenterX, centerY),
-                                        radius = radiusPx
-                                    )
+                            sharedPath.reset()
+                            sharedPath.addOval(
+                                androidx.compose.ui.geometry.Rect(
+                                    center = Offset(barCenterX, centerY),
+                                    radius = radiusPx
                                 )
-                            }
-                            clipPath(path) {
+                            )
+                            clipPath(sharedPath) {
                                 val dstWidth = radiusPx * 2
                                 val dstHeight = radiusPx * 2
                                 val imgWidth = image.width.toFloat()
@@ -280,15 +287,14 @@ fun AnimatedBarChart() {
                             val widthPx = overlay.width.toPx() * scale
                             val heightPx = overlay.height.toPx() * scale
                             val topLeft = Offset(barCenterX - widthPx / 2, centerY - heightPx / 2)
-                            val path = androidx.compose.ui.graphics.Path().apply {
-                                addRoundRect(
-                                    androidx.compose.ui.geometry.RoundRect(
-                                        rect = androidx.compose.ui.geometry.Rect(topLeft, Size(widthPx, heightPx)),
-                                        cornerRadius = CornerRadius(widthPx / 2, widthPx / 2)
-                                    )
+                            sharedPath.reset()
+                            sharedPath.addRoundRect(
+                                androidx.compose.ui.geometry.RoundRect(
+                                    rect = androidx.compose.ui.geometry.Rect(topLeft, Size(widthPx, heightPx)),
+                                    cornerRadius = CornerRadius(widthPx / 2, widthPx / 2)
                                 )
-                            }
-                            clipPath(path) {
+                            )
+                            clipPath(sharedPath) {
                                 val dstWidth = widthPx
                                 val dstHeight = heightPx
                                 val imgWidth = image.width.toFloat()
@@ -321,7 +327,7 @@ fun AnimatedBarChart() {
                      alpha = bubblesVisible.value
                 },
             icon = Icons.Default.Favorite,
-            count = (100 * mainProgress.value).toInt(),
+            count = { (100 * mainProgress.value).toInt() },
             color = Color(0xFFE84E66),
             shadowColor = Color(0xFFA62C41)
         )
@@ -337,7 +343,7 @@ fun AnimatedBarChart() {
                      alpha = bubblesVisible.value
                 },
             icon = Icons.Default.Person,
-            count = (250 * mainProgress.value).toInt(), // Different scale example
+            count = { (250 * mainProgress.value).toInt() }, // Different scale example
             color = Color(0xFF2DB3F9),
             shadowColor = Color(0xFFA62C41)
         )
