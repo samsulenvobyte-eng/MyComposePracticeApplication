@@ -155,16 +155,16 @@ fun PremiumContent(
                     onClose = { onEvent(PremiumUiEvent.OnCloseClicked) }
                 )
 
-                FeatureList()
+                FeatureList(modifier = Modifier)
 
                 Spacer(modifier = Modifier.height(20.dp))
 
                 Spacer(modifier = Modifier.weight(1f))
-                PurchaseOptions(state, onEvent)
+                PurchaseOptions(state = state, onEvent = onEvent, modifier = Modifier)
                 Spacer(modifier = Modifier.weight(1f))
 
                 Spacer(modifier = Modifier.height(20.dp))
-                Footer(onEvent)
+                Footer(onEvent = onEvent)
                 Spacer(modifier = Modifier.height(12.dp))
             }
         }
@@ -173,7 +173,7 @@ fun PremiumContent(
 
 @Composable
 
-private fun FeatureList() {
+private fun FeatureList(modifier: Modifier = Modifier) {
     Column(
         modifier = Modifier
             .padding(horizontal = 16.dp)
@@ -196,7 +196,8 @@ private fun FeatureList() {
 @Composable
 private fun PurchaseOptions(
     state: PremiumUiState,
-    onEvent: (PremiumUiEvent) -> Unit
+    onEvent: (PremiumUiEvent) -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Column(
         modifier = Modifier.padding(horizontal = 16.dp),
@@ -233,12 +234,17 @@ private fun PurchaseOptions(
 
 
 @Composable
-private fun Footer(onEvent: (PremiumUiEvent) -> Unit) {
+private fun Footer(
+    onEvent: (PremiumUiEvent) -> Unit,
+    modifier: Modifier = Modifier
+) {
 
 
-    val gradient = Brush.horizontalGradient(
-        colors = listOf(Color(0xFFF554FF), Color(0xFF434AFF))
-    )
+    val gradient = remember {
+        Brush.horizontalGradient(
+            colors = listOf(Color(0xFFF554FF), Color(0xFF434AFF))
+        )
+    }
 
     Column(
         modifier = Modifier.padding(horizontal = 16.dp),
@@ -519,9 +525,11 @@ fun FeatureRow(
     showDivider: Boolean = true
 ) {
 
-    val gradient = Brush.verticalGradient(
-        colors = listOf(Color(0xFFF554FF), Color(0xFF434AFF))
-    )
+    val gradient = remember {
+        Brush.verticalGradient(
+            colors = listOf(Color(0xFFF554FF), Color(0xFF434AFF))
+        )
+    }
     Column(
         modifier = modifier
             .padding(horizontal = 16.dp)
@@ -581,9 +589,11 @@ fun PlanCard(
     onClick: () -> Unit = {}
 ) {
 
-    val gradient = Brush.verticalGradient(
-        colors = listOf(Color(0xFFF554FF), Color(0xFF434AFF))
-    )
+    val gradient = remember {
+        Brush.verticalGradient(
+            colors = listOf(Color(0xFFF554FF), Color(0xFF434AFF))
+        )
+    }
     val borderColor = if (isSelected) BrandBlue else Color(0xFFE0E0E0) // Todo: why am I using if statement here?
     val borderWidth = if (isSelected) 2.dp else 1.dp
 
@@ -669,9 +679,11 @@ fun PlanCard(
 fun Badge60Percent(modifier: Modifier = Modifier, offPercent: String = "60% OFF") {
 
 
-    val gradient = Brush.verticalGradient(
-        colors = listOf(Color(0xFFF554FF), Color(0xFF434AFF))
-    )
+    val gradient = remember {
+        Brush.verticalGradient(
+            colors = listOf(Color(0xFFF554FF), Color(0xFF434AFF))
+        )
+    }
 
     Surface(
         color = Color.Transparent,

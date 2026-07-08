@@ -45,9 +45,11 @@ import kotlinx.coroutines.delay
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TtBoostOnboardingScreen(
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Scaffold(
+        modifier = modifier,
         topBar = {
             TopAppBar(
                 title = {
@@ -169,29 +171,33 @@ private fun TtBoostContent() {
         )
 
         // Draw Overlays
-        if (overlayVisible.value > 0f) {
-            val scale = overlayVisible.value
+        val overlaysCount = overlays.size
+        for (i in 0 until overlaysCount) {
+            val overlay = overlays[i]
+            // Calculate position
+            val barCenterX =
+                (overlay.xIndex * (barWidth.value + spacing.value)) + (barWidth.value / 2)
+            val fullHeightVal = availableHeight.value
+            val centerY = fullHeightVal - (fullHeightVal * overlay.yPercent)
 
-            overlays.forEach { overlay ->
-                // Calculate position
-                val barCenterX =
-                    (overlay.xIndex * (barWidth.value + spacing.value)) + (barWidth.value / 2)
-                val fullHeightVal = availableHeight.value
-                val centerY = fullHeightVal - (fullHeightVal * overlay.yPercent)
-
-                // Render overlay with animation
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.TopStart)
-                        .offset(x = barCenterX.dp, y = centerY.dp)
-                        .graphicsLayer {
-                            scaleX = scale
-                            scaleY = scale
-                            alpha = scale
-                        }
-                ) {
-                    OverlayRenderer(overlay)
-                }
+            // Render overlay with animation
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .offset {
+                        androidx.compose.ui.unit.IntOffset(
+                            barCenterX.dp.roundToPx(),
+                            centerY.dp.roundToPx()
+                        )
+                    }
+                    .graphicsLayer {
+                        val scale = overlayVisible.value
+                        scaleX = scale
+                        scaleY = scale
+                        alpha = scale
+                    }
+            ) {
+                OverlayRenderer(overlay = overlay, modifier = Modifier)
             }
         }
 
@@ -208,7 +214,7 @@ private fun TtBoostContent() {
                     alpha = bubblesVisible.value
                 },
             icon = Icons.Default.Favorite,
-            count = (100 * mainProgress.value).toInt(),
+            count = { (100 * mainProgress.value).toInt() },
             color = TtBoostTheme.Bubble.HeartColor,
             shadowColor = TtBoostTheme.Bubble.HeartShadow
         )
@@ -225,7 +231,7 @@ private fun TtBoostContent() {
                     alpha = bubblesVisible.value
                 },
             icon = Icons.Default.Person,
-            count = (250 * mainProgress.value).toInt(),
+            count = { (250 * mainProgress.value).toInt() },
             color = TtBoostTheme.Bubble.PersonColor,
             shadowColor = TtBoostTheme.Bubble.PersonShadow
         )
