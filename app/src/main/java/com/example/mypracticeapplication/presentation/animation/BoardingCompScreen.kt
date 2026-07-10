@@ -19,8 +19,10 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -31,6 +33,7 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.RoundRect
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -98,10 +101,11 @@ data class PillConfig(
 
 @Composable
 fun BoardingCompScreen(
+    modifier: Modifier = Modifier,
     onNavigateBack: () -> Unit = {}
 ) {
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
             .background(DarkBackground)
     ) {
@@ -127,141 +131,138 @@ private fun OptimizedPillWithHearts(
         BitmapFactory.decodeResource(context.resources, pillConfig.res)?.asImageBitmap()
     }
     
-    // Heart state - use mutableStateOf with a list that we manage manually
-    var hearts by remember { mutableStateOf(listOf<Heart>()) }
-    var lastSpawnTime by remember { mutableStateOf(0L) }
-    var currentTime by remember { mutableStateOf(0L) }
+    // Heart state - use ArrayList for in-place updates to avoid list allocations
+    val hearts = remember { ArrayList<Heart>(MAX_HEARTS) }
+    var lastSpawnTime by remember { mutableLongStateOf(0L) }
+    var frameTick by remember { mutableLongStateOf(0L) }
     
     // Single animation loop for all hearts
     LaunchedEffect(Unit) {
-        val startTime = withFrameMillis { it }
-        
         while (isActive) {
-            currentTime = withFrameMillis { it }
+            val currentTime = withFrameMillis { it }
+            frameTick = currentTime
             
             // Spawn new heart if enough time has passed
             if (currentTime - lastSpawnTime > HEART_SPAWN_INTERVAL_MS) {
                 lastSpawnTime = currentTime
-                hearts = (hearts + Heart(spawnTime = currentTime))
-                    .filter { !it.isExpired(currentTime) }
-                    .takeLast(MAX_HEARTS)
+                hearts.add(Heart(spawnTime = currentTime))
             }
             
-            // Remove expired hearts periodically
-            hearts = hearts.filter { !it.isExpired(currentTime) }
+            // Remove expired hearts
+            if (hearts.isNotEmpty()) {
+                var i = 0
+                while (i < hearts.size) {
+                    if (hearts[i].isExpired(currentTime)) {
+                        hearts.removeAt(i)
+                    } else {
+                        i++
+                    }
+                }
+
+                // Limit to MAX_HEARTS
+                while (hearts.size > MAX_HEARTS) {
+                    hearts.removeAt(0)
+                }
+            }
         }
     }
     
     val density = LocalDensity.current
     val pillWidthPx = with(density) { pillConfig.width.toPx() }
     val pillHeightPx = with(density) { pillConfig.height.toPx() }
+    val heartSizePx = with(density) { 36.dp.toPx() }
     
-    // Single Canvas for everything - most performant approach
-    Canvas(modifier = modifier) {
-        if (image == null) return@Canvas
-        
-        // Pre-calculate pill position (only depends on canvas size)
-        val barCount = 5
-        val spacing = size.width * 0.05f
-        val barWidth = (size.width - (spacing * (barCount - 1))) / barCount
-        
-        val pillCenterX = (pillConfig.xIndex * (barWidth + spacing)) + (barWidth / 2)
-        val pillCenterY = size.height * 0.5f - (size.height * 0.5f * (pillConfig.yPercent - 0.5f))
-        
-        val topLeft = Offset(pillCenterX - pillWidthPx / 2, pillCenterY - pillHeightPx / 2)
-        val pillBottomY = pillCenterY + pillHeightPx / 2
-        
-        // Draw pill with clipped image
-        drawPill(
-            image = image,
-            topLeft = topLeft,
-            width = pillWidthPx,
-            height = pillHeightPx
-        )
-        
-        // Draw all hearts in single draw call batch
-        hearts.forEach { heart ->
-            drawHeart(
-                heart = heart,
-                currentTime = currentTime,
-                centerX = pillCenterX,
-                bottomY = pillBottomY
-            )
+    // Pre-allocate normalized heart path (0..1) to avoid per-frame allocations
+    val heartPath = remember {
+        Path().apply {
+            moveTo(0.5f, 0.25f)
+            cubicTo(0.15f, 0.1f, 0f, 0.35f, 0f, 0.5f)
+            cubicTo(0f, 0.7f, 0.25f, 0.85f, 0.5f, 1f)
+            cubicTo(0.75f, 0.85f, 1f, 0.7f, 1f, 0.5f)
+            cubicTo(1f, 0.35f, 0.85f, 0.1f, 0.5f, 0.25f)
+            close()
         }
     }
-}
 
-/**
- * Draw pill shape with clipped image - extracted for clarity
- */
-private fun DrawScope.drawPill(
-    image: ImageBitmap,
-    topLeft: Offset,
-    width: Float,
-    height: Float
-) {
-    val path = Path().apply {
-        addRoundRect(
-            RoundRect(
-                rect = Rect(topLeft, Size(width, height)),
-                cornerRadius = CornerRadius(width / 2, width / 2)
-            )
-        )
-    }
-    
-    clipPath(path) {
-        val imgWidth = image.width.toFloat()
-        val imgHeight = image.height.toFloat()
-        
-        val scaleFactor = maxOf(width / imgWidth, height / imgHeight)
-        val scaledWidth = imgWidth * scaleFactor
-        val scaledHeight = imgHeight * scaleFactor
-        
-        val drawX = topLeft.x + (width - scaledWidth) / 2
-        val drawY = topLeft.y + (height - scaledHeight) / 2
-        
-        drawImage(
-            image = image,
-            dstOffset = IntOffset(drawX.toInt(), drawY.toInt()),
-            dstSize = IntSize(scaledWidth.toInt(), scaledHeight.toInt())
-        )
-    }
-}
+    Spacer(
+        modifier = modifier.drawWithCache {
+            val imageBitmap = image ?: return@drawWithCache onDrawBehind { }
 
-/**
- * Draw a single heart with animation - uses DrawScope transforms for efficiency
- */
-private fun DrawScope.drawHeart(
-    heart: Heart,
-    currentTime: Long,
-    centerX: Float,
-    bottomY: Float
-) {
-    val progress = heart.getProgress(currentTime)
-    
-    // Calculate animation values
-    val scale = calculateHeartScale(progress)
-    val alpha = calculateHeartAlpha(progress)
-    val translateY = -HEART_TRAVEL_DISTANCE * progress
-    
-    if (alpha <= 0f) return
-    
-    val heartSize = 36.dp.toPx()
-    val x = centerX + heart.offsetX - heartSize / 2
-    val y = bottomY + translateY - heartSize / 2
-    
-    translate(left = x + heartSize / 2, top = y + heartSize / 2) {
-        rotate(degrees = heart.rotation) {
-            scale(scale = scale) {
-                translate(left = -heartSize / 2, top = -heartSize / 2) {
-                    drawHeartShape(
-                        size = heartSize,
-                        color = HeartColor.copy(alpha = alpha)
+            val barCount = 5
+            val spacing = size.width * 0.05f
+            val barWidth = (size.width - (spacing * (barCount - 1))) / barCount
+
+            val pillCenterX = (pillConfig.xIndex * (barWidth + spacing)) + (barWidth / 2)
+            val pillCenterY = size.height * 0.5f - (size.height * 0.5f * (pillConfig.yPercent - 0.5f))
+
+            val topLeft = Offset(pillCenterX - pillWidthPx / 2, pillCenterY - pillHeightPx / 2)
+            val pillBottomY = pillCenterY + pillHeightPx / 2
+
+            val pillPath = Path().apply {
+                addRoundRect(
+                    RoundRect(
+                        rect = Rect(topLeft, Size(pillWidthPx, pillHeightPx)),
+                        cornerRadius = CornerRadius(pillWidthPx / 2, pillWidthPx / 2)
                     )
+                )
+            }
+
+            val imgWidth = imageBitmap.width.toFloat()
+            val imgHeight = imageBitmap.height.toFloat()
+            val scaleFactor = maxOf(pillWidthPx / imgWidth, pillHeightPx / imgHeight)
+            val scaledWidth = (imgWidth * scaleFactor).toInt()
+            val scaledHeight = (imgHeight * scaleFactor).toInt()
+            val drawX = (topLeft.x + (pillWidthPx - scaledWidth) / 2).toInt()
+            val drawY = (topLeft.y + (pillHeightPx - scaledHeight) / 2).toInt()
+
+            onDrawBehind {
+                // Trigger redraw on frameTick change
+                frameTick
+
+                // Draw pill with clipped image
+                clipPath(pillPath) {
+                    drawImage(
+                        image = imageBitmap,
+                        dstOffset = IntOffset(drawX, drawY),
+                        dstSize = IntSize(scaledWidth, scaledHeight)
+                    )
+                }
+
+                // Draw all hearts
+                val currentTime = frameTick
+                for (i in 0 until hearts.size) {
+                    val heart = hearts[i]
+                    val progress = heart.getProgress(currentTime)
+                    val alpha = calculateHeartAlpha(progress)
+
+                    if (alpha > 0f) {
+                        val scale = calculateHeartScale(progress)
+                        val translateY = -HEART_TRAVEL_DISTANCE * progress
+
+                        val x = pillCenterX + heart.offsetX - heartSizePx / 2
+                        val y = pillBottomY + translateY - heartSizePx / 2
+
+                        translate(left = x + heartSizePx / 2, top = y + heartSizePx / 2) {
+                            rotate(degrees = heart.rotation) {
+                                scale(scale = scale) {
+                                    translate(left = -heartSizePx / 2, top = -heartSizePx / 2) {
+                                        // Reuse heartPath with scaling
+                                        scale(heartSizePx) {
+                                            drawPath(
+                                                path = heartPath,
+                                                color = HeartColor,
+                                                alpha = alpha
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
-    }
+    )
 }
 
 /**
@@ -303,60 +304,21 @@ private fun easeOutBack(x: Float): Float {
     return 1f + c3 * t * t * t + c1 * t * t
 }
 
-/**
- * Draw heart shape using Canvas paths - more efficient than Icon composable
- */
-private fun DrawScope.drawHeartShape(
-    size: Float,
-    color: Color
-) {
-    val path = Path().apply {
-        val width = size
-        val height = size
-        
-        // Heart shape using bezier curves
-        moveTo(width / 2, height * 0.25f)
-        
-        // Left curve
-        cubicTo(
-            width * 0.15f, height * 0.1f,
-            0f, height * 0.35f,
-            0f, height * 0.5f
-        )
-        cubicTo(
-            0f, height * 0.7f,
-            width * 0.25f, height * 0.85f,
-            width / 2, height
-        )
-        
-        // Right curve
-        cubicTo(
-            width * 0.75f, height * 0.85f,
-            width, height * 0.7f,
-            width, height * 0.5f
-        )
-        cubicTo(
-            width, height * 0.35f,
-            width * 0.85f, height * 0.1f,
-            width / 2, height * 0.25f
-        )
-        
-        close()
-    }
-    
-    drawPath(path = path, color = color)
-}
-
 @Composable
-private fun BoardingCompHeader(onNavigateBack: () -> Unit) {
+private fun BoardingCompHeader(
+    modifier: Modifier = Modifier,
+    onNavigateBack: () -> Unit
+) {
+    val headerBrush = remember {
+        Brush.horizontalGradient(
+            colors = listOf(PrimaryColor, SecondaryColor)
+        )
+    }
+
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
-            .background(
-                Brush.horizontalGradient(
-                    colors = listOf(PrimaryColor, SecondaryColor)
-                )
-            )
+            .background(headerBrush)
             .padding(horizontal = 4.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -374,10 +336,11 @@ private fun BoardingCompHeader(onNavigateBack: () -> Unit) {
                 color = Color.White,
                 fontWeight = FontWeight.Bold
             )
+            val subtitleColor = remember { Color.White.copy(alpha = 0.8f) }
             Text(
                 text = "Onboarding Component Animations",
                 style = MaterialTheme.typography.bodySmall,
-                color = Color.White.copy(alpha = 0.8f)
+                color = subtitleColor
             )
         }
     }
