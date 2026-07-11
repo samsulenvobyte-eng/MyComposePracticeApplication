@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -27,6 +28,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
@@ -49,9 +51,11 @@ import kotlin.math.sin
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CanvasScreen(
+    modifier: Modifier = Modifier,
     onNavigateBack: () -> Unit = {}
 ) {
     Scaffold(
+        modifier = modifier,
         topBar = {
             TopAppBar(
                 title = {
@@ -140,10 +144,11 @@ fun CanvasScreen(
 @Composable
 private fun CanvasCard(
     title: String,
+    modifier: Modifier = Modifier,
     content: @Composable () -> Unit
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = Color.White
@@ -179,9 +184,11 @@ private fun CanvasCard(
 }
 
 @Composable
-private fun BasicShapesCanvas() {
+private fun BasicShapesCanvas(
+    modifier: Modifier = Modifier
+) {
     Canvas(
-        modifier = Modifier.size(180.dp)
+        modifier = modifier.size(180.dp)
     ) {
         // Circle
         drawCircle(
@@ -222,9 +229,22 @@ private fun BasicShapesCanvas() {
 }
 
 @Composable
-private fun LinesAndStrokesCanvas() {
+private fun LinesAndStrokesCanvas(
+    modifier: Modifier = Modifier
+) {
+    val points = remember {
+        listOf(
+            Offset(20f, 130f),
+            Offset(80f, 180f),
+            Offset(140f, 120f),
+            Offset(200f, 170f),
+            Offset(260f, 110f),
+            Offset(300f, 160f)
+        )
+    }
+
     Canvas(
-        modifier = Modifier.size(180.dp)
+        modifier = modifier.size(180.dp)
     ) {
         // Simple line
         drawLine(
@@ -244,15 +264,6 @@ private fun LinesAndStrokesCanvas() {
         )
 
         // Multiple connected lines
-        val points = listOf(
-            Offset(20f, 130f),
-            Offset(80f, 180f),
-            Offset(140f, 120f),
-            Offset(200f, 170f),
-            Offset(260f, 110f),
-            Offset(300f, 160f)
-        )
-        
         for (i in 0 until points.size - 1) {
             drawLine(
                 color = Color(0xFFf093fb),
@@ -264,63 +275,78 @@ private fun LinesAndStrokesCanvas() {
         }
 
         // Draw points
-        points.forEach { point ->
+        for (i in points.indices) {
             drawCircle(
                 color = Color(0xFF4facfe),
                 radius = 8f,
-                center = point
+                center = points[i]
             )
         }
     }
 }
 
 @Composable
-private fun GradientShapesCanvas() {
+private fun GradientShapesCanvas(
+    modifier: Modifier = Modifier
+) {
+    val horizontalBrush = remember {
+        Brush.horizontalGradient(
+            colors = listOf(Color(0xFF667eea), Color(0xFF764ba2))
+        )
+    }
+    val verticalBrush = remember {
+        Brush.verticalGradient(
+            colors = listOf(Color(0xFFf093fb), Color(0xFFf5576c))
+        )
+    }
+    val radialBrush = remember {
+        Brush.radialGradient(
+            colors = listOf(Color(0xFF4facfe), Color(0xFF00f2fe)),
+            center = Offset(80f, 160f),
+            radius = 80f
+        )
+    }
+    val sweepBrush = remember {
+        Brush.sweepGradient(
+            colors = listOf(
+                Color(0xFFfa709a),
+                Color(0xFFfee140),
+                Color(0xFF43e97b),
+                Color(0xFF38f9d7),
+                Color(0xFF4facfe),
+                Color(0xFFfa709a)
+            ),
+            center = Offset(220f, 160f)
+        )
+    }
+
     Canvas(
-        modifier = Modifier.size(180.dp)
+        modifier = modifier.size(180.dp)
     ) {
         // Horizontal gradient rectangle
         drawRect(
-            brush = Brush.horizontalGradient(
-                colors = listOf(Color(0xFF667eea), Color(0xFF764ba2))
-            ),
+            brush = horizontalBrush,
             topLeft = Offset(20f, 30f),
             size = Size(120f, 60f)
         )
 
         // Vertical gradient circle
         drawCircle(
-            brush = Brush.verticalGradient(
-                colors = listOf(Color(0xFFf093fb), Color(0xFFf5576c))
-            ),
+            brush = verticalBrush,
             radius = 45f,
             center = Offset(240f, 60f)
         )
 
         // Radial gradient oval
         drawOval(
-            brush = Brush.radialGradient(
-                colors = listOf(Color(0xFF4facfe), Color(0xFF00f2fe)),
-                center = Offset(80f, 160f),
-                radius = 80f
-            ),
+            brush = radialBrush,
             topLeft = Offset(20f, 120f),
             size = Size(120f, 80f)
         )
 
         // Sweep gradient rounded rectangle
         drawRoundRect(
-            brush = Brush.sweepGradient(
-                colors = listOf(
-                    Color(0xFFfa709a),
-                    Color(0xFFfee140),
-                    Color(0xFF43e97b),
-                    Color(0xFF38f9d7),
-                    Color(0xFF4facfe),
-                    Color(0xFFfa709a)
-                ),
-                center = Offset(220f, 160f)
-            ),
+            brush = sweepBrush,
             topLeft = Offset(160f, 110f),
             size = Size(120f, 100f),
             cornerRadius = CornerRadius(20f)
@@ -329,22 +355,28 @@ private fun GradientShapesCanvas() {
 }
 
 @Composable
-private fun ArcAndPieChartCanvas() {
-    Canvas(
-        modifier = Modifier.size(180.dp)
-    ) {
-        val center = Offset(size.width / 2, size.height / 2)
-        val radius = 80f
-
-        // Pie chart segments
-        val segments = listOf(
+private fun ArcAndPieChartCanvas(
+    modifier: Modifier = Modifier
+) {
+    val segments = remember {
+        listOf(
             Pair(0f, 90f) to Color(0xFF667eea),
             Pair(90f, 120f) to Color(0xFF764ba2),
             Pair(210f, 80f) to Color(0xFFf093fb),
             Pair(290f, 70f) to Color(0xFF4facfe)
         )
+    }
 
-        segments.forEach { (angles, color) ->
+    Canvas(
+        modifier = modifier.size(180.dp)
+    ) {
+        val center = Offset(size.width / 2, size.height / 2)
+        val radius = 80f
+
+        for (i in segments.indices) {
+            val segment = segments[i]
+            val angles = segment.first
+            val color = segment.second
             drawArc(
                 color = color,
                 startAngle = angles.first,
@@ -365,102 +397,136 @@ private fun ArcAndPieChartCanvas() {
 }
 
 @Composable
-private fun StarPathCanvas() {
-    Canvas(
-        modifier = Modifier.size(180.dp)
-    ) {
-        val centerX = size.width / 2
-        val centerY = size.height / 2
-        val outerRadius = 70f
-        val innerRadius = 35f
-        val points = 5
-
-        val path = Path()
-        
-        for (i in 0 until points * 2) {
-            val radius = if (i % 2 == 0) outerRadius else innerRadius
-            val angle = Math.toRadians((i * 360.0 / (points * 2)) - 90)
-            val x = centerX + (radius * cos(angle)).toFloat()
-            val y = centerY + (radius * sin(angle)).toFloat()
-            
-            if (i == 0) {
-                path.moveTo(x, y)
-            } else {
-                path.lineTo(x, y)
-            }
-        }
-        path.close()
-
-        // Fill star
-        drawPath(
-            path = path,
-            brush = Brush.linearGradient(
-                colors = listOf(Color(0xFFfee140), Color(0xFFfa709a))
-            )
-        )
-
-        // Stroke star
-        drawPath(
-            path = path,
-            color = Color(0xFFf5576c),
-            style = Stroke(
-                width = 3f,
-                join = StrokeJoin.Round
-            )
+private fun StarPathCanvas(
+    modifier: Modifier = Modifier
+) {
+    val starBrush = remember {
+        Brush.linearGradient(
+            colors = listOf(Color(0xFFfee140), Color(0xFFfa709a))
         )
     }
+    val starStroke = remember {
+        Stroke(
+            width = 3f,
+            join = StrokeJoin.Round
+        )
+    }
+
+    Spacer(
+        modifier = modifier
+            .size(180.dp)
+            .drawWithCache {
+                val centerX = size.width / 2
+                val centerY = size.height / 2
+                val outerRadius = 70f
+                val innerRadius = 35f
+                val points = 5
+
+                val path = Path()
+
+                for (i in 0 until points * 2) {
+                    val radius = if (i % 2 == 0) outerRadius else innerRadius
+                    val angle = Math.toRadians((i * 360.0 / (points * 2)) - 90)
+                    val x = centerX + (radius * cos(angle)).toFloat()
+                    val y = centerY + (radius * sin(angle)).toFloat()
+
+                    if (i == 0) {
+                        path.moveTo(x, y)
+                    } else {
+                        path.lineTo(x, y)
+                    }
+                }
+                path.close()
+
+                onDrawBehind {
+                    // Fill star
+                    drawPath(
+                        path = path,
+                        brush = starBrush
+                    )
+
+                    // Stroke star
+                    drawPath(
+                        path = path,
+                        color = Color(0xFFf5576c),
+                        style = starStroke
+                    )
+                }
+            }
+    )
 }
 
 @Composable
-private fun BezierCurveCanvas() {
-    Canvas(
-        modifier = Modifier.size(180.dp)
-    ) {
-        // Quadratic Bezier curve
-        val quadPath = Path().apply {
-            moveTo(20f, 150f)
-            quadraticTo(160f, 20f, 300f, 150f)
-        }
-        
-        drawPath(
-            path = quadPath,
-            color = Color(0xFF667eea),
-            style = Stroke(width = 4f, cap = StrokeCap.Round)
-        )
-
-        // Cubic Bezier curve
-        val cubicPath = Path().apply {
-            moveTo(20f, 180f)
-            cubicTo(80f, 50f, 240f, 250f, 300f, 100f)
-        }
-        
-        drawPath(
-            path = cubicPath,
-            color = Color(0xFFf093fb),
-            style = Stroke(width = 4f, cap = StrokeCap.Round)
-        )
-
-        // Control points visualization
-        val controlPoints = listOf(
+private fun BezierCurveCanvas(
+    modifier: Modifier = Modifier
+) {
+    val quadStroke = remember { Stroke(width = 4f, cap = StrokeCap.Round) }
+    val cubicStroke = remember { Stroke(width = 4f, cap = StrokeCap.Round) }
+    val controlPoints = remember {
+        listOf(
             Offset(160f, 20f),   // Quad control
             Offset(80f, 50f),    // Cubic control 1
             Offset(240f, 250f)   // Cubic control 2
         )
-        
-        controlPoints.forEach { point ->
-            drawCircle(
-                color = Color(0xFFfa709a),
-                radius = 6f,
-                center = point
-            )
-        }
     }
+
+    Spacer(
+        modifier = modifier
+            .size(180.dp)
+            .drawWithCache {
+                // Quadratic Bezier curve
+                val quadPath = Path().apply {
+                    moveTo(20f, 150f)
+                    quadraticTo(160f, 20f, 300f, 150f)
+                }
+
+                // Cubic Bezier curve
+                val cubicPath = Path().apply {
+                    moveTo(20f, 180f)
+                    cubicTo(80f, 50f, 240f, 250f, 300f, 100f)
+                }
+
+                onDrawBehind {
+                    drawPath(
+                        path = quadPath,
+                        color = Color(0xFF667eea),
+                        style = quadStroke
+                    )
+
+                    drawPath(
+                        path = cubicPath,
+                        color = Color(0xFFf093fb),
+                        style = cubicStroke
+                    )
+
+                    // Control points visualization
+                    for (i in controlPoints.indices) {
+                        drawCircle(
+                            color = Color(0xFFfa709a),
+                            radius = 6f,
+                            center = controlPoints[i]
+                        )
+                    }
+                }
+            }
+    )
 }
 
 @Composable
-private fun GridPatternCanvas() {
+private fun GridPatternCanvas(
+    modifier: Modifier = Modifier
+) {
+    val gridColors = remember {
+        listOf(
+            Color(0xFF667eea),
+            Color(0xFF764ba2),
+            Color(0xFFf093fb),
+            Color(0xFF4facfe)
+        )
+    }
+
     Canvas(
-        modifier = Modifier.size(180.dp)
+        modifier = modifier.size(180.dp)
     ) {
         val cellSize = 40f
         val cols = (size.width / cellSize).toInt()
@@ -475,7 +541,7 @@ private fun GridPatternCanvas() {
                 strokeWidth = 1f
             )
         }
-        
+
         for (i in 0..rows) {
             drawLine(
                 color = Color(0xFFE0E0E0),
@@ -486,18 +552,12 @@ private fun GridPatternCanvas() {
         }
 
         // Draw colored cells in a pattern
-        val colors = listOf(
-            Color(0xFF667eea),
-            Color(0xFF764ba2),
-            Color(0xFFf093fb),
-            Color(0xFF4facfe)
-        )
-
         for (row in 0 until rows) {
             for (col in 0 until cols) {
                 if ((row + col) % 3 == 0) {
                     drawRect(
-                        color = colors[(row + col) % colors.size].copy(alpha = 0.5f),
+                        color = gridColors[(row + col) % gridColors.size],
+                        alpha = 0.5f,
                         topLeft = Offset(col * cellSize, row * cellSize),
                         size = Size(cellSize, cellSize)
                     )
@@ -508,14 +568,11 @@ private fun GridPatternCanvas() {
 }
 
 @Composable
-private fun RotatedShapesCanvas() {
-    Canvas(
-        modifier = Modifier.size(180.dp)
-    ) {
-        val center = Offset(size.width / 2, size.height / 2)
-        val rectSize = Size(100f, 40f)
-
-        val colors = listOf(
+private fun RotatedShapesCanvas(
+    modifier: Modifier = Modifier
+) {
+    val rotatedColors = remember {
+        listOf(
             Color(0xFF667eea),
             Color(0xFF764ba2),
             Color(0xFFf093fb),
@@ -523,6 +580,13 @@ private fun RotatedShapesCanvas() {
             Color(0xFFfa709a),
             Color(0xFFfee140)
         )
+    }
+
+    Canvas(
+        modifier = modifier.size(180.dp)
+    ) {
+        val center = Offset(size.width / 2, size.height / 2)
+        val rectSize = Size(100f, 40f)
 
         for (i in 0 until 6) {
             rotate(
@@ -530,7 +594,8 @@ private fun RotatedShapesCanvas() {
                 pivot = center
             ) {
                 drawRoundRect(
-                    color = colors[i].copy(alpha = 0.7f),
+                    color = rotatedColors[i],
+                    alpha = 0.7f,
                     topLeft = Offset(center.x - rectSize.width / 2, center.y - rectSize.height / 2),
                     size = rectSize,
                     cornerRadius = CornerRadius(8f)
