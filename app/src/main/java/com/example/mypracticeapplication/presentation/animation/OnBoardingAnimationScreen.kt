@@ -1,4 +1,4 @@
-﻿package com.example.mypracticeapplication.presentation.animation
+package com.example.mypracticeapplication.presentation.animation
 
 import androidx.annotation.DrawableRes
 import androidx.compose.animation.core.LinearEasing
@@ -7,28 +7,24 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Compress
-import androidx.compose.material.icons.filled.CropFree
-import androidx.compose.material.icons.filled.Image
-import androidx.compose.material.icons.filled.Psychology
-import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
@@ -43,6 +39,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.example.mypracticeapplication.R
+import com.example.mypracticeapplication.presentation.theme.MyPracticeApplicationTheme
 import kotlin.math.cos
 import kotlin.math.roundToInt
 import kotlin.math.sin
@@ -66,17 +63,20 @@ private val orbitIcons = listOf(
 
 @Composable
 fun OnBoardingAnimationScreen(
+    modifier: Modifier = Modifier,
     onNavigateBack: () -> Unit = {}
 ) {
-    CircularAnimationComponent()
+    CircularAnimationComponent(modifier = modifier)
 }
 
 @Composable
-private fun CircularAnimationComponent() {
+private fun CircularAnimationComponent(
+    modifier: Modifier = Modifier
+) {
     val infiniteTransition = rememberInfiniteTransition(label = "orbit")
 
     // Slow rotation animation (20 seconds for full circle)
-    val rotationAngle by infiniteTransition.animateFloat(
+    val rotationAngle = infiniteTransition.animateFloat(
         initialValue = 0f,
         targetValue = -360f,
         animationSpec = infiniteRepeatable(
@@ -86,33 +86,38 @@ private fun CircularAnimationComponent() {
         label = "rotation"
     )
 
-    val density = LocalDensity.current
     val orbitRadius = 140.dp
     val iconSize = 56.dp
     val centerIconSize = 156.dp
 
     Box(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background),
         contentAlignment = Alignment.Center
     ) {
         // Draw concentric orbit rings
-        Canvas(
-            modifier = Modifier.size(350.dp)
-        ) {
-            val center = Offset(size.width / 2, size.height / 2)
+        // Optimization: Use Modifier.drawBehind on a Spacer instead of an empty Canvas to reduce composable nesting.
+        val radiusFractions = remember { listOf(0.55f, 0.7f, 0.85f) }
+        Spacer(
+            modifier = Modifier
+                .size(350.dp)
+                .drawBehind {
+                    val center = Offset(size.width / 2, size.height / 2)
+                    val minDimension = size.minDimension
 
-            // Draw 3 concentric circles
-            listOf(0.55f, 0.7f, 0.85f).forEach { radiusFraction ->
-                drawCircle(
-                    color = OrbitRingColor,
-                    radius = size.minDimension / 2 * radiusFraction,
-                    center = center,
-                    style = Stroke(width = 2f)
-                )
-            }
-        }
+                    // Draw 3 concentric circles
+                    for (i in radiusFractions.indices) {
+                        val radiusFraction = radiusFractions[i]
+                        drawCircle(
+                            color = OrbitRingColor,
+                            radius = minDimension / 2 * radiusFraction,
+                            center = center,
+                            style = Stroke(width = 2f)
+                        )
+                    }
+                }
+        )
 
         // Central blue circle with icon
         Box(
@@ -151,10 +156,11 @@ private fun CircularAnimationComponent() {
         }
 
         // Orbiting icons
-        orbitIcons.forEach { orbitIcon ->
+        for (i in orbitIcons.indices) {
+            val orbitIcon = orbitIcons[i]
             OrbitingIcon(
                 icon = orbitIcon.icon,
-                angleDegrees = orbitIcon.startAngleDegrees + rotationAngle,
+                angleDegreesProvider = { orbitIcon.startAngleDegrees + rotationAngle.value },
                 orbitRadius = orbitRadius,
                 iconSize = iconSize
             )
@@ -166,24 +172,26 @@ private fun CircularAnimationComponent() {
 @Composable
 private fun OrbitingIcon(
     @DrawableRes icon: Int,
-    angleDegrees: Float,
+    angleDegreesProvider: () -> Float,
     orbitRadius: Dp,
-    iconSize: Dp
+    iconSize: Dp,
+    modifier: Modifier = Modifier
 ) {
     val density = LocalDensity.current
-    val angleRadians = Math.toRadians(angleDegrees.toDouble())
-    
-    val offsetX = with(density) { 
-        (orbitRadius.toPx() * cos(angleRadians)).roundToInt() 
-    }
-    val offsetY = with(density) { 
-        (orbitRadius.toPx() * sin(angleRadians)).roundToInt() 
-    }
 
     Image(
         painter = painterResource(icon),
-        modifier = Modifier
-            .offset { IntOffset(offsetX, -offsetY) }
+        modifier = modifier
+            .offset {
+                // Optimization: Defer high-frequency state read (rotationAngle) to the placement phase.
+                // This eliminates per-frame recompositions of the OrbitingIcon and its parent.
+                val angleRadians = Math.toRadians(angleDegreesProvider().toDouble())
+                val radiusPx = orbitRadius.toPx()
+
+                val offsetX = (radiusPx * cos(angleRadians)).roundToInt()
+                val offsetY = (radiusPx * sin(angleRadians)).roundToInt()
+                IntOffset(offsetX, -offsetY)
+            }
             .size(iconSize)
             .shadow(
                 elevation = 2.dp,
@@ -197,7 +205,7 @@ private fun OrbitingIcon(
 @Preview(showBackground = true)
 @Composable
 private fun OnBoardingAnimationScreenPreview() {
-    OnBoardingAnimationScreen()
+    MyPracticeApplicationTheme {
+        OnBoardingAnimationScreen()
+    }
 }
-
-
