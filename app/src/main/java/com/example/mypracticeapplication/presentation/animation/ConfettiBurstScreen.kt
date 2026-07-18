@@ -1,4 +1,4 @@
-﻿package com.example.mypracticeapplication.presentation.animation
+package com.example.mypracticeapplication.presentation.animation
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -40,6 +41,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.example.mypracticeapplication.presentation.theme.MyPracticeApplicationTheme
 import kotlin.random.Random
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -49,8 +51,9 @@ import kotlin.random.Random
 /**
  * Represents a single confetti particle with physics properties.
  * All values are in normalized units or pixels per second.
+ * Optimized: Mutable class to allow in-place updates and eliminate allocation overhead.
  */
-private data class Particle(
+private class Particle(
     var x: Float,           // Current X position
     var y: Float,           // Current Y position
     var vx: Float,          // Velocity X (pixels per second)
@@ -105,20 +108,24 @@ private val ConfettiPalette = listOf(
 // PARTICLE GENERATOR
 // ═══════════════════════════════════════════════════════════════════════════════
 
-private fun generateParticles(emissionX: Float, emissionY: Float): List<Particle> {
-    return List(PhysicsConfig.PARTICLE_COUNT) {
-        Particle(
-            x = emissionX,
-            y = emissionY,
-            vx = Random.nextFloat() * (PhysicsConfig.MAX_VX - PhysicsConfig.MIN_VX) + PhysicsConfig.MIN_VX,
-            vy = Random.nextFloat() * (PhysicsConfig.MAX_VY - PhysicsConfig.MIN_VY) + PhysicsConfig.MIN_VY,
-            width = Random.nextFloat() * (PhysicsConfig.MAX_WIDTH - PhysicsConfig.MIN_WIDTH) + PhysicsConfig.MIN_WIDTH,
-            height = Random.nextFloat() * (PhysicsConfig.MAX_HEIGHT - PhysicsConfig.MIN_HEIGHT) + PhysicsConfig.MIN_HEIGHT,
-            color = ConfettiPalette.random(),
-            rotation = Random.nextFloat() * 360f,
-            rotationSpeed = Random.nextFloat() * (PhysicsConfig.MAX_ROTATION_SPEED - PhysicsConfig.MIN_ROTATION_SPEED) + PhysicsConfig.MIN_ROTATION_SPEED,
-            alpha = Random.nextFloat() * 0.5f + 0.5f, // 0.5 - 1.0
-            scale = Random.nextFloat() * 0.4f + 0.6f  // 0.6 - 1.0
+private fun generateParticles(emissionX: Float, emissionY: Float, list: ArrayList<Particle>) {
+    list.clear()
+    list.ensureCapacity(PhysicsConfig.PARTICLE_COUNT)
+    for (i in 0 until PhysicsConfig.PARTICLE_COUNT) {
+        list.add(
+            Particle(
+                x = emissionX,
+                y = emissionY,
+                vx = Random.nextFloat() * (PhysicsConfig.MAX_VX - PhysicsConfig.MIN_VX) + PhysicsConfig.MIN_VX,
+                vy = Random.nextFloat() * (PhysicsConfig.MAX_VY - PhysicsConfig.MIN_VY) + PhysicsConfig.MIN_VY,
+                width = Random.nextFloat() * (PhysicsConfig.MAX_WIDTH - PhysicsConfig.MIN_WIDTH) + PhysicsConfig.MIN_WIDTH,
+                height = Random.nextFloat() * (PhysicsConfig.MAX_HEIGHT - PhysicsConfig.MIN_HEIGHT) + PhysicsConfig.MIN_HEIGHT,
+                color = ConfettiPalette.random(),
+                rotation = Random.nextFloat() * 360f,
+                rotationSpeed = Random.nextFloat() * (PhysicsConfig.MAX_ROTATION_SPEED - PhysicsConfig.MIN_ROTATION_SPEED) + PhysicsConfig.MIN_ROTATION_SPEED,
+                alpha = Random.nextFloat() * 0.5f + 0.5f, // 0.5 - 1.0
+                scale = Random.nextFloat() * 0.4f + 0.6f  // 0.6 - 1.0
+            )
         )
     }
 }
@@ -145,8 +152,9 @@ fun ConfettiExplosion(
         val canvasWidthPx = with(density) { maxWidth.toPx() }
         val canvasHeightPx = with(density) { maxHeight.toPx() }
         
-        // Particle state
-        var particles by remember { mutableStateOf<List<Particle>>(emptyList()) }
+        // Particle state: Optimized with ArrayList backing pool and frameTick to trigger recomposition
+        val particles = remember { ArrayList<Particle>(PhysicsConfig.PARTICLE_COUNT) }
+        var frameTick by remember { mutableLongStateOf(0L) }
         var lastFrameTime by remember { mutableLongStateOf(0L) }
         var isAnimating by remember { mutableStateOf(false) }
         
@@ -156,8 +164,9 @@ fun ConfettiExplosion(
                 // Initialize particles with known dimensions
                 val emissionX = canvasWidthPx / 2
                 val emissionY = canvasHeightPx // Bottom center
-                particles = generateParticles(emissionX, emissionY)
+                generateParticles(emissionX, emissionY, particles)
                 lastFrameTime = 0L
+                frameTick = 0L
                 isAnimating = true
             }
         }
@@ -177,10 +186,12 @@ fun ConfettiExplosion(
                     val deltaTime = (frameTimeNanos - lastFrameTime) / 1_000_000_000f
                     lastFrameTime = frameTimeNanos
                     
-                    // Update particles with physics
+                    // Update particles in-place with physics
                     var anyAlive = false
-                    particles = particles.map { particle ->
-                        if (!particle.isAlive) return@map particle
+                    val size = particles.size
+                    for (i in 0 until size) {
+                        val particle = particles[i]
+                        if (!particle.isAlive) continue
                         
                         // Apply gravity
                         val newVy = particle.vy + PhysicsConfig.GRAVITY * deltaTime
@@ -200,20 +211,22 @@ fun ConfettiExplosion(
                         val stillAlive = newY <= canvasHeightPx + 100f
                         if (stillAlive) anyAlive = true
                         
-                        particle.copy(
-                            x = newX,
-                            y = newY,
-                            vx = draggedVx,
-                            vy = draggedVy,
-                            rotation = newRotation,
-                            isAlive = stillAlive
-                        )
+                        // Update in place (No GC allocation pressure)
+                        particle.x = newX
+                        particle.y = newY
+                        particle.vx = draggedVx
+                        particle.vy = draggedVy
+                        particle.rotation = newRotation
+                        particle.isAlive = stillAlive
                     }
                     
+                    // Update the state tick to trigger redrawing
+                    frameTick++
+
                     // End animation when all particles are dead
                     if (!anyAlive && particles.isNotEmpty()) {
                         isAnimating = false
-                        particles = emptyList()
+                        particles.clear()
                         onAnimationEnd?.invoke()
                     }
                 }
@@ -222,9 +235,14 @@ fun ConfettiExplosion(
         
         // Canvas for high-performance rendering
         Canvas(modifier = Modifier.fillMaxSize()) {
-            // Draw all particles
-            particles.forEach { particle ->
-                if (!particle.isAlive) return@forEach
+            // Read frameTick to declare state dependency for recomposition/redrawing
+            val tick = frameTick
+
+            // Draw all particles using manual indexed loop to avoid iterator allocation
+            val size = particles.size
+            for (i in 0 until size) {
+                val particle = particles[i]
+                if (!particle.isAlive) continue
                 
                 val scaledWidth = particle.width * particle.scale
                 val scaledHeight = particle.height * particle.scale
@@ -234,12 +252,13 @@ fun ConfettiExplosion(
                     pivot = Offset(particle.x, particle.y)
                 ) {
                     drawRect(
-                        color = particle.color.copy(alpha = particle.alpha),
+                        color = particle.color,
                         topLeft = Offset(
                             particle.x - scaledWidth / 2,
                             particle.y - scaledHeight / 2
                         ),
-                        size = Size(scaledWidth, scaledHeight)
+                        size = Size(scaledWidth, scaledHeight),
+                        alpha = particle.alpha // Optimized: Use drawRect's native alpha parameter to avoid Color.copy() allocation
                     )
                 }
             }
@@ -253,12 +272,13 @@ fun ConfettiExplosion(
 
 @Composable
 fun ConfettiBurstScreen(
+    modifier: Modifier = Modifier,
     onNavigateBack: () -> Unit = {}
 ) {
     var startExplosion by remember { mutableStateOf(false) }
     
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
@@ -355,9 +375,12 @@ fun ConfettiBurstScreen(
 }
 
 @Composable
-private fun ConfettiBurstHeader(onNavigateBack: () -> Unit) {
+private fun ConfettiBurstHeader(
+    modifier: Modifier = Modifier,
+    onNavigateBack: () -> Unit
+) {
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .background(
                 Brush.horizontalGradient(
@@ -396,7 +419,7 @@ private fun ConfettiBurstHeader(onNavigateBack: () -> Unit) {
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 private fun ConfettiBurstScreenPreview() {
-    ConfettiBurstScreen()
+    MyPracticeApplicationTheme {
+        ConfettiBurstScreen()
+    }
 }
-
-
