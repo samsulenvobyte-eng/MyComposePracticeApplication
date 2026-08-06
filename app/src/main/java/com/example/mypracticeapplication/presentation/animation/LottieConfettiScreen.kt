@@ -26,6 +26,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -38,11 +40,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import java.util.Locale
 import kotlinx.coroutines.delay
 import kotlin.math.PI
 import kotlin.math.cos
@@ -83,6 +87,7 @@ private data class LottieParticle(
     var vy: Float,                    // Velocity Y
     val color: Color,
     val gradientColor: Color?,
+    val brush: Brush?,                // Pre-calculated brush
     val size: Float,
     val shape: LottieShape,
     var rotationX: Float,             // Current 3D Rotation X
@@ -127,6 +132,11 @@ private fun generateLottieParticles(
         val initialVx = cos(angleRad) * force
         val initialVy = sin(angleRad) * force 
         
+        val gradientColor = if (hasGradient) LottieBlueColors.random() else null
+        val brush = if (gradientColor != null) {
+            Brush.horizontalGradient(listOf(baseColor, gradientColor))
+        } else null
+
         LottieParticle(
             id = index,
             x = centerX,
@@ -134,7 +144,8 @@ private fun generateLottieParticles(
             vx = initialVx,
             vy = initialVy,
             color = baseColor,
-            gradientColor = if (hasGradient) LottieBlueColors.random() else null,
+            gradientColor = gradientColor,
+            brush = brush,
             size = Random.nextFloat() * 30f + 15f,
             shape = LottieShape.entries.random(),
             rotationX = Random.nextFloat() * 360f,
@@ -166,10 +177,11 @@ private fun ConfettiControls(
     onHeightChange: (Float) -> Unit,
     speed: Float,
     onSpeedChange: (Float) -> Unit,
-    onFire: () -> Unit
+    onFire: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .padding(16.dp)
             .background(Color(0xFF1E1E1E).copy(alpha = 0.9f), RoundedCornerShape(16.dp))
@@ -234,7 +246,7 @@ private fun ConfettiControls(
                 )
 
                 // Speed Slider
-                Text("Speed: ${String.format("%.1fx", speed)}", color = Color.White, style = MaterialTheme.typography.bodySmall)
+                Text("Speed: ${String.format(Locale.US, "%.1fx", speed)}", color = Color.White, style = MaterialTheme.typography.bodySmall)
                 androidx.compose.material3.Slider(
                     value = speed,
                     onValueChange = onSpeedChange,
@@ -255,8 +267,8 @@ private fun ConfettiControls(
 
 @Composable
 private fun LottieConfettiExplosion(
-    modifier: Modifier = Modifier,
     isVisible: Boolean,
+    modifier: Modifier = Modifier,
     particleCount: Int = 100,
     spreadAngle: Float = 90f,
     startPositionY: Float = 0.5f,
@@ -264,6 +276,26 @@ private fun LottieConfettiExplosion(
     speedMultiplier: Float = 1f,
     onAnimationEnd: (() -> Unit)? = null
 ) {
+    val trianglePath = remember {
+        Path().apply {
+            moveTo(0.5f, 0f)
+            lineTo(0f, 1f)
+            lineTo(1f, 1f)
+            close()
+        }
+    }
+
+    val parallelogramPath = remember {
+        Path().apply {
+            val skew = 0.3f
+            moveTo(skew, 0f)
+            lineTo(1f + skew, 0f)
+            lineTo(1f - skew, 1f)
+            lineTo(-skew, 1f)
+            close()
+        }
+    }
+
     val animationProgress = remember { Animatable(0f) }
     var particles by remember { mutableStateOf(emptyList<LottieParticle>()) }
     
@@ -300,15 +332,19 @@ private fun LottieConfettiExplosion(
     }
     
     if (isVisible) {
-        Canvas(modifier = modifier.fillMaxSize()) {
+        Canvas(modifier = modifier) {
             if (canvasSize == Size.Zero) {
                 canvasSize = size
             }
             
             val progress = animationProgress.value
             val time = progress * 3.7f * speedMultiplier // Dynamic Speed
-            
-            particles.forEach { particle ->
+            val particleListSize = particles.size
+
+            // Manual loop to avoid iterator allocation every frame
+            for (i in 0 until particleListSize) {
+                val particle = particles[i]
+
                 // 1. Calculate Drag (Velocity Decay)
                 val frames = time * 60f
                 val dragEffect = particle.drag.toDouble().pow(frames.toDouble()).toFloat()
@@ -330,7 +366,7 @@ private fun LottieConfettiExplosion(
                 val currentY = particle.y + moveY + gravityDisplacement
                 
                 // Skip if out of bounds (optimization)
-                if (currentY > size.height + 100) return@forEach
+                if (currentY > size.height + 100) continue
                 
                 // 4. 3D Tumbling
                 val spinX = particle.rotationX + particle.rotationSpeedX * frames * speedMultiplier
@@ -348,18 +384,17 @@ private fun LottieConfettiExplosion(
                     1f
                 }
                 
-                // Draw
-                rotate(
-                    degrees = spinZ,
-                    pivot = Offset(currentX, currentY)
-                ) {
+                // Draw with cached path templates and transformations
+                withTransform({
+                    translate(currentX, currentY)
+                    rotate(spinZ, Offset.Zero)
+                    scale(scaleX, scaleY, Offset.Zero)
+                }) {
                     drawLottieShape(
                         particle = particle,
-                        x = currentX,
-                        y = currentY,
-                        scaleX = scaleX,
-                        scaleY = scaleY,
-                        alpha = alpha
+                        alpha = alpha,
+                        triangleTemplate = trianglePath,
+                        parallelogramTemplate = parallelogramPath
                     )
                 }
             }
@@ -369,87 +404,63 @@ private fun LottieConfettiExplosion(
 
 private fun DrawScope.drawLottieShape(
     particle: LottieParticle,
-    x: Float,
-    y: Float,
-    scaleX: Float,
-    scaleY: Float,
-    alpha: Float
+    alpha: Float,
+    triangleTemplate: Path,
+    parallelogramTemplate: Path
 ) {
-    val width = particle.size * scaleX
-    val height = when (particle.shape) {
-        LottieShape.RECTANGLE -> particle.size * 0.6f * scaleY
-        LottieShape.TALL_RECTANGLE -> particle.size * 2f * scaleY
-        LottieShape.TRIANGLE -> particle.size * scaleY
-        LottieShape.PARALLELOGRAM -> particle.size * 0.5f * scaleY
-    }
-    
-    val color = particle.color.copy(alpha = alpha)
-    val brush = if (particle.gradientColor != null) {
-        Brush.horizontalGradient(
-            colors = listOf(
-                particle.color.copy(alpha = alpha),
-                particle.gradientColor.copy(alpha = alpha)
-            )
-        )
-    } else null
+    val size = particle.size
     
     when (particle.shape) {
         LottieShape.RECTANGLE -> {
-            if (brush != null) {
-                drawRect(
-                    brush = brush,
-                    topLeft = Offset(x - width / 2, y - height / 2),
-                    size = Size(width, height)
-                )
+            val width = size
+            val height = size * 0.6f
+            val topLeft = Offset(-width / 2, -height / 2)
+            val rectSize = Size(width, height)
+
+            if (particle.brush != null) {
+                drawRect(brush = particle.brush, topLeft = topLeft, size = rectSize, alpha = alpha)
             } else {
-                drawRect(
-                    color = color,
-                    topLeft = Offset(x - width / 2, y - height / 2),
-                    size = Size(width, height)
-                )
+                drawRect(color = particle.color, topLeft = topLeft, size = rectSize, alpha = alpha)
             }
         }
         LottieShape.TALL_RECTANGLE -> {
-            if (brush != null) {
-                drawRect(
-                    brush = brush,
-                    topLeft = Offset(x - width / 4, y - height / 2),
-                    size = Size(width / 2, height)
-                )
+            val width = size / 2
+            val height = size * 2f
+            val topLeft = Offset(-width / 2, -height / 2)
+            val rectSize = Size(width, height)
+
+            if (particle.brush != null) {
+                drawRect(brush = particle.brush, topLeft = topLeft, size = rectSize, alpha = alpha)
             } else {
-                drawRect(
-                    color = color,
-                    topLeft = Offset(x - width / 4, y - height / 2),
-                    size = Size(width / 2, height)
-                )
+                drawRect(color = particle.color, topLeft = topLeft, size = rectSize, alpha = alpha)
             }
         }
         LottieShape.TRIANGLE -> {
-            val path = Path().apply {
-                moveTo(x, y - height / 2)
-                lineTo(x - width / 2, y + height / 2)
-                lineTo(x + width / 2, y + height / 2)
-                close()
-            }
-            if (brush != null) {
-                drawPath(path = path, brush = brush)
-            } else {
-                drawPath(path = path, color = color)
+            val width = size
+            val height = size
+            withTransform({
+                translate(-width / 2, -height / 2)
+                scale(width, height, Offset.Zero)
+            }) {
+                if (particle.brush != null) {
+                    drawPath(path = triangleTemplate, brush = particle.brush, alpha = alpha)
+                } else {
+                    drawPath(path = triangleTemplate, color = particle.color, alpha = alpha)
+                }
             }
         }
         LottieShape.PARALLELOGRAM -> {
-            val skew = width * 0.3f
-            val path = Path().apply {
-                moveTo(x - width / 2 + skew, y - height / 2)
-                lineTo(x + width / 2 + skew, y - height / 2)
-                lineTo(x + width / 2 - skew, y + height / 2)
-                lineTo(x - width / 2 - skew, y + height / 2)
-                close()
-            }
-            if (brush != null) {
-                drawPath(path = path, brush = brush)
-            } else {
-                drawPath(path = path, color = color)
+            val width = size
+            val height = size * 0.5f
+            withTransform({
+                translate(-width / 2, -height / 2)
+                scale(width, height, Offset.Zero)
+            }) {
+                if (particle.brush != null) {
+                    drawPath(path = parallelogramTemplate, brush = particle.brush, alpha = alpha)
+                } else {
+                    drawPath(path = parallelogramTemplate, color = particle.color, alpha = alpha)
+                }
             }
         }
     }
@@ -461,18 +472,19 @@ private fun DrawScope.drawLottieShape(
 
 @Composable
 fun LottieConfettiScreen(
-    onNavigateBack: () -> Unit = {}
+    onNavigateBack: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     var isPlaying by remember { mutableStateOf(false) }
     
     // Cannon Configuration State
-    var spread by remember { mutableStateOf(90f) }
-    var positionY by remember { mutableStateOf(1.0f) } 
-    var forceMultiplier by remember { mutableStateOf(0.8f) } // Default power
-    var speed by remember { mutableStateOf(1.0f) }
+    var spread by remember { mutableFloatStateOf(90f) }
+    var positionY by remember { mutableFloatStateOf(1.0f) }
+    var forceMultiplier by remember { mutableFloatStateOf(0.8f) } // Default power
+    var speed by remember { mutableFloatStateOf(1.0f) }
     
     // Trigger State
-    var triggerCount by remember { mutableStateOf(0) }
+    var triggerCount by remember { mutableIntStateOf(0) }
     
     // Auto-trigger
     LaunchedEffect(Unit) {
@@ -513,6 +525,7 @@ fun LottieConfettiScreen(
             // Confetti Animation
             LottieConfettiExplosion(
                 isVisible = isPlaying,
+                modifier = Modifier.fillMaxSize(),
                 particleCount = 150,
                 spreadAngle = spread,
                 startPositionY = positionY,
@@ -551,9 +564,12 @@ fun LottieConfettiScreen(
 // ═══════════════════════════════════════════════════════════════════════════════
 
 @Composable
-private fun LottieConfettiHeader(onNavigateBack: () -> Unit) {
+private fun LottieConfettiHeader(
+    onNavigateBack: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .background(
                 Brush.horizontalGradient(
@@ -596,7 +612,7 @@ private fun LottieConfettiHeader(onNavigateBack: () -> Unit) {
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 private fun LottieConfettiScreenPreview() {
-    LottieConfettiScreen()
+    LottieConfettiScreen(onNavigateBack = {})
 }
 
 
