@@ -78,7 +78,8 @@ private data class Firework(
     val color: Color,
     val explosionDelay: Float, // When it explodes (0-1)
     val particleCount: Int,
-    val trailLength: Int
+    val trailLength: Int,
+    val sparks: List<FireworkSpark>
 )
 
 // Firework spark particle
@@ -92,6 +93,7 @@ private data class FireworkSpark(
 
 @Composable
 fun FireworksScreen(
+    modifier: Modifier = Modifier,
     onNavigateBack: () -> Unit = {}
 ) {
     var isPlaying by remember { mutableStateOf(false) }
@@ -118,7 +120,7 @@ fun FireworksScreen(
     }
     
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
@@ -246,20 +248,8 @@ fun FireworksScreen(
                             val explosionProgress = ((fireworkProgress - firework.explosionDelay) / 
                                 (1f - firework.explosionDelay)).coerceIn(0f, 1f)
                             
-                            // Generate sparks for this firework
-                            val sparks = List(firework.particleCount) { i ->
-                                FireworkSpark(
-                                    angle = (i.toFloat() / firework.particleCount) * 2 * Math.PI.toFloat() +
-                                        Random(firework.id * 100 + i).nextFloat() * 0.3f,
-                                    speed = 0.5f + Random(firework.id * 100 + i + 50).nextFloat() * 0.8f,
-                                    color = if (Random(firework.id * 100 + i + 100).nextFloat() > 0.7f) 
-                                        Color.White else firework.color,
-                                    size = 2f + Random(firework.id * 100 + i + 150).nextFloat() * 4f,
-                                    sparkle = Random(firework.id * 100 + i + 200).nextFloat() > 0.5f
-                                )
-                            }
-                            
-                            sparks.forEach { spark ->
+                            // Using pre-calculated sparks to avoid per-frame allocation
+                            firework.sparks.forEach { spark ->
                                 val distance = spark.speed * explosionProgress * 150
                                 val gravity = explosionProgress.pow(2) * 100
                                 
@@ -410,14 +400,32 @@ private fun generateBurstParticles(count: Int): List<BurstParticle> {
 
 private fun generateFireworks(count: Int): List<Firework> {
     return List(count) { index ->
+        val id = index
+        val color = FireworkColors.random()
+        val particleCount = Random.nextInt(30, 60)
+
+        // Pre-calculate sparks to avoid per-frame allocation
+        val sparks = List(particleCount) { i ->
+            FireworkSpark(
+                angle = (i.toFloat() / particleCount) * 2 * Math.PI.toFloat() +
+                        Random(id * 100 + i).nextFloat() * 0.3f,
+                speed = 0.5f + Random(id * 100 + i + 50).nextFloat() * 0.8f,
+                color = if (Random(id * 100 + i + 100).nextFloat() > 0.7f)
+                    Color.White else color,
+                size = 2f + Random(id * 100 + i + 150).nextFloat() * 4f,
+                sparkle = Random(id * 100 + i + 200).nextFloat() > 0.5f
+            )
+        }
+
         Firework(
-            id = index,
+            id = id,
             startX = Random.nextFloat() * 800 + 100,
             targetY = Random.nextFloat() * 300 + 150,
-            color = FireworkColors.random(),
+            color = color,
             explosionDelay = 0.15f + index * 0.15f, // Stagger explosions
-            particleCount = Random.nextInt(30, 60),
-            trailLength = Random.nextInt(8, 15)
+            particleCount = particleCount,
+            trailLength = Random.nextInt(8, 15),
+            sparks = sparks
         )
     }
 }
