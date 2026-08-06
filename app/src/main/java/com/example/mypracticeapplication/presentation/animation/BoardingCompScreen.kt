@@ -21,6 +21,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -42,6 +43,7 @@ import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.drawscope.translate
+import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
@@ -98,10 +100,11 @@ data class PillConfig(
 
 @Composable
 fun BoardingCompScreen(
-    onNavigateBack: () -> Unit = {}
+    onNavigateBack: () -> Unit = {},
+    modifier: Modifier = Modifier
 ) {
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
             .background(DarkBackground)
     ) {
@@ -129,13 +132,29 @@ private fun OptimizedPillWithHearts(
     
     // Heart state - use mutableStateOf with a list that we manage manually
     var hearts by remember { mutableStateOf(listOf<Heart>()) }
-    var lastSpawnTime by remember { mutableStateOf(0L) }
-    var currentTime by remember { mutableStateOf(0L) }
+    var lastSpawnTime by remember { mutableLongStateOf(0L) }
+    var currentTime by remember { mutableLongStateOf(0L) }
+
+    // Pre-calculate normalized heart path to avoid per-frame allocations
+    val heartPath = remember {
+        Path().apply {
+            // Heart shape using bezier curves on 1.0 x 1.0 canvas
+            moveTo(0.5f, 0.25f)
+            // Left curve
+            cubicTo(0.15f, 0.1f, 0f, 0.35f, 0f, 0.5f)
+            cubicTo(0f, 0.7f, 0.25f, 0.85f, 0.5f, 1f)
+            // Right curve
+            cubicTo(0.75f, 0.85f, 1f, 0.7f, 1f, 0.5f)
+            cubicTo(1f, 0.35f, 0.85f, 0.1f, 0.5f, 0.25f)
+            close()
+        }
+    }
+
+    // Pre-allocate path for pill to reuse across frames
+    val pillPath = remember { Path() }
     
     // Single animation loop for all hearts
     LaunchedEffect(Unit) {
-        val startTime = withFrameMillis { it }
-        
         while (isActive) {
             currentTime = withFrameMillis { it }
             
@@ -176,16 +195,18 @@ private fun OptimizedPillWithHearts(
             image = image,
             topLeft = topLeft,
             width = pillWidthPx,
-            height = pillHeightPx
+            height = pillHeightPx,
+            pillPath = pillPath
         )
         
-        // Draw all hearts in single draw call batch
-        hearts.forEach { heart ->
+        // Draw all hearts in single draw call batch - manual for loop avoids iterator allocation
+        for (i in hearts.indices) {
             drawHeart(
-                heart = heart,
+                heart = hearts[i],
                 currentTime = currentTime,
                 centerX = pillCenterX,
-                bottomY = pillBottomY
+                bottomY = pillBottomY,
+                heartPath = heartPath
             )
         }
     }
@@ -198,18 +219,18 @@ private fun DrawScope.drawPill(
     image: ImageBitmap,
     topLeft: Offset,
     width: Float,
-    height: Float
+    height: Float,
+    pillPath: Path
 ) {
-    val path = Path().apply {
-        addRoundRect(
-            RoundRect(
-                rect = Rect(topLeft, Size(width, height)),
-                cornerRadius = CornerRadius(width / 2, width / 2)
-            )
+    pillPath.reset()
+    pillPath.addRoundRect(
+        RoundRect(
+            rect = Rect(topLeft, Size(width, height)),
+            cornerRadius = CornerRadius(width / 2, width / 2)
         )
-    }
+    )
     
-    clipPath(path) {
+    clipPath(pillPath) {
         val imgWidth = image.width.toFloat()
         val imgHeight = image.height.toFloat()
         
@@ -235,7 +256,8 @@ private fun DrawScope.drawHeart(
     heart: Heart,
     currentTime: Long,
     centerX: Float,
-    bottomY: Float
+    bottomY: Float,
+    heartPath: Path
 ) {
     val progress = heart.getProgress(currentTime)
     
@@ -249,18 +271,20 @@ private fun DrawScope.drawHeart(
     val heartSize = 36.dp.toPx()
     val x = centerX + heart.offsetX - heartSize / 2
     val y = bottomY + translateY - heartSize / 2
-    
-    translate(left = x + heartSize / 2, top = y + heartSize / 2) {
-        rotate(degrees = heart.rotation) {
-            scale(scale = scale) {
-                translate(left = -heartSize / 2, top = -heartSize / 2) {
-                    drawHeartShape(
-                        size = heartSize,
-                        color = HeartColor.copy(alpha = alpha)
-                    )
-                }
-            }
-        }
+
+    // Using withTransform to batch transformations and avoid extra nesting
+    withTransform({
+        translate(left = x + heartSize / 2, top = y + heartSize / 2)
+        rotate(degrees = heart.rotation)
+        scale(scale = scale)
+        translate(left = -heartSize / 2, top = -heartSize / 2)
+    }) {
+        drawHeartShape(
+            size = heartSize,
+            color = HeartColor,
+            alpha = alpha,
+            heartPath = heartPath
+        )
     }
 }
 
@@ -304,47 +328,21 @@ private fun easeOutBack(x: Float): Float {
 }
 
 /**
- * Draw heart shape using Canvas paths - more efficient than Icon composable
+ * Draw heart shape using Canvas paths - more efficient than Icon composable.
+ * Uses a pre-cached normalized path to avoid per-frame allocations.
  */
 private fun DrawScope.drawHeartShape(
     size: Float,
-    color: Color
+    color: Color,
+    alpha: Float,
+    heartPath: Path
 ) {
-    val path = Path().apply {
-        val width = size
-        val height = size
-        
-        // Heart shape using bezier curves
-        moveTo(width / 2, height * 0.25f)
-        
-        // Left curve
-        cubicTo(
-            width * 0.15f, height * 0.1f,
-            0f, height * 0.35f,
-            0f, height * 0.5f
-        )
-        cubicTo(
-            0f, height * 0.7f,
-            width * 0.25f, height * 0.85f,
-            width / 2, height
-        )
-        
-        // Right curve
-        cubicTo(
-            width * 0.75f, height * 0.85f,
-            width, height * 0.7f,
-            width, height * 0.5f
-        )
-        cubicTo(
-            width, height * 0.35f,
-            width * 0.85f, height * 0.1f,
-            width / 2, height * 0.25f
-        )
-        
-        close()
+    withTransform({
+        scale(size, size, pivot = Offset.Zero)
+    }) {
+        // Use the alpha parameter of drawPath instead of color.copy() to avoid allocations
+        drawPath(path = heartPath, color = color, alpha = alpha)
     }
-    
-    drawPath(path = path, color = color)
 }
 
 @Composable
