@@ -162,16 +162,24 @@ private fun TtBoostContent() {
         // Animated Bar Chart
         AnimatedBarChart(
             barData = barData,
-            entranceProgress = mainProgress.value,
+            entranceProgress = { mainProgress.value },
             barWidth = barWidth,
             barSpacing = spacing,
             modifier = Modifier.fillMaxSize()
         )
 
         // Draw Overlays
-        if (overlayVisible.value > 0f) {
-            val scale = overlayVisible.value
-
+        // Use graphicsLayer for visibility animation to avoid recompositions
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer {
+                    val scale = overlayVisible.value
+                    scaleX = scale
+                    scaleY = scale
+                    alpha = scale
+                }
+        ) {
             overlays.forEach { overlay ->
                 // Calculate position
                 val barCenterX =
@@ -179,16 +187,11 @@ private fun TtBoostContent() {
                 val fullHeightVal = availableHeight.value
                 val centerY = fullHeightVal - (fullHeightVal * overlay.yPercent)
 
-                // Render overlay with animation
+                // Render overlay
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopStart)
                         .offset(x = barCenterX.dp, y = centerY.dp)
-                        .graphicsLayer {
-                            scaleX = scale
-                            scaleY = scale
-                            alpha = scale
-                        }
                 ) {
                     OverlayRenderer(overlay)
                 }
@@ -208,7 +211,7 @@ private fun TtBoostContent() {
                     alpha = bubblesVisible.value
                 },
             icon = Icons.Default.Favorite,
-            count = (100 * mainProgress.value).toInt(),
+            count = { (100 * mainProgress.value).toInt() },
             color = TtBoostTheme.Bubble.HeartColor,
             shadowColor = TtBoostTheme.Bubble.HeartShadow
         )
@@ -225,7 +228,7 @@ private fun TtBoostContent() {
                     alpha = bubblesVisible.value
                 },
             icon = Icons.Default.Person,
-            count = (250 * mainProgress.value).toInt(),
+            count = { (250 * mainProgress.value).toInt() },
             color = TtBoostTheme.Bubble.PersonColor,
             shadowColor = TtBoostTheme.Bubble.PersonShadow
         )
