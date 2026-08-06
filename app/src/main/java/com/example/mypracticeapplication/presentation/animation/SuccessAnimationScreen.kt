@@ -31,7 +31,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
@@ -44,6 +44,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.drawscope.withTransform
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -155,45 +156,61 @@ fun SuccessAnimationContent() {
             Canvas(
                 modifier = Modifier
                     .size(110.dp) // Matched size
-                    .scale(circleScale.value)
+                    .graphicsLayer {
+                        scaleX = circleScale.value
+                        scaleY = circleScale.value
+                    }
             ) {
                 drawCircle(
                     color = ColorGreenCircle
                 )
             }
-            
+
             // Checkmark
-            Canvas(
+            Box(
                 modifier = Modifier
                     .size(110.dp)
-                    .scale(circleScale.value.coerceAtLeast(0f)) // Scale with circle
-            ) {
-                // Define Checkmark Path
-                val path = Path().apply {
-                    moveTo(32.dp.toPx(), 58.dp.toPx())
-                    lineTo(48.dp.toPx(), 74.dp.toPx()) // Tip
-                    lineTo(82.dp.toPx(), 38.dp.toPx()) // End
-                }
-                
-                // Helper to measure path length
-                val pathMeasure = PathMeasure()
-                pathMeasure.setPath(path, false)
-                val pathLength = pathMeasure.length
-                
-                // Create animated path segment
-                val animatedPath = Path()
-                pathMeasure.getSegment(0f, pathLength * checkmarkProgress.value, animatedPath, true)
-                
-                drawPath(
-                    path = animatedPath,
-                    color = Color.White,
-                    style = Stroke(
-                        width = 8.dp.toPx(), // Thick stroke
-                        cap = StrokeCap.Round,
-                        join = StrokeJoin.Round
-                    )
-                )
-            }
+                    .graphicsLayer {
+                        val s = circleScale.value.coerceAtLeast(0f)
+                        scaleX = s
+                        scaleY = s
+                    }
+                    .drawWithCache {
+                        // Define Checkmark Path (Pre-calculated in cache)
+                        val path = Path().apply {
+                            moveTo(32.dp.toPx(), 58.dp.toPx())
+                            lineTo(48.dp.toPx(), 74.dp.toPx()) // Tip
+                            lineTo(82.dp.toPx(), 38.dp.toPx()) // End
+                        }
+
+                        // Helper to measure path length
+                        val pathMeasure = PathMeasure()
+                        pathMeasure.setPath(path, false)
+                        val pathLength = pathMeasure.length
+                        val animatedPath = Path()
+
+                        onDrawBehind {
+                            // Clear and update animated path segment on every frame
+                            animatedPath.reset()
+                            pathMeasure.getSegment(
+                                0f,
+                                pathLength * checkmarkProgress.value,
+                                animatedPath,
+                                true
+                            )
+
+                            drawPath(
+                                path = animatedPath,
+                                color = Color.White,
+                                style = Stroke(
+                                    width = 8.dp.toPx(), // Thick stroke
+                                    cap = StrokeCap.Round,
+                                    join = StrokeJoin.Round
+                                )
+                            )
+                        }
+                    }
+            )
         }
         
         Spacer(modifier = Modifier.height(32.dp))
@@ -247,6 +264,30 @@ fun ConfettiBurst(
     isVisible: Boolean,
     modifier: Modifier = Modifier
 ) {
+    // Hoist Path allocations for particle shapes (0 to 1 normalized)
+    val zigzagPath = remember {
+        Path().apply {
+            moveTo(-0.2f, -0.5f)
+            lineTo(0.3f, -0.1f)
+            lineTo(-0.1f, -0.1f)
+            lineTo(0.2f, 0.5f)
+            lineTo(-0.3f, 0.1f)
+            lineTo(0.1f, 0.1f)
+            close()
+        }
+    }
+
+    val curvePath = remember {
+        Path().apply {
+            moveTo(-0.5f, 0f)
+            cubicTo(
+                -0.25f, -0.5f,
+                0.25f, 0.5f,
+                0.5f, 0f
+            )
+        }
+    }
+
     Box(modifier = modifier) {
         if (isVisible) {
             val density = LocalDensity.current
@@ -357,10 +398,10 @@ fun ConfettiBurst(
                                 drawCross(color, p.size)
                             }
                             ParticleShape.ZIGZAG -> {
-                                drawZigzag(color, p.size)
+                                drawZigzag(color, p.size, zigzagPath)
                             }
                             ParticleShape.CURVE -> {
-                                drawCurve(color, p.size)
+                                drawCurve(color, p.size, curvePath)
                             }
                             ParticleShape.STRIP -> {
                                 drawStrip(color, p.size)
@@ -395,49 +436,25 @@ fun DrawScope.drawCross(color: Color, size: Float) {
     )
 }
 
-fun DrawScope.drawZigzag(color: Color, size: Float) {
-    // 3-point zigzag path
-    val path = Path().apply {
-        moveTo(-size/2, -size/2)
-        lineTo(0f, 0f)
-        lineTo(-size/2, size/2)
-        lineTo(0f, size/2)
-        lineTo(size/2, 0f)
-        lineTo(0f, -size/2)
-        close()
+fun DrawScope.drawZigzag(color: Color, size: Float, cachedPath: Path) {
+    // Draw pre-calculated "Lightning" style filled shape
+    scale(size, pivot = Offset.Zero) {
+        drawPath(path = cachedPath, color = color)
     }
-    // Simplification: Just a jagged path outline or fill. 
-    // Let's draw a "Lightning" style filled shape
-    val lightningPath = Path().apply {
-        moveTo(-size * 0.2f, -size * 0.5f)
-        lineTo(size * 0.3f, -size * 0.1f)
-        lineTo(-size * 0.1f, -size * 0.1f)
-        lineTo(size * 0.2f, size * 0.5f)
-        lineTo(-size * 0.3f, size * 0.1f)
-        lineTo(size * 0.1f, size * 0.1f)
-        close()
-    }
-    drawPath(path = lightningPath, color = color)
 }
 
-fun DrawScope.drawCurve(color: Color, size: Float) {
-    // A simple squiggly line
-    val path = Path().apply {
-        moveTo(-size/2, 0f)
-        cubicTo(
-            -size/4, -size/2,
-            size/4, size/2,
-            size/2, 0f
+fun DrawScope.drawCurve(color: Color, size: Float, cachedPath: Path) {
+    // Draw pre-calculated squiggly line
+    scale(size, pivot = Offset.Zero) {
+        drawPath(
+            path = cachedPath,
+            color = color,
+            style = Stroke(
+                width = 0.2f, // width is also scaled
+                cap = StrokeCap.Round
+            )
         )
     }
-    drawPath(
-        path = path,
-        color = color,
-        style = Stroke(
-            width = size * 0.2f,
-            cap = StrokeCap.Round
-        )
-    )
 }
 
 fun DrawScope.drawStrip(color: Color, size: Float) {
