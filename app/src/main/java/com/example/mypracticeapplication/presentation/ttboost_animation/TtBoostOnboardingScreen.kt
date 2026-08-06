@@ -45,9 +45,11 @@ import kotlinx.coroutines.delay
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TtBoostOnboardingScreen(
+    modifier: Modifier = Modifier,
     onNavigateBack: () -> Unit
 ) {
     Scaffold(
+        modifier = modifier,
         topBar = {
             TopAppBar(
                 title = {
@@ -88,7 +90,7 @@ fun TtBoostOnboardingScreen(
 @Composable
 private fun TtBoostContent() {
     // Data definition: Relative heights [0.0 - 1.0]
-    val barData = remember { listOf(0.4f, 0.55f, 0.65f, 0.85f, 0.95f) }
+    val barData = remember { BarData(listOf(0.4f, 0.55f, 0.65f, 0.85f, 0.95f)) }
 
     // Animation States
     val overlayVisible = remember { Animatable(0f) }
@@ -155,14 +157,15 @@ private fun TtBoostContent() {
     ) {
         val availableWidth = maxWidth
         val availableHeight = maxHeight
-        val barCount = barData.size
+        val barCount = barData.values.size
         val spacing = availableWidth * 0.05f
         val barWidth = (availableWidth - (spacing * (barCount - 1))) / barCount
 
         // Animated Bar Chart
+        // Optimization: Use lambda provider for entranceProgress to avoid parent recomposition
         AnimatedBarChart(
             barData = barData,
-            entranceProgress = mainProgress.value,
+            entranceProgress = { mainProgress.value },
             barWidth = barWidth,
             barSpacing = spacing,
             modifier = Modifier.fillMaxSize()
