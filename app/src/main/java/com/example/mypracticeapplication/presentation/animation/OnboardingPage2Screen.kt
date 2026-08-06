@@ -190,13 +190,20 @@ fun AnimatedBarChartV2() {
         Canvas(
             modifier = Modifier.fillMaxSize()
         ) {
+            val barCountValue = barData.size
+            val progressValue = mainProgress.value
+            val phaseValue = breathingPhase
+            val barWidthPx = barWidth.toPx()
+            val spacingPx = spacing.toPx()
+
             // Draw Bars
-            barData.forEachIndexed { index, targetRelativeHeight ->
-                val entranceProgress = mainProgress.value
+            // Use manual for loop to avoid iterator allocation
+            for (index in 0 until barCountValue) {
+                val targetRelativeHeight = barData[index]
 
                 // Calculate ambient offset using sine wave based on time (phase) and index
-                val ambientOffset = if (entranceProgress > 0.95f) {
-                    val offset = sin(breathingPhase + index * 0.5f) * 0.03f
+                val ambientOffset = if (progressValue > 0.95f) {
+                    val offset = sin(phaseValue + index * 0.5f) * 0.03f
                     offset
                 } else {
                     0f
@@ -204,10 +211,10 @@ fun AnimatedBarChartV2() {
 
                 // Combine heights: Target * Entrance * (1 + Ambient)
                 val finalRelativeHeight =
-                    (targetRelativeHeight * entranceProgress + ambientOffset).coerceAtLeast(0.01f)
+                    (targetRelativeHeight * progressValue + ambientOffset).coerceAtLeast(0.01f)
 
                 val barHeight = size.height * finalRelativeHeight
-                val xOffset = index * (barWidth.toPx() + spacing.toPx())
+                val xOffset = index * (barWidthPx + spacingPx)
                 val yOffset = size.height - barHeight // Draw from bottom up
 
                 // Draw Bar
@@ -218,7 +225,7 @@ fun AnimatedBarChartV2() {
                         endY = size.height
                     ), alpha = 0.3f,
                     topLeft = Offset(xOffset, yOffset),
-                    size = Size(barWidth.toPx(), barHeight),
+                    size = Size(barWidthPx, barHeight),
                     cornerRadius = CornerRadius(35f, 35f) // Fully rounded top
                 )
             }
@@ -263,7 +270,7 @@ fun AnimatedBarChartV2() {
                     alpha = bubblesVisible.value
                 },
             icon = Icons.Default.Favorite,
-            count = (100 * mainProgress.value).toInt(),
+            count = { (100 * mainProgress.value).toInt() },
             color = Color(0xFFE84E66),
             shadowColor = Color(0xFFA62C41)
         )
@@ -279,7 +286,7 @@ fun AnimatedBarChartV2() {
                     alpha = bubblesVisible.value
                 },
             icon = Icons.Default.Person,
-            count = (250 * mainProgress.value).toInt(), // Different scale example
+            count = { (250 * mainProgress.value).toInt() }, // Different scale example
             color = Color(0xFF2DB3F9),
             shadowColor = Color(0xFFA62C41)
         )
