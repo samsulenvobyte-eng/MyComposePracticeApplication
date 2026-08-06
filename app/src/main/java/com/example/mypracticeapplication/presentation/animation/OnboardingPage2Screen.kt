@@ -33,6 +33,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -56,6 +57,12 @@ private val DarkBackground = Color(0xFF0B0F19)
 private val BarTopColor = Color(0xFFA86E90)
 private val BarBottomColor = Color(0xFF0B0F19) // Fading into dark
 private val BarGradient = listOf(BarTopColor, BarBottomColor)
+
+/**
+ * Immutable wrapper for bar chart data to ensure stability in Compose.
+ */
+@Immutable
+data class BarDataV2(val values: List<Float>)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -95,17 +102,23 @@ fun OnboardingPage2Screen(
                 .background(DarkBackground),
             contentAlignment = Alignment.Center
         ) {
-            AnimatedBarChartV2()
+            val barData = remember { BarDataV2(listOf(0.4f, 0.55f, 0.65f, 0.85f, 0.95f)) }
+            AnimatedBarChartV2(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(300.dp),
+                barData = barData
+            )
         }
     }
 }
 
 
 @Composable
-fun AnimatedBarChartV2() {
-    // Data definition: Relative heights [0.0 - 1.0]
-    val barData = remember { listOf(0.4f, 0.55f, 0.65f, 0.85f, 0.95f) }
-
+fun AnimatedBarChartV2(
+    modifier: Modifier = Modifier,
+    barData: BarDataV2 = remember { BarDataV2(listOf(0.4f, 0.55f, 0.65f, 0.85f, 0.95f)) }
+) {
     // Animation States
     val overlayVisible = remember { Animatable(0f) }
     val bubblesVisible = remember { Animatable(0f) }
@@ -177,26 +190,33 @@ fun AnimatedBarChartV2() {
     }
 
     androidx.compose.foundation.layout.BoxWithConstraints(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(300.dp)
+        modifier = modifier
     ) {
         val availableWidth = maxWidth
         val availableHeight = maxHeight
-        val barCount = barData.size
+        val values = barData.values
+        val barCount = values.size
         val spacing = availableWidth * 0.05f
         val barWidth = (availableWidth - (spacing * (barCount - 1))) / barCount
 
         Canvas(
             modifier = Modifier.fillMaxSize()
         ) {
-            // Draw Bars
-            barData.forEachIndexed { index, targetRelativeHeight ->
-                val entranceProgress = mainProgress.value
+            // Cache high-frequency state reads before the loop
+            val entranceProgress = mainProgress.value
+            val currentBreathingPhase = breathingPhase
+            val barWidthPx = barWidth.toPx()
+            val spacingPx = spacing.toPx()
+            val canvasHeight = size.height
+
+            // Optimization: Replace forEachIndexed with manual indexed for loop
+            // to eliminate per-frame Iterator allocations in the DrawScope.
+            for (index in 0 until barCount) {
+                val targetRelativeHeight = values[index]
 
                 // Calculate ambient offset using sine wave based on time (phase) and index
                 val ambientOffset = if (entranceProgress > 0.95f) {
-                    val offset = sin(breathingPhase + index * 0.5f) * 0.03f
+                    val offset = sin(currentBreathingPhase + index * 0.5f) * 0.03f
                     offset
                 } else {
                     0f
@@ -206,19 +226,20 @@ fun AnimatedBarChartV2() {
                 val finalRelativeHeight =
                     (targetRelativeHeight * entranceProgress + ambientOffset).coerceAtLeast(0.01f)
 
-                val barHeight = size.height * finalRelativeHeight
-                val xOffset = index * (barWidth.toPx() + spacing.toPx())
-                val yOffset = size.height - barHeight // Draw from bottom up
+                val barHeight = canvasHeight * finalRelativeHeight
+                val xOffset = index * (barWidthPx + spacingPx)
+                val yOffset = canvasHeight - barHeight // Draw from bottom up
 
                 // Draw Bar
                 drawRoundRect(
                     brush = Brush.verticalGradient(
                         colors = BarGradient,
                         startY = yOffset,
-                        endY = size.height
-                    ), alpha = 0.3f,
+                        endY = canvasHeight
+                    ),
+                    alpha = 0.3f,
                     topLeft = Offset(xOffset, yOffset),
-                    size = Size(barWidth.toPx(), barHeight),
+                    size = Size(barWidthPx, barHeight),
                     cornerRadius = CornerRadius(35f, 35f) // Fully rounded top
                 )
             }
@@ -362,4 +383,17 @@ private fun OnboardingPage2ScreenPreview() {
     }
 }
 
+@androidx.compose.ui.tooling.preview.Preview
+@Composable
+private fun AnimatedBarChartV2Preview() {
+    MaterialTheme {
+        Box(modifier = Modifier.size(400.dp), contentAlignment = Alignment.Center) {
+            AnimatedBarChartV2(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(300.dp)
+            )
+        }
+    }
+}
 
