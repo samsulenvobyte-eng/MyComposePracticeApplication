@@ -1,4 +1,4 @@
-﻿package com.example.mypracticeapplication.presentation.animation
+package com.example.mypracticeapplication.presentation.animation
 
 import androidx.annotation.DrawableRes
 import androidx.compose.animation.core.LinearEasing
@@ -26,6 +26,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -33,6 +34,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalDensity
@@ -66,17 +68,21 @@ private val orbitIcons = listOf(
 
 @Composable
 fun OnBoardingAnimationScreen(
+    modifier: Modifier = Modifier,
     onNavigateBack: () -> Unit = {}
 ) {
-    CircularAnimationComponent()
+    CircularAnimationComponent(modifier = modifier)
 }
 
 @Composable
-private fun CircularAnimationComponent() {
+private fun CircularAnimationComponent(
+    modifier: Modifier = Modifier
+) {
     val infiniteTransition = rememberInfiniteTransition(label = "orbit")
 
-    // Slow rotation animation (20 seconds for full circle)
-    val rotationAngle by infiniteTransition.animateFloat(
+    // BOLT: Use State object directly instead of delegated property 'by'
+    // This allows us to defer state reads to the draw phase in sub-composables
+    val rotationAngle = infiniteTransition.animateFloat(
         initialValue = 0f,
         targetValue = -360f,
         animationSpec = infiniteRepeatable(
@@ -86,13 +92,15 @@ private fun CircularAnimationComponent() {
         label = "rotation"
     )
 
-    val density = LocalDensity.current
     val orbitRadius = 140.dp
     val iconSize = 56.dp
     val centerIconSize = 156.dp
 
+    // BOLT: Cache orbit ring fractions in a FloatArray to avoid per-frame list allocations and boxing
+    val ringFractions = remember { floatArrayOf(0.55f, 0.7f, 0.85f) }
+
     Box(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background),
         contentAlignment = Alignment.Center
@@ -102,12 +110,13 @@ private fun CircularAnimationComponent() {
             modifier = Modifier.size(350.dp)
         ) {
             val center = Offset(size.width / 2, size.height / 2)
+            val minDimensionHalf = size.minDimension / 2
 
-            // Draw 3 concentric circles
-            listOf(0.55f, 0.7f, 0.85f).forEach { radiusFraction ->
+            // BOLT: Replace forEach with manual indexed for loop to avoid iterator allocations
+            for (i in ringFractions.indices) {
                 drawCircle(
                     color = OrbitRingColor,
-                    radius = size.minDimension / 2 * radiusFraction,
+                    radius = minDimensionHalf * ringFractions[i],
                     center = center,
                     style = Stroke(width = 2f)
                 )
@@ -151,10 +160,13 @@ private fun CircularAnimationComponent() {
         }
 
         // Orbiting icons
-        orbitIcons.forEach { orbitIcon ->
+        // BOLT: Replace forEach with manual indexed for loop to avoid iterator allocations
+        for (i in orbitIcons.indices) {
+            val orbitIcon = orbitIcons[i]
             OrbitingIcon(
                 icon = orbitIcon.icon,
-                angleDegrees = orbitIcon.startAngleDegrees + rotationAngle,
+                // BOLT: Pass lambda provider to defer state read to draw phase
+                angleDegreesProvider = { orbitIcon.startAngleDegrees + rotationAngle.value },
                 orbitRadius = orbitRadius,
                 iconSize = iconSize
             )
@@ -166,24 +178,24 @@ private fun CircularAnimationComponent() {
 @Composable
 private fun OrbitingIcon(
     @DrawableRes icon: Int,
-    angleDegrees: Float,
+    angleDegreesProvider: () -> Float,
     orbitRadius: Dp,
-    iconSize: Dp
+    iconSize: Dp,
+    modifier: Modifier = Modifier
 ) {
-    val density = LocalDensity.current
-    val angleRadians = Math.toRadians(angleDegrees.toDouble())
-    
-    val offsetX = with(density) { 
-        (orbitRadius.toPx() * cos(angleRadians)).roundToInt() 
-    }
-    val offsetY = with(density) { 
-        (orbitRadius.toPx() * sin(angleRadians)).roundToInt() 
-    }
-
+    // BOLT: Move coordinate calculations into graphicsLayer to defer state reads
+    // to the draw phase. This prevents this composable from recomposing every frame.
+    // It also avoids triggering a layout pass by using translationX/Y instead of offset.
     Image(
         painter = painterResource(icon),
-        modifier = Modifier
-            .offset { IntOffset(offsetX, -offsetY) }
+        modifier = modifier
+            .graphicsLayer {
+                val angleRadians = Math.toRadians(angleDegreesProvider().toDouble())
+                val radiusPx = orbitRadius.toPx()
+
+                translationX = (radiusPx * cos(angleRadians)).toFloat()
+                translationY = (-radiusPx * sin(angleRadians)).toFloat()
+            }
             .size(iconSize)
             .shadow(
                 elevation = 2.dp,
@@ -199,5 +211,3 @@ private fun OrbitingIcon(
 private fun OnBoardingAnimationScreenPreview() {
     OnBoardingAnimationScreen()
 }
-
-
