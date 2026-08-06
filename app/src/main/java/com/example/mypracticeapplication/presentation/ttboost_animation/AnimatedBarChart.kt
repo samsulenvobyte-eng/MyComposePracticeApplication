@@ -10,6 +10,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -30,10 +31,10 @@ import kotlin.math.sin
 @Composable
 fun AnimatedBarChart(
     barData: List<Float>,
-    entranceProgress: Float,
-    barWidth: Dp,
-    barSpacing: Dp,
-    modifier: Modifier = Modifier
+    entranceProgressProvider: () -> Float,
+    modifier: Modifier = Modifier,
+    barWidth: Dp = 10.dp,
+    barSpacing: Dp = 4.dp
 ) {
     // Infinite transition for ambient breathing
     val infiniteTransition = rememberInfiniteTransition(label = "breathing")
@@ -47,11 +48,17 @@ fun AnimatedBarChart(
         label = "phase"
     )
 
+    val cornerRadius = remember { CornerRadius(35f, 35f) }
+
     Canvas(modifier = modifier.fillMaxSize()) {
         val barWidthPx = barWidth.toPx()
         val spacingPx = barSpacing.toPx()
+        val entranceProgress = entranceProgressProvider()
 
-        barData.forEachIndexed { index, targetRelativeHeight ->
+        // Use indexed loop to avoid iterator allocation per frame
+        for (index in barData.indices) {
+            val targetRelativeHeight = barData[index]
+
             // Calculate ambient offset using sine wave based on phase and index
             val ambientOffset = if (entranceProgress > 0.95f) {
                 sin(breathingPhase + index * 0.5f) * 0.03f
@@ -77,7 +84,7 @@ fun AnimatedBarChart(
                 alpha = 0.3f,
                 topLeft = Offset(xOffset, yOffset),
                 size = Size(barWidthPx, barHeight),
-                cornerRadius = CornerRadius(35f, 35f)
+                cornerRadius = cornerRadius
             )
         }
     }
