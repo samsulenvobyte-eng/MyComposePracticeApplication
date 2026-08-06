@@ -1,4 +1,4 @@
-﻿package com.example.mypracticeapplication.presentation.ttboost_animation
+package com.example.mypracticeapplication.presentation.ttboost_animation
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -45,7 +45,8 @@ import kotlinx.coroutines.delay
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TtBoostOnboardingScreen(
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    modifier: Modifier = Modifier // Bolt: Add missing modifier parameter to satisfy lint
 ) {
     Scaffold(
         topBar = {
@@ -71,7 +72,8 @@ fun TtBoostOnboardingScreen(
                 )
             )
         },
-        containerColor = TtBoostTheme.DarkBackground
+        containerColor = TtBoostTheme.DarkBackground,
+        modifier = modifier // Bolt: Use the passed modifier
     ) { paddingValues ->
         Box(
             modifier = Modifier
@@ -162,36 +164,36 @@ private fun TtBoostContent() {
         // Animated Bar Chart
         AnimatedBarChart(
             barData = barData,
-            entranceProgress = mainProgress.value,
+            progress = { mainProgress.value }, // Bolt: Defer state reading
             barWidth = barWidth,
             barSpacing = spacing,
             modifier = Modifier.fillMaxSize()
         )
 
         // Draw Overlays
-        if (overlayVisible.value > 0f) {
-            val scale = overlayVisible.value
+        // Bolt: We use graphicsLayer { alpha = ... } instead of conditional composition
+        // to avoid expensive composition/layout cycles during the fade-in animation.
+        overlays.forEach { overlay ->
+            // Calculate position
+            val barCenterX =
+                (overlay.xIndex * (barWidth.value + spacing.value)) + (barWidth.value / 2)
+            val fullHeightVal = availableHeight.value
+            val centerY = fullHeightVal - (fullHeightVal * overlay.yPercent)
 
-            overlays.forEach { overlay ->
-                // Calculate position
-                val barCenterX =
-                    (overlay.xIndex * (barWidth.value + spacing.value)) + (barWidth.value / 2)
-                val fullHeightVal = availableHeight.value
-                val centerY = fullHeightVal - (fullHeightVal * overlay.yPercent)
-
-                // Render overlay with animation
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.TopStart)
-                        .offset(x = barCenterX.dp, y = centerY.dp)
-                        .graphicsLayer {
-                            scaleX = scale
-                            scaleY = scale
-                            alpha = scale
-                        }
-                ) {
-                    OverlayRenderer(overlay)
-                }
+            // Render overlay with animation
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .offset(x = barCenterX.dp, y = centerY.dp)
+                    .graphicsLayer {
+                        // Bolt: State reading is now deferred to the draw phase
+                        val scale = overlayVisible.value
+                        scaleX = scale
+                        scaleY = scale
+                        alpha = scale
+                    }
+            ) {
+                OverlayRenderer(overlay)
             }
         }
 
@@ -203,12 +205,14 @@ private fun TtBoostContent() {
                 .align(Alignment.TopStart)
                 .offset(y = (-50).dp)
                 .graphicsLayer {
-                    scaleX = bubblesVisible.value
-                    scaleY = bubblesVisible.value
-                    alpha = bubblesVisible.value
+                    // Bolt: State reading is now deferred to the draw phase
+                    val scale = bubblesVisible.value
+                    scaleX = scale
+                    scaleY = scale
+                    alpha = scale
                 },
             icon = Icons.Default.Favorite,
-            count = (100 * mainProgress.value).toInt(),
+            count = { (100 * mainProgress.value).toInt() }, // Bolt: Defer state reading
             color = TtBoostTheme.Bubble.HeartColor,
             shadowColor = TtBoostTheme.Bubble.HeartShadow
         )
@@ -220,12 +224,14 @@ private fun TtBoostContent() {
                 .padding(end = 32.dp)
                 .rotate(15f)
                 .graphicsLayer {
-                    scaleX = bubblesVisible.value
-                    scaleY = bubblesVisible.value
-                    alpha = bubblesVisible.value
+                    // Bolt: State reading is now deferred to the draw phase
+                    val scale = bubblesVisible.value
+                    scaleX = scale
+                    scaleY = scale
+                    alpha = scale
                 },
             icon = Icons.Default.Person,
-            count = (250 * mainProgress.value).toInt(),
+            count = { (250 * mainProgress.value).toInt() }, // Bolt: Defer state reading
             color = TtBoostTheme.Bubble.PersonColor,
             shadowColor = TtBoostTheme.Bubble.PersonShadow
         )
@@ -239,5 +245,3 @@ private fun TtBoostOnboardingScreenPreview() {
         TtBoostOnboardingScreen(onNavigateBack = {})
     }
 }
-
-

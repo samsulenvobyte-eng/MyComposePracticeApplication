@@ -1,4 +1,4 @@
-﻿package com.example.mypracticeapplication.presentation.ttboost_animation
+package com.example.mypracticeapplication.presentation.ttboost_animation
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.offset
@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
@@ -17,6 +18,7 @@ import androidx.compose.ui.unit.dp
  * Sealed class representing different overlay types for the chart.
  * Each overlay has a position (xIndex, yPercent) and a drawable resource.
  */
+@Immutable
 sealed class ChartOverlay(
     val xIndex: Float,
     val yPercent: Float,
@@ -25,6 +27,7 @@ sealed class ChartOverlay(
     /**
      * Circular overlay with specified radius
      */
+    @Immutable
     class Circle(
         xIndex: Float,
         yPercent: Float,
@@ -35,6 +38,7 @@ sealed class ChartOverlay(
     /**
      * Pill-shaped overlay with specified dimensions
      */
+    @Immutable
     class Pill(
         xIndex: Float,
         yPercent: Float,
@@ -46,6 +50,7 @@ sealed class ChartOverlay(
     /**
      * Profile card overlay with rounded corners
      */
+    @Immutable
     class ProfileCard(
         xIndex: Float,
         yPercent: Float,
@@ -60,7 +65,10 @@ sealed class ChartOverlay(
  * Handles Circle, Pill, and ProfileCard variants with appropriate shapes.
  */
 @Composable
-fun OverlayRenderer(overlay: ChartOverlay) {
+fun OverlayRenderer(
+    overlay: ChartOverlay,
+    modifier: Modifier = Modifier // Bolt: Added missing modifier parameter
+) {
     val painter = painterResource(id = overlay.res)
 
     when (overlay) {
@@ -69,7 +77,7 @@ fun OverlayRenderer(overlay: ChartOverlay) {
                 painter = painter,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
-                modifier = Modifier
+                modifier = modifier
                     .offset(x = -overlay.radius, y = -overlay.radius)
                     .size(overlay.radius * 2)
                     .clip(CircleShape)
@@ -81,7 +89,7 @@ fun OverlayRenderer(overlay: ChartOverlay) {
                 painter = painter,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
-                modifier = Modifier
+                modifier = modifier
                     .offset(x = -overlay.width / 2, y = -overlay.height / 2)
                     .size(overlay.width, overlay.height)
                     .clip(RoundedCornerShape(percent = 50))
@@ -93,7 +101,7 @@ fun OverlayRenderer(overlay: ChartOverlay) {
                 painter = painter,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
-                modifier = Modifier
+                modifier = modifier
                     .offset(x = -overlay.width / 2, y = -overlay.height / 2)
                     .size(overlay.width, overlay.height)
                     .clip(RoundedCornerShape(16.dp))
@@ -101,5 +109,3 @@ fun OverlayRenderer(overlay: ChartOverlay) {
         }
     }
 }
-
-
