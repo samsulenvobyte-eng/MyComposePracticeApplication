@@ -51,6 +51,9 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.graphics.drawscope.scale
+import androidx.compose.ui.graphics.drawscope.translate
+import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
@@ -119,7 +122,11 @@ private enum class JsonShapeType {
 // PARTICLE DATA CLASS
 // ═══════════════════════════════════════════════════════════════════════════════
 
-private data class JsonParticle(
+/**
+ * Optimized particle class for high-frequency updates.
+ * Using a regular class instead of a data class to avoid per-frame allocations during physics updates.
+ */
+private class JsonParticle(
     var x: Float,
     var y: Float,
     var vx: Float,
@@ -211,8 +218,8 @@ private fun generateJsonParticles(
 
 @Composable
 fun JsonConfettiExplosion(
-    modifier: Modifier = Modifier,
     isVisible: Boolean,
+    modifier: Modifier = Modifier,
     config: JsonConfettiConfig = JsonConfettiConfig(),
     onAnimationEnd: (() -> Unit)? = null
 ) {
@@ -221,9 +228,11 @@ fun JsonConfettiExplosion(
         val canvasWidthPx = with(density) { maxWidth.toPx() }
         val canvasHeightPx = with(density) { maxHeight.toPx() }
         
-        var particles by remember { mutableStateOf<List<JsonParticle>>(emptyList()) }
+        // Optimization: Use a regular ArrayList and trigger redraws via frameTick to avoid per-frame allocations
+        val particles = remember { ArrayList<JsonParticle>() }
         var lastFrameTime by remember { mutableLongStateOf(0L) }
         var isAnimating by remember { mutableStateOf(false) }
+        var frameTick by remember { mutableLongStateOf(0L) }
         
         // 3D rotation animation progress
         val rotationProgress = remember { Animatable(0f) }
@@ -233,7 +242,8 @@ fun JsonConfettiExplosion(
             if (isVisible && !isAnimating) {
                 val centerX = canvasWidthPx / 2
                 val centerY = canvasHeightPx / 2
-                particles = generateJsonParticles(centerX, centerY, config)
+                particles.clear()
+                particles.addAll(generateJsonParticles(centerX, centerY, config))
                 lastFrameTime = 0L
                 isAnimating = true
                 
@@ -263,9 +273,14 @@ fun JsonConfettiExplosion(
                     val deltaTime = (frameTimeNanos - lastFrameTime) / 1_000_000_000f
                     lastFrameTime = frameTimeNanos
                     
+                    // Cache rotation progress for this frame
+                    val currentRotationProgress = rotationProgress.value
+
+                    // Update particles in-place using a manual loop to avoid iterator allocations
                     var anyAlive = false
-                    particles = particles.map { particle ->
-                        if (!particle.isAlive) return@map particle
+                    for (i in 0 until particles.size) {
+                        val particle = particles[i]
+                        if (!particle.isAlive) continue
                         
                         // Apply gravity
                         val newVy = particle.vy + config.gravity * deltaTime
@@ -275,98 +290,124 @@ fun JsonConfettiExplosion(
                         val draggedVy = newVy * config.airDrag
                         
                         // Update position
-                        val newX = particle.x + draggedVx * deltaTime
-                        val newY = particle.y + draggedVy * deltaTime
+                        particle.x += draggedVx * deltaTime
+                        particle.y += draggedVy * deltaTime
+                        particle.vx = draggedVx
+                        particle.vy = draggedVy
                         
                         // Update 2D rotation
-                        val newRotationZ = particle.rotationZ + particle.rotationSpeedZ * deltaTime
+                        particle.rotationZ += particle.rotationSpeedZ * deltaTime
                         
                         // Update 3D rotations based on progress
-                        val progress = rotationProgress.value
-                        val newRotationX = particle.rotationSpeedX * progress
-                        val newRotationY = particle.rotationSpeedY * progress
+                        particle.rotationX = particle.rotationSpeedX * currentRotationProgress
+                        particle.rotationY = particle.rotationSpeedY * currentRotationProgress
                         
                         // Check if still alive (on screen + buffer)
-                        val stillAlive = newY <= canvasHeightPx + 150f &&
-                                newX >= -100f && newX <= canvasWidthPx + 100f
-                        if (stillAlive) anyAlive = true
+                        particle.isAlive = particle.y <= canvasHeightPx + 150f &&
+                                particle.x >= -100f && particle.x <= canvasWidthPx + 100f
                         
-                        particle.copy(
-                            x = newX,
-                            y = newY,
-                            vx = draggedVx,
-                            vy = draggedVy,
-                            rotationZ = newRotationZ,
-                            rotationX = newRotationX,
-                            rotationY = newRotationY,
-                            isAlive = stillAlive
-                        )
+                        if (particle.isAlive) anyAlive = true
                     }
                     
+                    // Trigger redraw
+                    frameTick = frameTimeNanos
+
                     if (!anyAlive && particles.isNotEmpty()) {
                         isAnimating = false
-                        particles = emptyList<JsonParticle>()
+                        particles.clear()
                         onAnimationEnd?.invoke()
                     }
                 }
             }
         }
         
+        // Optimization: Pre-allocate paths for complex shapes to avoid per-frame allocations
+        val trianglePath = remember {
+            Path().apply {
+                moveTo(0.5f, 0f)
+                lineTo(0f, 1f)
+                lineTo(1f, 1f)
+                close()
+            }
+        }
+        val parallelogramPath = remember {
+            Path().apply {
+                moveTo(0.3f, 0f)
+                lineTo(1.3f, 0f)
+                lineTo(1f, 1f)
+                lineTo(0f, 1f)
+                close()
+            }
+        }
+
         // Render canvas
         Canvas(modifier = Modifier.fillMaxSize()) {
-            particles.forEach { particle ->
-                if (!particle.isAlive) return@forEach
+            // Optimization: Access frameTick to ensure redraws but use local reference
+            @Suppress("UNUSED_VARIABLE")
+            val tick = frameTick
+
+            // Optimization: Pre-calculate constants to avoid repeated math
+            val degToRad = PI.toFloat() / 180f
+
+            // Optimization: Use a manual loop to avoid iterator allocations
+            for (i in 0 until particles.size) {
+                val particle = particles[i]
+                if (!particle.isAlive) continue
                 
                 val scaledWidth = particle.width * particle.scale
                 val scaledHeight = particle.height * particle.scale
                 
                 // Apply 3D rotation effect via scale transformation
-                val scaleX = cos(particle.rotationX * PI / 180f).toFloat().coerceIn(0.1f, 1f)
-                val scaleY = cos(particle.rotationY * PI / 180f).toFloat().coerceIn(0.1f, 1f)
+                val scaleX = cos(particle.rotationX * degToRad).coerceIn(0.1f, 1f)
+                val scaleY = cos(particle.rotationY * degToRad).coerceIn(0.1f, 1f)
                 
                 val finalWidth = scaledWidth * scaleX
                 val finalHeight = scaledHeight * scaleY
                 
-                rotate(
-                    degrees = particle.rotationZ,
-                    pivot = Offset(particle.x, particle.y)
-                ) {
+                // Optimization: Use withTransform to combine translation, rotation, and scaling
+                // This is more performant than creating new Path instances or nested draw blocks
+                withTransform({
+                    translate(particle.x, particle.y)
+                    rotate(particle.rotationZ, Offset.Zero)
+                    scale(finalWidth, finalHeight, Offset.Zero)
+                }) {
                     when (particle.shapeType) {
                         JsonShapeType.RECTANGLE, JsonShapeType.TALL_RECTANGLE, JsonShapeType.SQUARE -> {
+                            // Draw rectangle centered at (0,0) due to translate
                             drawRect(
-                                color = particle.color.copy(alpha = particle.alpha),
-                                topLeft = Offset(
-                                    particle.x - finalWidth / 2,
-                                    particle.y - finalHeight / 2
-                                ),
-                                size = Size(finalWidth, finalHeight)
+                                color = particle.color,
+                                alpha = particle.alpha,
+                                topLeft = Offset(-0.5f, -0.5f),
+                                size = Size(1f, 1f)
                             )
                         }
                         JsonShapeType.TRIANGLE -> {
-                            val path = Path().apply {
-                                moveTo(particle.x, particle.y - finalHeight / 2)
-                                lineTo(particle.x - finalWidth / 2, particle.y + finalHeight / 2)
-                                lineTo(particle.x + finalWidth / 2, particle.y + finalHeight / 2)
-                                close()
+                            // Draw pre-allocated triangle path scaled and translated
+                            // The triangle is 1x1, starting at (0,0) in normalized space
+                            // Adjusting to center it
+                            withTransform({
+                                translate(-0.5f, -0.5f)
+                            }) {
+                                drawPath(
+                                    path = trianglePath,
+                                    color = particle.color,
+                                    alpha = particle.alpha
+                                )
                             }
-                            drawPath(
-                                path = path,
-                                color = particle.color.copy(alpha = particle.alpha)
-                            )
                         }
                         JsonShapeType.PARALLELOGRAM -> {
-                            val skew = finalWidth * 0.3f
-                            val path = Path().apply {
-                                moveTo(particle.x - finalWidth / 2 + skew, particle.y - finalHeight / 2)
-                                lineTo(particle.x + finalWidth / 2 + skew, particle.y - finalHeight / 2)
-                                lineTo(particle.x + finalWidth / 2 - skew, particle.y + finalHeight / 2)
-                                lineTo(particle.x - finalWidth / 2 - skew, particle.y + finalHeight / 2)
-                                close()
+                            // Draw pre-allocated parallelogram path
+                            // The base parallelogram is roughly 1x1 but wider due to skew
+                            withTransform({
+                                // Adjusting translation to center it roughly
+                                translate(-0.65f, -0.5f)
+                            }) {
+                                drawPath(
+                                    path = parallelogramPath,
+                                    color = particle.color,
+                                    alpha = particle.alpha
+                                )
                             }
-                            drawPath(
-                                path = path,
-                                color = particle.color.copy(alpha = particle.alpha)
-                            )
                         }
                     }
                 }
@@ -381,6 +422,7 @@ fun JsonConfettiExplosion(
 
 @Composable
 fun JsonAnimScreen(
+    modifier: Modifier = Modifier,
     onNavigateBack: () -> Unit = {}
 ) {
     var startExplosion by remember { mutableStateOf(false) }
@@ -397,7 +439,7 @@ fun JsonAnimScreen(
     )
     
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
@@ -427,8 +469,8 @@ fun JsonAnimScreen(
             
             // Confetti overlay
             JsonConfettiExplosion(
-                modifier = Modifier.fillMaxSize(),
                 isVisible = startExplosion,
+                modifier = Modifier.fillMaxSize(),
                 config = currentConfig,
                 onAnimationEnd = { startExplosion = false }
             )
@@ -515,10 +557,11 @@ private fun SettingsCard(
     onEnable3DRotationChange: (Boolean) -> Unit,
     gravity: Float,
     onGravityChange: (Float) -> Unit,
-    onReset: () -> Unit
+    onReset: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
             containerColor = Color.White.copy(alpha = 0.1f)
@@ -630,9 +673,12 @@ private fun SettingsCard(
 }
 
 @Composable
-private fun JsonAnimHeader(onNavigateBack: () -> Unit) {
+private fun JsonAnimHeader(
+    onNavigateBack: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .background(
                 Brush.horizontalGradient(colors = HeaderGradient)
