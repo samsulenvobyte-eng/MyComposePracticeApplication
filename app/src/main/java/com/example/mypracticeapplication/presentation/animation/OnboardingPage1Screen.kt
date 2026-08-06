@@ -45,6 +45,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.clipPath
+import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import kotlinx.coroutines.delay
@@ -61,9 +62,11 @@ private val BarGradient = listOf(BarTopColor, BarBottomColor)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OnboardingPage1Screen(
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Scaffold(
+        modifier = modifier,
         topBar = {
             TopAppBar(
                 title = { 
@@ -102,7 +105,9 @@ fun OnboardingPage1Screen(
 }
 
 @Composable
-fun AnimatedBarChart() {
+fun AnimatedBarChart(
+    modifier: Modifier = Modifier
+) {
     // Data definition: Relative heights [0.0 - 1.0]
     val barData = remember { listOf(0.4f, 0.55f, 0.65f, 0.85f, 0.95f) }
     
@@ -191,7 +196,11 @@ fun AnimatedBarChart() {
         }
     }
 
-    Box(){
+    // Optimization: Cache Path and Brush to avoid per-frame allocations in Canvas
+    val rememberedPath = remember { androidx.compose.ui.graphics.Path() }
+    val barBrush = remember { Brush.verticalGradient(colors = BarGradient, startY = 0f, endY = 1f) }
+
+    Box(modifier = modifier){
 
         Canvas(
             modifier = Modifier
@@ -202,63 +211,75 @@ fun AnimatedBarChart() {
             val barCount = barData.size
 
             // Dynamic calculations
-            val availableWidth = size.width
-            val spacing = size.width * 0.05f // 5% spacing
-            val barWidth = (availableWidth - (spacing * (barCount - 1))) / barCount
+            val canvasWidth = size.width
+            val canvasHeight = size.height
+            val spacing = canvasWidth * 0.05f // 5% spacing
+            val barWidth = (canvasWidth - (spacing * (barCount - 1))) / barCount
 
-            // Draw Bars
-            barData.forEachIndexed { index, targetRelativeHeight ->
-                val entranceProgress = mainProgress.value
+            // Cache high-frequency animation state reads
+            val currentProgress = mainProgress.value
+            val currentBreathingPhase = breathingPhase
+
+            // Draw Bars - Using manual for loop to avoid iterator allocation
+            for (index in 0 until barCount) {
+                val targetRelativeHeight = barData[index]
 
                 // Calculate ambient offset using sine wave based on time (phase) and index
-                val ambientOffset = if (entranceProgress > 0.95f) {
-                    val offset = sin(breathingPhase + index * 0.5f) * 0.03f 
-                    offset
+                val ambientOffset = if (currentProgress > 0.95f) {
+                    sin(currentBreathingPhase + index * 0.5f) * 0.03f
                 } else {
                     0f
                 }
 
                 // Combine heights: Target * Entrance * (1 + Ambient)
-                val finalRelativeHeight = (targetRelativeHeight * entranceProgress + ambientOffset).coerceAtLeast(0.01f)
+                val finalRelativeHeight = (targetRelativeHeight * currentProgress + ambientOffset).coerceAtLeast(0.01f)
 
-                val barHeight = size.height * finalRelativeHeight
+                val barHeight = canvasHeight * finalRelativeHeight
                 val xOffset = index * (barWidth + spacing)
-                val yOffset = size.height - barHeight // Draw from bottom up
+                val yOffset = canvasHeight - barHeight // Draw from bottom up
 
-                // Draw Bar
-                drawRoundRect(
-                    brush = Brush.verticalGradient(
-                        colors = BarGradient,
-                        startY = yOffset,
-                        endY = size.height
-                    ), alpha = 0.3f,
-                    topLeft = Offset(xOffset, yOffset),
-                    size = Size(barWidth, barHeight),
-                    cornerRadius = CornerRadius(35f, 35f) // Fully rounded top
-                )
+                // Draw Bar using withTransform to reuse the same Brush for all bars
+                withTransform({
+                    translate(left = xOffset, top = yOffset)
+                    scale(scaleX = barWidth, scaleY = barHeight, pivot = Offset.Zero)
+                }) {
+                    drawRoundRect(
+                        brush = barBrush,
+                        alpha = 0.3f,
+                        topLeft = Offset.Zero,
+                        size = Size(1f, 1f),
+                        // Adjust CornerRadius to avoid distortion from scaling
+                        cornerRadius = CornerRadius(35f / barWidth, 35f / barHeight)
+                    )
+                }
             }
 
             // Draw Overlays
-            if (overlayVisible.value > 0f) {
-                overlays.forEach { overlay ->
-                    val image = images[overlay.res] ?: return@forEach
+            val currentOverlayVisible = overlayVisible.value
+            if (currentOverlayVisible > 0f) {
+                val overlayCount = overlays.size
+                for (i in 0 until overlayCount) {
+                    val overlay = overlays[i]
+                    val image = images[overlay.res] ?: continue
 
                     val barCenterX = (overlay.xIndex * (barWidth + spacing)) + (barWidth / 2)
-                    val centerY = size.height - (size.height * overlay.yPercent)
-                    val scale = overlayVisible.value
+                    val centerY = canvasHeight - (canvasHeight * overlay.yPercent)
+                    val scale = currentOverlayVisible
 
                     when (overlay) {
                         is ChartOverlay.Circle -> {
                             val radiusPx = overlay.radius.toPx() * scale
-                            val path = androidx.compose.ui.graphics.Path().apply {
-                                addOval(
-                                    androidx.compose.ui.geometry.Rect(
-                                        center = Offset(barCenterX, centerY),
-                                        radius = radiusPx
-                                    )
+
+                            // Reuse rememberedPath to avoid per-frame allocation
+                            rememberedPath.reset()
+                            rememberedPath.addOval(
+                                androidx.compose.ui.geometry.Rect(
+                                    center = Offset(barCenterX, centerY),
+                                    radius = radiusPx
                                 )
-                            }
-                            clipPath(path) {
+                            )
+
+                            clipPath(rememberedPath) {
                                 val dstWidth = radiusPx * 2
                                 val dstHeight = radiusPx * 2
                                 val imgWidth = image.width.toFloat()
@@ -280,15 +301,17 @@ fun AnimatedBarChart() {
                             val widthPx = overlay.width.toPx() * scale
                             val heightPx = overlay.height.toPx() * scale
                             val topLeft = Offset(barCenterX - widthPx / 2, centerY - heightPx / 2)
-                            val path = androidx.compose.ui.graphics.Path().apply {
-                                addRoundRect(
-                                    androidx.compose.ui.geometry.RoundRect(
-                                        rect = androidx.compose.ui.geometry.Rect(topLeft, Size(widthPx, heightPx)),
-                                        cornerRadius = CornerRadius(widthPx / 2, widthPx / 2)
-                                    )
+
+                            // Reuse rememberedPath to avoid per-frame allocation
+                            rememberedPath.reset()
+                            rememberedPath.addRoundRect(
+                                androidx.compose.ui.geometry.RoundRect(
+                                    rect = androidx.compose.ui.geometry.Rect(topLeft, Size(widthPx, heightPx)),
+                                    cornerRadius = CornerRadius(widthPx / 2, widthPx / 2)
                                 )
-                            }
-                            clipPath(path) {
+                            )
+
+                            clipPath(rememberedPath) {
                                 val dstWidth = widthPx
                                 val dstHeight = heightPx
                                 val imgWidth = image.width.toFloat()
