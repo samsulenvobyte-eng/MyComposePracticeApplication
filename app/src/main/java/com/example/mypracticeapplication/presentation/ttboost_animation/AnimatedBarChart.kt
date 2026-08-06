@@ -10,6 +10,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -30,7 +31,7 @@ import kotlin.math.sin
 @Composable
 fun AnimatedBarChart(
     barData: List<Float>,
-    entranceProgress: Float,
+    entranceProgress: () -> Float,
     barWidth: Dp,
     barSpacing: Dp,
     modifier: Modifier = Modifier
@@ -47,13 +48,17 @@ fun AnimatedBarChart(
         label = "phase"
     )
 
+    val barCornerRadius = remember { CornerRadius(35f, 35f) }
+
     Canvas(modifier = modifier.fillMaxSize()) {
         val barWidthPx = barWidth.toPx()
         val spacingPx = barSpacing.toPx()
+        val currentEntrance = entranceProgress()
 
-        barData.forEachIndexed { index, targetRelativeHeight ->
+        for (index in barData.indices) {
+            val targetRelativeHeight = barData[index]
             // Calculate ambient offset using sine wave based on phase and index
-            val ambientOffset = if (entranceProgress > 0.95f) {
+            val ambientOffset = if (currentEntrance > 0.95f) {
                 sin(breathingPhase + index * 0.5f) * 0.03f
             } else {
                 0f
@@ -61,7 +66,7 @@ fun AnimatedBarChart(
 
             // Combine heights: Target × Entrance + Ambient
             val finalRelativeHeight =
-                (targetRelativeHeight * entranceProgress + ambientOffset).coerceAtLeast(0.01f)
+                (targetRelativeHeight * currentEntrance + ambientOffset).coerceAtLeast(0.01f)
 
             val barHeight = size.height * finalRelativeHeight
             val xOffset = index * (barWidthPx + spacingPx)
@@ -77,7 +82,7 @@ fun AnimatedBarChart(
                 alpha = 0.3f,
                 topLeft = Offset(xOffset, yOffset),
                 size = Size(barWidthPx, barHeight),
-                cornerRadius = CornerRadius(35f, 35f)
+                cornerRadius = barCornerRadius
             )
         }
     }
