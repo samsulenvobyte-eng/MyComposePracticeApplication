@@ -155,6 +155,30 @@ private fun OptimizedPillWithHearts(
     val density = LocalDensity.current
     val pillWidthPx = with(density) { pillConfig.width.toPx() }
     val pillHeightPx = with(density) { pillConfig.height.toPx() }
+
+    // PERFORMANCE: Cache Path objects to avoid allocations in the draw loop
+    val heartPath = remember {
+        Path().apply {
+            // Normalized heart shape (0.0 to 1.0)
+            moveTo(0.5f, 0.25f)
+            cubicTo(0.15f, 0.1f, 0f, 0.35f, 0f, 0.5f)
+            cubicTo(0f, 0.7f, 0.25f, 0.85f, 0.5f, 1f)
+            cubicTo(0.75f, 0.85f, 1f, 0.7f, 1f, 0.5f)
+            cubicTo(1f, 0.35f, 0.85f, 0.1f, 0.5f, 0.25f)
+            close()
+        }
+    }
+
+    val pillPath = remember(pillWidthPx, pillHeightPx) {
+        Path().apply {
+            addRoundRect(
+                RoundRect(
+                    rect = Rect(Offset.Zero, Size(pillWidthPx, pillHeightPx)),
+                    cornerRadius = CornerRadius(pillWidthPx / 2, pillWidthPx / 2)
+                )
+            )
+        }
+    }
     
     // Single Canvas for everything - most performant approach
     Canvas(modifier = modifier) {
@@ -176,7 +200,8 @@ private fun OptimizedPillWithHearts(
             image = image,
             topLeft = topLeft,
             width = pillWidthPx,
-            height = pillHeightPx
+            height = pillHeightPx,
+            pillPath = pillPath
         )
         
         // Draw all hearts in single draw call batch
@@ -185,7 +210,8 @@ private fun OptimizedPillWithHearts(
                 heart = heart,
                 currentTime = currentTime,
                 centerX = pillCenterX,
-                bottomY = pillBottomY
+                bottomY = pillBottomY,
+                heartPath = heartPath
             )
         }
     }
@@ -198,33 +224,28 @@ private fun DrawScope.drawPill(
     image: ImageBitmap,
     topLeft: Offset,
     width: Float,
-    height: Float
+    height: Float,
+    pillPath: Path
 ) {
-    val path = Path().apply {
-        addRoundRect(
-            RoundRect(
-                rect = Rect(topLeft, Size(width, height)),
-                cornerRadius = CornerRadius(width / 2, width / 2)
+    translate(left = topLeft.x, top = topLeft.y) {
+        clipPath(pillPath) {
+            val imgWidth = image.width.toFloat()
+            val imgHeight = image.height.toFloat()
+
+            val scaleFactor = maxOf(width / imgWidth, height / imgHeight)
+            val scaledWidth = imgWidth * scaleFactor
+            val scaledHeight = imgHeight * scaleFactor
+
+            // Draw relative to the translated origin (0,0)
+            val drawX = (width - scaledWidth) / 2
+            val drawY = (height - scaledHeight) / 2
+
+            drawImage(
+                image = image,
+                dstOffset = IntOffset(drawX.toInt(), drawY.toInt()),
+                dstSize = IntSize(scaledWidth.toInt(), scaledHeight.toInt())
             )
-        )
-    }
-    
-    clipPath(path) {
-        val imgWidth = image.width.toFloat()
-        val imgHeight = image.height.toFloat()
-        
-        val scaleFactor = maxOf(width / imgWidth, height / imgHeight)
-        val scaledWidth = imgWidth * scaleFactor
-        val scaledHeight = imgHeight * scaleFactor
-        
-        val drawX = topLeft.x + (width - scaledWidth) / 2
-        val drawY = topLeft.y + (height - scaledHeight) / 2
-        
-        drawImage(
-            image = image,
-            dstOffset = IntOffset(drawX.toInt(), drawY.toInt()),
-            dstSize = IntSize(scaledWidth.toInt(), scaledHeight.toInt())
-        )
+        }
     }
 }
 
@@ -235,7 +256,8 @@ private fun DrawScope.drawHeart(
     heart: Heart,
     currentTime: Long,
     centerX: Float,
-    bottomY: Float
+    bottomY: Float,
+    heartPath: Path
 ) {
     val progress = heart.getProgress(currentTime)
     
@@ -256,7 +278,8 @@ private fun DrawScope.drawHeart(
                 translate(left = -heartSize / 2, top = -heartSize / 2) {
                     drawHeartShape(
                         size = heartSize,
-                        color = HeartColor.copy(alpha = alpha)
+                        color = HeartColor.copy(alpha = alpha),
+                        path = heartPath
                     )
                 }
             }
@@ -304,47 +327,20 @@ private fun easeOutBack(x: Float): Float {
 }
 
 /**
- * Draw heart shape using Canvas paths - more efficient than Icon composable
+ * Draw heart shape using Canvas paths - more efficient than Icon composable.
+ * PERFORMANCE: Reuses a cached Path object to avoid per-frame allocations.
  */
 private fun DrawScope.drawHeartShape(
     size: Float,
-    color: Color
+    color: Color,
+    path: Path
 ) {
-    val path = Path().apply {
-        val width = size
-        val height = size
-        
-        // Heart shape using bezier curves
-        moveTo(width / 2, height * 0.25f)
-        
-        // Left curve
-        cubicTo(
-            width * 0.15f, height * 0.1f,
-            0f, height * 0.35f,
-            0f, height * 0.5f
-        )
-        cubicTo(
-            0f, height * 0.7f,
-            width * 0.25f, height * 0.85f,
-            width / 2, height
-        )
-        
-        // Right curve
-        cubicTo(
-            width * 0.75f, height * 0.85f,
-            width, height * 0.7f,
-            width, height * 0.5f
-        )
-        cubicTo(
-            width, height * 0.35f,
-            width * 0.85f, height * 0.1f,
-            width / 2, height * 0.25f
-        )
-        
-        close()
+    // scale() by default scales from the center of the current canvas.
+    // Since we've already translated to the heart's position, we must scale
+    // from (0,0) to keep the heart in place.
+    scale(scale = size, pivot = Offset.Zero) {
+        drawPath(path = path, color = color)
     }
-    
-    drawPath(path = path, color = color)
 }
 
 @Composable
