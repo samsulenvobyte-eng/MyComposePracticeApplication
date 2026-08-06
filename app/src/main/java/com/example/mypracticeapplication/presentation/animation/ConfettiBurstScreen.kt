@@ -49,8 +49,9 @@ import kotlin.random.Random
 /**
  * Represents a single confetti particle with physics properties.
  * All values are in normalized units or pixels per second.
+ * Optimized to be a mutable class to avoid per-frame allocations.
  */
-private data class Particle(
+private class Particle(
     var x: Float,           // Current X position
     var y: Float,           // Current Y position
     var vx: Float,          // Velocity X (pixels per second)
@@ -105,22 +106,26 @@ private val ConfettiPalette = listOf(
 // PARTICLE GENERATOR
 // ═══════════════════════════════════════════════════════════════════════════════
 
-private fun generateParticles(emissionX: Float, emissionY: Float): List<Particle> {
-    return List(PhysicsConfig.PARTICLE_COUNT) {
-        Particle(
-            x = emissionX,
-            y = emissionY,
-            vx = Random.nextFloat() * (PhysicsConfig.MAX_VX - PhysicsConfig.MIN_VX) + PhysicsConfig.MIN_VX,
-            vy = Random.nextFloat() * (PhysicsConfig.MAX_VY - PhysicsConfig.MIN_VY) + PhysicsConfig.MIN_VY,
-            width = Random.nextFloat() * (PhysicsConfig.MAX_WIDTH - PhysicsConfig.MIN_WIDTH) + PhysicsConfig.MIN_WIDTH,
-            height = Random.nextFloat() * (PhysicsConfig.MAX_HEIGHT - PhysicsConfig.MIN_HEIGHT) + PhysicsConfig.MIN_HEIGHT,
-            color = ConfettiPalette.random(),
-            rotation = Random.nextFloat() * 360f,
-            rotationSpeed = Random.nextFloat() * (PhysicsConfig.MAX_ROTATION_SPEED - PhysicsConfig.MIN_ROTATION_SPEED) + PhysicsConfig.MIN_ROTATION_SPEED,
-            alpha = Random.nextFloat() * 0.5f + 0.5f, // 0.5 - 1.0
-            scale = Random.nextFloat() * 0.4f + 0.6f  // 0.6 - 1.0
+private fun generateParticles(emissionX: Float, emissionY: Float): ArrayList<Particle> {
+    val list = ArrayList<Particle>(PhysicsConfig.PARTICLE_COUNT)
+    repeat(PhysicsConfig.PARTICLE_COUNT) {
+        list.add(
+            Particle(
+                x = emissionX,
+                y = emissionY,
+                vx = Random.nextFloat() * (PhysicsConfig.MAX_VX - PhysicsConfig.MIN_VX) + PhysicsConfig.MIN_VX,
+                vy = Random.nextFloat() * (PhysicsConfig.MAX_VY - PhysicsConfig.MIN_VY) + PhysicsConfig.MIN_VY,
+                width = Random.nextFloat() * (PhysicsConfig.MAX_WIDTH - PhysicsConfig.MIN_WIDTH) + PhysicsConfig.MIN_WIDTH,
+                height = Random.nextFloat() * (PhysicsConfig.MAX_HEIGHT - PhysicsConfig.MIN_HEIGHT) + PhysicsConfig.MIN_HEIGHT,
+                color = ConfettiPalette.random(),
+                rotation = Random.nextFloat() * 360f,
+                rotationSpeed = Random.nextFloat() * (PhysicsConfig.MAX_ROTATION_SPEED - PhysicsConfig.MIN_ROTATION_SPEED) + PhysicsConfig.MIN_ROTATION_SPEED,
+                alpha = Random.nextFloat() * 0.5f + 0.5f, // 0.5 - 1.0
+                scale = Random.nextFloat() * 0.4f + 0.6f  // 0.6 - 1.0
+            )
         )
     }
+    return list
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -136,8 +141,8 @@ private fun generateParticles(emissionX: Float, emissionY: Float): List<Particle
  */
 @Composable
 fun ConfettiExplosion(
-    modifier: Modifier = Modifier,
     isVisible: Boolean,
+    modifier: Modifier = Modifier,
     onAnimationEnd: (() -> Unit)? = null
 ) {
     BoxWithConstraints(modifier = modifier) {
@@ -145,8 +150,9 @@ fun ConfettiExplosion(
         val canvasWidthPx = with(density) { maxWidth.toPx() }
         val canvasHeightPx = with(density) { maxHeight.toPx() }
         
-        // Particle state
-        var particles by remember { mutableStateOf<List<Particle>>(emptyList()) }
+        // Particle state - use ArrayList for in-place updates
+        val particles = remember { ArrayList<Particle>() }
+        var frameTick by remember { mutableLongStateOf(0L) }
         var lastFrameTime by remember { mutableLongStateOf(0L) }
         var isAnimating by remember { mutableStateOf(false) }
         
@@ -156,7 +162,8 @@ fun ConfettiExplosion(
                 // Initialize particles with known dimensions
                 val emissionX = canvasWidthPx / 2
                 val emissionY = canvasHeightPx // Bottom center
-                particles = generateParticles(emissionX, emissionY)
+                particles.clear()
+                particles.addAll(generateParticles(emissionX, emissionY))
                 lastFrameTime = 0L
                 isAnimating = true
             }
@@ -177,10 +184,11 @@ fun ConfettiExplosion(
                     val deltaTime = (frameTimeNanos - lastFrameTime) / 1_000_000_000f
                     lastFrameTime = frameTimeNanos
                     
-                    // Update particles with physics
+                    // Update particles in-place with physics to avoid allocations
                     var anyAlive = false
-                    particles = particles.map { particle ->
-                        if (!particle.isAlive) return@map particle
+                    for (i in 0 until particles.size) {
+                        val particle = particles[i]
+                        if (!particle.isAlive) continue
                         
                         // Apply gravity
                         val newVy = particle.vy + PhysicsConfig.GRAVITY * deltaTime
@@ -200,20 +208,22 @@ fun ConfettiExplosion(
                         val stillAlive = newY <= canvasHeightPx + 100f
                         if (stillAlive) anyAlive = true
                         
-                        particle.copy(
-                            x = newX,
-                            y = newY,
-                            vx = draggedVx,
-                            vy = draggedVy,
-                            rotation = newRotation,
-                            isAlive = stillAlive
-                        )
+                        // Apply updates in-place
+                        particle.x = newX
+                        particle.y = newY
+                        particle.vx = draggedVx
+                        particle.vy = draggedVy
+                        particle.rotation = newRotation
+                        particle.isAlive = stillAlive
                     }
                     
+                    // Update frameTick to trigger Canvas redraw
+                    frameTick = frameTimeNanos
+
                     // End animation when all particles are dead
                     if (!anyAlive && particles.isNotEmpty()) {
                         isAnimating = false
-                        particles = emptyList()
+                        particles.clear()
                         onAnimationEnd?.invoke()
                     }
                 }
@@ -222,24 +232,36 @@ fun ConfettiExplosion(
         
         // Canvas for high-performance rendering
         Canvas(modifier = Modifier.fillMaxSize()) {
-            // Draw all particles
-            particles.forEach { particle ->
-                if (!particle.isAlive) return@forEach
-                
+            // Access frameTick to trigger redraws
+            @Suppress("UNUSED_VARIABLE")
+            val tick = frameTick
+
+            // Draw all particles using manual indexed loop to avoid iterator allocations
+            for (i in 0 until particles.size) {
+                val particle = particles[i]
+                if (!particle.isAlive) continue
+
+                // Cache values to avoid repeated property access
+                val pX = particle.x
+                val pY = particle.y
+                val pRotation = particle.rotation
+                val pAlpha = particle.alpha
                 val scaledWidth = particle.width * particle.scale
                 val scaledHeight = particle.height * particle.scale
-                
+
                 rotate(
-                    degrees = particle.rotation,
-                    pivot = Offset(particle.x, particle.y)
+                    degrees = pRotation,
+                    pivot = Offset(pX, pY)
                 ) {
+                    // Use DrawScope's alpha parameter to avoid Color.copy()
                     drawRect(
-                        color = particle.color.copy(alpha = particle.alpha),
+                        color = particle.color,
                         topLeft = Offset(
-                            particle.x - scaledWidth / 2,
-                            particle.y - scaledHeight / 2
+                            pX - scaledWidth / 2,
+                            pY - scaledHeight / 2
                         ),
-                        size = Size(scaledWidth, scaledHeight)
+                        size = Size(scaledWidth, scaledHeight),
+                        alpha = pAlpha
                     )
                 }
             }
@@ -253,12 +275,13 @@ fun ConfettiExplosion(
 
 @Composable
 fun ConfettiBurstScreen(
+    modifier: Modifier = Modifier,
     onNavigateBack: () -> Unit = {}
 ) {
     var startExplosion by remember { mutableStateOf(false) }
     
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
@@ -288,8 +311,8 @@ fun ConfettiBurstScreen(
             
             // Confetti Explosion Overlay
             ConfettiExplosion(
-                modifier = Modifier.fillMaxSize(),
                 isVisible = startExplosion,
+                modifier = Modifier.fillMaxSize(),
                 onAnimationEnd = { startExplosion = false }
             )
             
