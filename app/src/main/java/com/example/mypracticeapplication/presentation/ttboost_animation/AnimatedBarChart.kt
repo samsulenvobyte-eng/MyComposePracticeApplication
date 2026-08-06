@@ -10,11 +10,15 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.drawscope.scale
+import androidx.compose.ui.graphics.drawscope.translate
+import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.unit.Dp
 import kotlin.math.sin
 
@@ -30,11 +34,20 @@ import kotlin.math.sin
 @Composable
 fun AnimatedBarChart(
     barData: List<Float>,
-    entranceProgress: Float,
+    entranceProgress: () -> Float, // Use lambda to defer state reading to draw phase
     barWidth: Dp,
     barSpacing: Dp,
     modifier: Modifier = Modifier
 ) {
+    // Pre-allocate brush to avoid per-frame allocations during animation
+    val barBrush = remember {
+        Brush.verticalGradient(
+            colors = TtBoostTheme.BarGradient,
+            startY = 0f,
+            endY = 1f
+        )
+    }
+
     // Infinite transition for ambient breathing
     val infiniteTransition = rememberInfiniteTransition(label = "breathing")
     val breathingPhase by infiniteTransition.animateFloat(
@@ -50,10 +63,15 @@ fun AnimatedBarChart(
     Canvas(modifier = modifier.fillMaxSize()) {
         val barWidthPx = barWidth.toPx()
         val spacingPx = barSpacing.toPx()
+        val canvasHeight = size.height
+        val currentProgress = entranceProgress()
 
-        barData.forEachIndexed { index, targetRelativeHeight ->
+        // Use indexed for-loop to avoid iterator allocation per frame
+        for (index in barData.indices) {
+            val targetRelativeHeight = barData[index]
+
             // Calculate ambient offset using sine wave based on phase and index
-            val ambientOffset = if (entranceProgress > 0.95f) {
+            val ambientOffset = if (currentProgress > 0.95f) {
                 sin(breathingPhase + index * 0.5f) * 0.03f
             } else {
                 0f
@@ -61,24 +79,26 @@ fun AnimatedBarChart(
 
             // Combine heights: Target × Entrance + Ambient
             val finalRelativeHeight =
-                (targetRelativeHeight * entranceProgress + ambientOffset).coerceAtLeast(0.01f)
+                (targetRelativeHeight * currentProgress + ambientOffset).coerceAtLeast(0.01f)
 
-            val barHeight = size.height * finalRelativeHeight
+            val barHeight = canvasHeight * finalRelativeHeight
             val xOffset = index * (barWidthPx + spacingPx)
-            val yOffset = size.height - barHeight // Draw from bottom up
 
-            // Draw bar with gradient
-            drawRoundRect(
-                brush = Brush.verticalGradient(
-                    colors = TtBoostTheme.BarGradient,
-                    startY = yOffset,
-                    endY = size.height
-                ),
-                alpha = 0.3f,
-                topLeft = Offset(xOffset, yOffset),
-                size = Size(barWidthPx, barHeight),
-                cornerRadius = CornerRadius(35f, 35f)
-            )
+            // Draw bar using withTransform to reuse the pre-allocated verticalGradient brush.
+            // We translate to the bar's top-left and scale Y by the barHeight so the
+            // 0f-1f brush perfectly covers the bar's vertical span.
+            withTransform({
+                translate(left = xOffset, top = canvasHeight - barHeight)
+                scale(scaleX = 1f, scaleY = barHeight, pivot = Offset.Zero)
+            }) {
+                drawRoundRect(
+                    brush = barBrush,
+                    alpha = 0.3f,
+                    size = Size(barWidthPx, 1f),
+                    // Compensate for Y scale in corner radius to maintain visual consistency
+                    cornerRadius = CornerRadius(35f, 35f / barHeight)
+                )
+            }
         }
     }
 }
