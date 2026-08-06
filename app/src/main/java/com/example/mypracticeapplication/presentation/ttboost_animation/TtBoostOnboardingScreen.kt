@@ -27,6 +27,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -162,16 +163,17 @@ private fun TtBoostContent() {
         // Animated Bar Chart
         AnimatedBarChart(
             barData = barData,
-            entranceProgress = mainProgress.value,
+            entranceProgress = { mainProgress.value }, // Optimized: Defer state read to draw phase
             barWidth = barWidth,
             barSpacing = spacing,
             modifier = Modifier.fillMaxSize()
         )
 
-        // Draw Overlays
-        if (overlayVisible.value > 0f) {
-            val scale = overlayVisible.value
+        // Optimized: Use derivedStateOf for conditional rendering to prevent recomposition on every frame
+        val isOverlayVisible = remember { derivedStateOf { overlayVisible.value > 0f } }
 
+        // Draw Overlays
+        if (isOverlayVisible.value) {
             overlays.forEach { overlay ->
                 // Calculate position
                 val barCenterX =
@@ -185,6 +187,8 @@ private fun TtBoostContent() {
                         .align(Alignment.TopStart)
                         .offset(x = barCenterX.dp, y = centerY.dp)
                         .graphicsLayer {
+                            // Optimized: Read state .value inside graphicsLayer to defer to draw phase
+                            val scale = overlayVisible.value
                             scaleX = scale
                             scaleY = scale
                             alpha = scale
@@ -203,12 +207,14 @@ private fun TtBoostContent() {
                 .align(Alignment.TopStart)
                 .offset(y = (-50).dp)
                 .graphicsLayer {
-                    scaleX = bubblesVisible.value
-                    scaleY = bubblesVisible.value
-                    alpha = bubblesVisible.value
+                    // Optimized: Read state .value inside graphicsLayer to defer to draw phase
+                    val scale = bubblesVisible.value
+                    scaleX = scale
+                    scaleY = scale
+                    alpha = scale
                 },
             icon = Icons.Default.Favorite,
-            count = (100 * mainProgress.value).toInt(),
+            count = { (100 * mainProgress.value).toInt() }, // Optimized: Defer state read
             color = TtBoostTheme.Bubble.HeartColor,
             shadowColor = TtBoostTheme.Bubble.HeartShadow
         )
@@ -220,12 +226,14 @@ private fun TtBoostContent() {
                 .padding(end = 32.dp)
                 .rotate(15f)
                 .graphicsLayer {
-                    scaleX = bubblesVisible.value
-                    scaleY = bubblesVisible.value
-                    alpha = bubblesVisible.value
+                    // Optimized: Read state .value inside graphicsLayer to defer to draw phase
+                    val scale = bubblesVisible.value
+                    scaleX = scale
+                    scaleY = scale
+                    alpha = scale
                 },
             icon = Icons.Default.Person,
-            count = (250 * mainProgress.value).toInt(),
+            count = { (250 * mainProgress.value).toInt() }, // Optimized: Defer state read
             color = TtBoostTheme.Bubble.PersonColor,
             shadowColor = TtBoostTheme.Bubble.PersonShadow
         )
