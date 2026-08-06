@@ -257,6 +257,10 @@ fun AnimatedLineChart(
     )
 ) {
     val textMeasurer = rememberTextMeasurer()
+
+    // Path caching to avoid object allocation during animation
+    val linePath = remember { Path() }
+    val fillPath = remember { Path() }
     
     // Main progress animation with spring for bouncy effect
     val animationProgress = remember { Animatable(0f) }
@@ -318,53 +322,50 @@ fun AnimatedLineChart(
         
         val pointSpacing = (canvasWidth - chartPadding * 2) / (dataPoints.size - 1).coerceAtLeast(1)
         
-        // Calculate all points with vertical bounce applied
-        val baselineY = chartHeight / 2 // Center point for bounce reference
-        val points = dataPoints.mapIndexed { index, dataPoint ->
+        // Helper to get point at index without creating a List<Offset>
+        // Offset is a value class, so this avoids object allocations when not boxed
+        val baselineY = chartHeight / 2
+        val getPoint: (Int) -> Offset = { index ->
+            val dataPoint = dataPoints[index]
             val x = chartPadding + index * pointSpacing
             val normalizedValue = (dataPoint.value - minValue) / valueRange
             val rawY = chartHeight - (normalizedValue * (chartHeight - chartPadding * 2)) - chartPadding
-            
-            // Apply vertical bounce: points bounce from below
-            val distanceFromBaseline = rawY - baselineY
-            val bouncedY = baselineY + (distanceFromBaseline * verticalBounce.value)
-            
+            val bouncedY = baselineY + ((rawY - baselineY) * verticalBounce.value)
             Offset(x, bouncedY)
         }
         
-        if (points.size >= 2) {
-            // Create the FULL line path using smooth cubic bezier curves
-            val linePath = Path().apply {
-                moveTo(points.first().x, points.first().y)
+        if (dataPoints.size >= 2) {
+            // Reuse cached paths to avoid allocation during high-frequency animation
+            linePath.reset()
+            val firstPoint = getPoint(0)
+            linePath.moveTo(firstPoint.x, firstPoint.y)
+
+            // Use indexed loop instead of forEach to avoid iterator allocation
+            for (i in 1 until dataPoints.size) {
+                val prev = getPoint(i - 1)
+                val curr = getPoint(i)
+                val next = if (i < dataPoints.size - 1) getPoint(i + 1) else curr
+                val prevPrev = if (i > 1) getPoint(i - 2) else prev
                 
-                for (i in 1 until points.size) {
-                    val prev = points[i - 1]
-                    val curr = points[i]
-                    val next = if (i < points.size - 1) points[i + 1] else curr
-                    val prevPrev = if (i > 1) points[i - 2] else prev
-                    
-                    // Calculate control points for smooth cubic bezier
-                    val tension = 0.3f
-                    
-                    // Control point 1: based on previous segment direction
-                    val cp1x = prev.x + (curr.x - prevPrev.x) * tension
-                    val cp1y = prev.y + (curr.y - prevPrev.y) * tension
-                    
-                    // Control point 2: based on next segment direction
-                    val cp2x = curr.x - (next.x - prev.x) * tension
-                    val cp2y = curr.y - (next.y - prev.y) * tension
-                    
-                    cubicTo(cp1x, cp1y, cp2x, cp2y, curr.x, curr.y)
-                }
+                // Calculate control points for smooth cubic bezier
+                val tension = 0.3f
+
+                // Control point 1: based on previous segment direction
+                val cp1x = prev.x + (curr.x - prevPrev.x) * tension
+                val cp1y = prev.y + (curr.y - prevPrev.y) * tension
+
+                // Control point 2: based on next segment direction
+                val cp2x = curr.x - (next.x - prev.x) * tension
+                val cp2y = curr.y - (next.y - prev.y) * tension
+
+                linePath.cubicTo(cp1x, cp1y, cp2x, cp2y, curr.x, curr.y)
             }
             
-            // Create the fill path (closed shape below the line)
-            val fillPath = Path().apply {
-                addPath(linePath)
-                lineTo(points.last().x, chartHeight)
-                lineTo(points.first().x, chartHeight)
-                close()
-            }
+            fillPath.reset()
+            fillPath.addPath(linePath)
+            fillPath.lineTo(getPoint(dataPoints.size - 1).x, chartHeight)
+            fillPath.lineTo(getPoint(0).x, chartHeight)
+            fillPath.close()
             
             // Calculate the clip width based on animation progress
             val clipWidth = chartPadding + (canvasWidth - chartPadding) * animationProgress.value
@@ -397,9 +398,11 @@ fun AnimatedLineChart(
                 
                 // Draw data points with fade-in effect
                 if (showDataPoints) {
-                    points.forEachIndexed { index, point ->
+                    // Use indexed loop instead of forEachIndexed to avoid iterator allocation
+                    for (index in 0 until dataPoints.size) {
+                        val point = getPoint(index)
                         // Calculate when this point should appear
-                        val pointProgress = (index.toFloat() / (points.size - 1))
+                        val pointProgress = (index.toFloat() / (dataPoints.size - 1))
                         if (animationProgress.value >= pointProgress) {
                             // Fade in the point
                             val pointAlpha = ((animationProgress.value - pointProgress) * 5f).coerceIn(0f, 1f)
