@@ -47,9 +47,11 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.tooling.preview.Preview
+import java.util.Locale
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -112,13 +114,19 @@ fun AnimatedDonutChart(
         }
     }
 
+    // Optimization: Cache Stroke object to avoid per-frame/per-segment allocation
+    val density = LocalDensity.current
+    val stroke = remember(strokeWidth, density) {
+        Stroke(width = strokeWidth.value * density.density, cap = StrokeCap.Butt)
+    }
+
     // Pre-measure labels to avoid expensive measurement in the draw loop
     val labelLayoutResults = remember(segments, labelTextStyle, textMeasurer) {
         segments.map { segment ->
             val displayValue = if (segment.value == segment.value.toLong().toFloat()) {
                 segment.value.toLong().toString()
             } else {
-                String.format("%.1f", segment.value)
+                String.format(Locale.US, "%.1f", segment.value)
             }
             textMeasurer.measure(text = displayValue, style = labelTextStyle)
         }
@@ -145,7 +153,7 @@ fun AnimatedDonutChart(
                     useCenter = false,
                     topLeft = Offset(center.x - radius, center.y - radius),
                     size = Size(radius * 2, radius * 2),
-                    style = Stroke(width = strokeWidth.toPx(), cap = StrokeCap.Butt)
+                    style = stroke
                 )
                 
                 if (showLabels && animationProgress.value > 0.5f) {
@@ -308,6 +316,18 @@ fun AnimatedLineChart(
             } else null
         }
     }
+
+    // Optimization: Cache Path objects and Stroke to avoid per-frame allocations
+    val linePath = remember { Path() }
+    val fillPath = remember { Path() }
+    val density = LocalDensity.current
+    val stroke = remember(lineWidth, density) {
+        Stroke(
+            width = lineWidth.value * density.density,
+            cap = StrokeCap.Round,
+            join = StrokeJoin.Round
+        )
+    }
     
     Canvas(modifier = modifier) {
         val canvasWidth = size.width
@@ -333,8 +353,9 @@ fun AnimatedLineChart(
         }
         
         if (points.size >= 2) {
-            // Create the FULL line path using smooth cubic bezier curves
-            val linePath = Path().apply {
+            // Optimization: Reuse Path instances by rewinding instead of allocating every frame
+            linePath.rewind()
+            linePath.apply {
                 moveTo(points.first().x, points.first().y)
                 
                 for (i in 1 until points.size) {
@@ -358,8 +379,9 @@ fun AnimatedLineChart(
                 }
             }
             
-            // Create the fill path (closed shape below the line)
-            val fillPath = Path().apply {
+            // Optimization: Reuse Path instances by rewinding
+            fillPath.rewind()
+            fillPath.apply {
                 addPath(linePath)
                 lineTo(points.last().x, chartHeight)
                 lineTo(points.first().x, chartHeight)
@@ -388,11 +410,7 @@ fun AnimatedLineChart(
                 drawPath(
                     path = linePath,
                     color = lineColor,
-                    style = Stroke(
-                        width = lineWidth.toPx(),
-                        cap = StrokeCap.Round,
-                        join = StrokeJoin.Round
-                    )
+                    style = stroke
                 )
                 
                 // Draw data points with fade-in effect
@@ -403,8 +421,10 @@ fun AnimatedLineChart(
                         if (animationProgress.value >= pointProgress) {
                             // Fade in the point
                             val pointAlpha = ((animationProgress.value - pointProgress) * 5f).coerceIn(0f, 1f)
+                            // Optimization: Use native alpha parameter to avoid Color.copy object allocation
                             drawCircle(
-                                color = lineColor.copy(alpha = pointAlpha),
+                                color = lineColor,
+                                alpha = pointAlpha,
                                 radius = dataPointRadius.toPx() * pointAlpha,
                                 center = point
                             )
