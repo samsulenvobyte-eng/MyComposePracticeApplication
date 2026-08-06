@@ -25,6 +25,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -32,6 +33,7 @@ import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
@@ -73,9 +75,12 @@ private val AllConfettiColors = listOf(
 )
 
 @Composable
-fun SuccessAnimationScreen(navController: NavController) {
+fun SuccessAnimationScreen(
+    navController: NavController,
+    modifier: Modifier = Modifier
+) {
     Scaffold(
-        modifier = Modifier.fillMaxSize(),
+        modifier = modifier.fillMaxSize(),
     ) { innerPadding ->
         Box(
             modifier = Modifier
@@ -84,13 +89,15 @@ fun SuccessAnimationScreen(navController: NavController) {
                 .background(Color.White),
             contentAlignment = Alignment.Center
         ) {
-            SuccessAnimationContent()
+            SuccessAnimationContent(modifier = Modifier)
         }
     }
 }
 
 @Composable
-fun SuccessAnimationContent() {
+fun SuccessAnimationContent(
+    modifier: Modifier = Modifier
+) {
     var isPlaying by remember { mutableStateOf(false) }
     
     // Animation States
@@ -99,6 +106,23 @@ fun SuccessAnimationContent() {
     
     // Confetti State
     var startConfetti by remember { mutableStateOf(false) }
+
+    // Optimization: Pre-calculate and cache paths/measures to avoid per-frame allocations
+    val density = LocalDensity.current
+    val checkmarkPath = remember(density) {
+        Path().apply {
+            with(density) {
+                moveTo(32.dp.toPx(), 58.dp.toPx())
+                lineTo(48.dp.toPx(), 74.dp.toPx()) // Tip
+                lineTo(82.dp.toPx(), 38.dp.toPx()) // End
+            }
+        }
+    }
+    val checkmarkPathMeasure = remember(checkmarkPath) {
+        PathMeasure().apply { setPath(checkmarkPath, false) }
+    }
+    val animatedCheckmarkPath = remember { Path() }
+    val strokeWidth = remember(density) { with(density) { 8.dp.toPx() } }
 
     LaunchedEffect(isPlaying) {
         if (isPlaying) {
@@ -137,6 +161,7 @@ fun SuccessAnimationContent() {
     }
     
     Column(
+        modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Box(
@@ -155,7 +180,12 @@ fun SuccessAnimationContent() {
             Canvas(
                 modifier = Modifier
                     .size(110.dp) // Matched size
-                    .scale(circleScale.value)
+                    // Optimization: Use graphicsLayer to defer state reading to the draw phase
+                    .graphicsLayer {
+                        val scale = circleScale.value
+                        scaleX = scale
+                        scaleY = scale
+                    }
             ) {
                 drawCircle(
                     color = ColorGreenCircle
@@ -166,29 +196,27 @@ fun SuccessAnimationContent() {
             Canvas(
                 modifier = Modifier
                     .size(110.dp)
-                    .scale(circleScale.value.coerceAtLeast(0f)) // Scale with circle
+                    // Optimization: Use graphicsLayer to defer state reading to the draw phase
+                    .graphicsLayer {
+                        val scale = circleScale.value.coerceAtLeast(0f)
+                        scaleX = scale
+                        scaleY = scale
+                    }
             ) {
-                // Define Checkmark Path
-                val path = Path().apply {
-                    moveTo(32.dp.toPx(), 58.dp.toPx())
-                    lineTo(48.dp.toPx(), 74.dp.toPx()) // Tip
-                    lineTo(82.dp.toPx(), 38.dp.toPx()) // End
-                }
-                
-                // Helper to measure path length
-                val pathMeasure = PathMeasure()
-                pathMeasure.setPath(path, false)
-                val pathLength = pathMeasure.length
-                
-                // Create animated path segment
-                val animatedPath = Path()
-                pathMeasure.getSegment(0f, pathLength * checkmarkProgress.value, animatedPath, true)
+                // Optimization: Reuse cached path and measure to eliminate per-frame allocations
+                animatedCheckmarkPath.reset()
+                checkmarkPathMeasure.getSegment(
+                    0f,
+                    checkmarkPathMeasure.length * checkmarkProgress.value,
+                    animatedCheckmarkPath,
+                    true
+                )
                 
                 drawPath(
-                    path = animatedPath,
+                    path = animatedCheckmarkPath,
                     color = Color.White,
                     style = Stroke(
-                        width = 8.dp.toPx(), // Thick stroke
+                        width = strokeWidth,
                         cap = StrokeCap.Round,
                         join = StrokeJoin.Round
                     )
@@ -250,8 +278,32 @@ fun ConfettiBurst(
     Box(modifier = modifier) {
         if (isVisible) {
             val density = LocalDensity.current
+
+            // Optimization: Pre-allocate normalized paths for complex shapes
+            val lightningPath = remember {
+                Path().apply {
+                    moveTo(-0.2f, -0.5f)
+                    lineTo(0.3f, -0.1f)
+                    lineTo(-0.1f, -0.1f)
+                    lineTo(0.2f, 0.5f)
+                    lineTo(-0.3f, 0.1f)
+                    lineTo(0.1f, 0.1f)
+                    close()
+                }
+            }
+            val curvePath = remember {
+                Path().apply {
+                    moveTo(-0.5f, 0f)
+                    cubicTo(
+                        -0.25f, -0.5f,
+                        0.25f, 0.5f,
+                        0.5f, 0f
+                    )
+                }
+            }
+
             var particles by remember { mutableStateOf<List<SuccessParticle>>(emptyList()) }
-            var lastFrameTime by remember { mutableStateOf(0L) }
+            var lastFrameTime by remember { mutableLongStateOf(0L) }
             
             LaunchedEffect(Unit) {
                 with(density) {
@@ -328,7 +380,9 @@ fun ConfettiBurst(
             }
             
             Canvas(modifier = Modifier.fillMaxSize()) {
-                particles.forEach { p ->
+                // Optimization: Use indexed for loop to avoid Iterator allocations
+                for (i in particles.indices) {
+                    val p = particles[i]
                     // Draw logic per shape
                     withTransform({
                         translate(p.x, p.y)
@@ -336,34 +390,37 @@ fun ConfettiBurst(
                         scale(p.life) // Shrink as they die
                     }) {
                         val alpha = p.life.coerceIn(0f, 1f)
-                        val color = p.color.copy(alpha = alpha)
+                        // Optimization: Avoid Color.copy() by using the alpha parameter in draw calls
+                        val color = p.color
                         val halfSize = p.size / 2
                         
                         when(p.shape) {
                             ParticleShape.CIRCLE -> {
                                 drawCircle(
                                     color = color,
-                                    radius = halfSize
+                                    radius = halfSize,
+                                    alpha = alpha
                                 )
                             }
                             ParticleShape.SQUARE -> {
                                 drawRect(
                                     color = color,
                                     topLeft = Offset(-halfSize, -halfSize),
-                                    size = Size(p.size, p.size)
+                                    size = Size(p.size, p.size),
+                                    alpha = alpha
                                 )
                             }
                             ParticleShape.CROSS -> {
-                                drawCross(color, p.size)
+                                drawCross(color, alpha, p.size)
                             }
                             ParticleShape.ZIGZAG -> {
-                                drawZigzag(color, p.size)
+                                drawZigzag(lightningPath, color, alpha, p.size)
                             }
                             ParticleShape.CURVE -> {
-                                drawCurve(color, p.size)
+                                drawCurve(curvePath, color, alpha, p.size)
                             }
                             ParticleShape.STRIP -> {
-                                drawStrip(color, p.size)
+                                drawStrip(color, alpha, p.size)
                             }
                         }
                     }
@@ -377,7 +434,7 @@ fun ConfettiBurst(
 // CUSTOM SHAPE DRAWERS
 // -----------------------------------------------------------------------------
 
-fun DrawScope.drawCross(color: Color, size: Float) {
+fun DrawScope.drawCross(color: Color, alpha: Float, size: Float) {
     val thickness = size * 0.25f
     val halfSize = size / 2
     
@@ -385,75 +442,59 @@ fun DrawScope.drawCross(color: Color, size: Float) {
     drawRect(
         color = color,
         topLeft = Offset(-thickness/2, -halfSize),
-        size = Size(thickness, size)
+        size = Size(thickness, size),
+        alpha = alpha
     )
     // Horizontal Bar
     drawRect(
         color = color,
         topLeft = Offset(-halfSize, -thickness/2),
-        size = Size(size, thickness)
+        size = Size(size, thickness),
+        alpha = alpha
     )
 }
 
-fun DrawScope.drawZigzag(color: Color, size: Float) {
-    // 3-point zigzag path
-    val path = Path().apply {
-        moveTo(-size/2, -size/2)
-        lineTo(0f, 0f)
-        lineTo(-size/2, size/2)
-        lineTo(0f, size/2)
-        lineTo(size/2, 0f)
-        lineTo(0f, -size/2)
-        close()
+fun DrawScope.drawZigzag(lightningPath: Path, color: Color, alpha: Float, size: Float) {
+    // Optimization: Reuse pre-allocated normalized path and scale it
+    withTransform({
+        scale(size, size, Offset.Zero)
+    }) {
+        drawPath(path = lightningPath, color = color, alpha = alpha)
     }
-    // Simplification: Just a jagged path outline or fill. 
-    // Let's draw a "Lightning" style filled shape
-    val lightningPath = Path().apply {
-        moveTo(-size * 0.2f, -size * 0.5f)
-        lineTo(size * 0.3f, -size * 0.1f)
-        lineTo(-size * 0.1f, -size * 0.1f)
-        lineTo(size * 0.2f, size * 0.5f)
-        lineTo(-size * 0.3f, size * 0.1f)
-        lineTo(size * 0.1f, size * 0.1f)
-        close()
-    }
-    drawPath(path = lightningPath, color = color)
 }
 
-fun DrawScope.drawCurve(color: Color, size: Float) {
-    // A simple squiggly line
-    val path = Path().apply {
-        moveTo(-size/2, 0f)
-        cubicTo(
-            -size/4, -size/2,
-            size/4, size/2,
-            size/2, 0f
+fun DrawScope.drawCurve(curvePath: Path, color: Color, alpha: Float, size: Float) {
+    // Optimization: Reuse pre-allocated normalized path and scale it
+    withTransform({
+        scale(size, size, Offset.Zero)
+    }) {
+        drawPath(
+            path = curvePath,
+            color = color,
+            alpha = alpha,
+            style = Stroke(
+                width = 0.2f, // width is also scaled
+                cap = StrokeCap.Round
+            )
         )
     }
-    drawPath(
-        path = path,
-        color = color,
-        style = Stroke(
-            width = size * 0.2f,
-            cap = StrokeCap.Round
-        )
-    )
 }
 
-fun DrawScope.drawStrip(color: Color, size: Float) {
+fun DrawScope.drawStrip(color: Color, alpha: Float, size: Float) {
     // a long thin rectangle (Strip)
     val width = size * 0.3f
     val height = size * 1.2f
     drawRect(
         color = color,
         topLeft = Offset(-width/2, -height/2),
-        size = Size(width, height)
+        size = Size(width, height),
+        alpha = alpha
     )
 }
 
 @Preview(showBackground = true)
 @Composable
-fun SuccessAnimationDetailedPreview() {
+private fun SuccessAnimationDetailedPreview() {
     MaterialTheme {
         SuccessAnimationScreen(navController = rememberNavController())
     }
