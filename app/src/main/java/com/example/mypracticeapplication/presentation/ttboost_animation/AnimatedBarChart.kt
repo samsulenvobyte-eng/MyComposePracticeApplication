@@ -9,6 +9,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
@@ -19,18 +20,24 @@ import androidx.compose.ui.unit.Dp
 import kotlin.math.sin
 
 /**
+ * Immutable wrapper for bar data to ensure stability in Compose.
+ */
+@Immutable
+data class BarDataV2(val items: List<Float>)
+
+/**
  * Animated bar chart with entrance animation and ambient breathing effect.
  * 
- * @param barData List of relative bar heights (0.0 to 1.0)
- * @param entranceProgress Animation progress for bar entrance (0.0 to 1.0)
+ * @param barData Data for the bars
+ * @param entranceProgressProvider Lambda providing animation progress for bar entrance (0.0 to 1.0)
  * @param barWidth Width of each bar
  * @param barSpacing Spacing between bars
  * @param modifier Modifier for the canvas
  */
 @Composable
 fun AnimatedBarChart(
-    barData: List<Float>,
-    entranceProgress: Float,
+    barData: BarDataV2,
+    entranceProgressProvider: () -> Float,
     barWidth: Dp,
     barSpacing: Dp,
     modifier: Modifier = Modifier
@@ -50,8 +57,11 @@ fun AnimatedBarChart(
     Canvas(modifier = modifier.fillMaxSize()) {
         val barWidthPx = barWidth.toPx()
         val spacingPx = barSpacing.toPx()
+        val entranceProgress = entranceProgressProvider()
+        val items = barData.items
 
-        barData.forEachIndexed { index, targetRelativeHeight ->
+        for (index in items.indices) {
+            val targetRelativeHeight = items[index]
             // Calculate ambient offset using sine wave based on phase and index
             val ambientOffset = if (entranceProgress > 0.95f) {
                 sin(breathingPhase + index * 0.5f) * 0.03f

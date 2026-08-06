@@ -45,9 +45,11 @@ import kotlinx.coroutines.delay
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TtBoostOnboardingScreen(
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Scaffold(
+        modifier = modifier,
         topBar = {
             TopAppBar(
                 title = {
@@ -88,7 +90,7 @@ fun TtBoostOnboardingScreen(
 @Composable
 private fun TtBoostContent() {
     // Data definition: Relative heights [0.0 - 1.0]
-    val barData = remember { listOf(0.4f, 0.55f, 0.65f, 0.85f, 0.95f) }
+    val barData = remember { BarDataV2(listOf(0.4f, 0.55f, 0.65f, 0.85f, 0.95f)) }
 
     // Animation States
     val overlayVisible = remember { Animatable(0f) }
@@ -155,14 +157,14 @@ private fun TtBoostContent() {
     ) {
         val availableWidth = maxWidth
         val availableHeight = maxHeight
-        val barCount = barData.size
+        val barCount = barData.items.size
         val spacing = availableWidth * 0.05f
         val barWidth = (availableWidth - (spacing * (barCount - 1))) / barCount
 
         // Animated Bar Chart
         AnimatedBarChart(
             barData = barData,
-            entranceProgress = mainProgress.value,
+            entranceProgressProvider = { mainProgress.value },
             barWidth = barWidth,
             barSpacing = spacing,
             modifier = Modifier.fillMaxSize()
@@ -197,6 +199,10 @@ private fun TtBoostContent() {
 
         // Heart Bubble (Top-Left)
         StatBubble(
+            icon = Icons.Default.Favorite,
+            countProvider = { (100 * mainProgress.value).toInt() },
+            color = TtBoostTheme.Bubble.HeartColor,
+            shadowColor = TtBoostTheme.Bubble.HeartShadow,
             modifier = Modifier
                 .padding(start = 32.dp)
                 .rotate(-15f)
@@ -206,15 +212,15 @@ private fun TtBoostContent() {
                     scaleX = bubblesVisible.value
                     scaleY = bubblesVisible.value
                     alpha = bubblesVisible.value
-                },
-            icon = Icons.Default.Favorite,
-            count = (100 * mainProgress.value).toInt(),
-            color = TtBoostTheme.Bubble.HeartColor,
-            shadowColor = TtBoostTheme.Bubble.HeartShadow
+                }
         )
 
         // Person Bubble (Top-Right)
         StatBubble(
+            icon = Icons.Default.Person,
+            countProvider = { (250 * mainProgress.value).toInt() },
+            color = TtBoostTheme.Bubble.PersonColor,
+            shadowColor = TtBoostTheme.Bubble.PersonShadow,
             modifier = Modifier
                 .align(Alignment.TopEnd)
                 .padding(end = 32.dp)
@@ -223,11 +229,7 @@ private fun TtBoostContent() {
                     scaleX = bubblesVisible.value
                     scaleY = bubblesVisible.value
                     alpha = bubblesVisible.value
-                },
-            icon = Icons.Default.Person,
-            count = (250 * mainProgress.value).toInt(),
-            color = TtBoostTheme.Bubble.PersonColor,
-            shadowColor = TtBoostTheme.Bubble.PersonShadow
+                }
         )
     }
 }
