@@ -30,14 +30,16 @@ import kotlin.math.sin
 @Composable
 fun AnimatedBarChart(
     barData: List<Float>,
-    entranceProgress: Float,
+    entranceProgress: () -> Float, // Use lambda to avoid recomposition during high-frequency animation
     barWidth: Dp,
     barSpacing: Dp,
     modifier: Modifier = Modifier
 ) {
     // Infinite transition for ambient breathing
     val infiniteTransition = rememberInfiniteTransition(label = "breathing")
-    val breathingPhase by infiniteTransition.animateFloat(
+
+    // Use State object directly to avoid recomposition by reading .value inside Canvas draw block
+    val breathingPhaseState = infiniteTransition.animateFloat(
         initialValue = 0f,
         targetValue = 2f * Math.PI.toFloat(),
         animationSpec = infiniteRepeatable(
@@ -50,18 +52,23 @@ fun AnimatedBarChart(
     Canvas(modifier = modifier.fillMaxSize()) {
         val barWidthPx = barWidth.toPx()
         val spacingPx = barSpacing.toPx()
+        val currentEntranceProgress = entranceProgress()
+        val currentBreathingPhase = breathingPhaseState.value
 
-        barData.forEachIndexed { index, targetRelativeHeight ->
+        // Use indexed for loop instead of forEachIndexed to avoid iterator allocation per frame
+        for (index in barData.indices) {
+            val targetRelativeHeight = barData[index]
+
             // Calculate ambient offset using sine wave based on phase and index
-            val ambientOffset = if (entranceProgress > 0.95f) {
-                sin(breathingPhase + index * 0.5f) * 0.03f
+            val ambientOffset = if (currentEntranceProgress > 0.95f) {
+                sin(currentBreathingPhase + index * 0.5f) * 0.03f
             } else {
                 0f
             }
 
             // Combine heights: Target × Entrance + Ambient
             val finalRelativeHeight =
-                (targetRelativeHeight * entranceProgress + ambientOffset).coerceAtLeast(0.01f)
+                (targetRelativeHeight * currentEntranceProgress + ambientOffset).coerceAtLeast(0.01f)
 
             val barHeight = size.height * finalRelativeHeight
             val xOffset = index * (barWidthPx + spacingPx)

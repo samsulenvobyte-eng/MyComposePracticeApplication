@@ -28,6 +28,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -84,7 +85,7 @@ private fun createBubbleShape(): GenericShape {
 @Composable
 fun StatBubble(
     icon: ImageVector,
-    count: Int,
+    count: () -> Int, // Pass as lambda to avoid recomposition on every value change
     color: Color,
     shadowColor: Color,
     modifier: Modifier = Modifier,
@@ -93,7 +94,8 @@ fun StatBubble(
     // 3D Rotation Animation
     val infiniteTransition = rememberInfiniteTransition(label = "3d_float")
     
-    val rotationY by infiniteTransition.animateFloat(
+    // Use State objects directly to avoid recomposition by accessing .value inside graphicsLayer
+    val rotationYState = infiniteTransition.animateFloat(
         initialValue = -15f,
         targetValue = 15f,
         animationSpec = infiniteRepeatable(
@@ -103,7 +105,7 @@ fun StatBubble(
         label = "rotationY"
     )
 
-    val rotationX by infiniteTransition.animateFloat(
+    val rotationXState = infiniteTransition.animateFloat(
         initialValue = 5f,
         targetValue = -5f,
         animationSpec = infiniteRepeatable(
@@ -122,8 +124,9 @@ fun StatBubble(
                 interactionSource = remember { MutableInteractionSource() }
             ) { onClick() }
             .graphicsLayer {
-                this.rotationY = rotationY
-                this.rotationX = rotationX
+                // Read animation state only during the graphics phase
+                this.rotationY = rotationYState.value
+                this.rotationX = rotationXState.value
                 cameraDistance = 12f * density
                 transformOrigin = TransformOrigin(0.5f, 0.5f)
             }
@@ -148,8 +151,11 @@ fun StatBubble(
 
                     Spacer(modifier = Modifier.width(8.dp))
 
+                    // Use derivedStateOf to only trigger recomposition/animation when the integer value changes
+                    val stableCount by remember(count) { derivedStateOf { count() } }
+
                     AnimatedContent(
-                        targetState = count,
+                        targetState = stableCount,
                         transitionSpec = {
                             if (targetState > initialState) {
                                 (slideInVertically { height -> height } + fadeIn()).togetherWith(
