@@ -33,6 +33,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -61,9 +62,11 @@ private val BarGradient = listOf(BarTopColor, BarBottomColor)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OnboardingPage1Screen(
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Scaffold(
+        modifier = modifier,
         topBar = {
             TopAppBar(
                 title = { 
@@ -102,7 +105,9 @@ fun OnboardingPage1Screen(
 }
 
 @Composable
-fun AnimatedBarChart() {
+fun AnimatedBarChart(
+    modifier: Modifier = Modifier
+) {
     // Data definition: Relative heights [0.0 - 1.0]
     val barData = remember { listOf(0.4f, 0.55f, 0.65f, 0.85f, 0.95f) }
     
@@ -151,6 +156,7 @@ fun AnimatedBarChart() {
     )
 
     // Overlay Data
+        val isOverlayVisible by remember { derivedStateOf { overlayVisible.value > 0f } }
     val overlays = remember {
         listOf(
             ChartOverlay.Circle(
@@ -191,7 +197,7 @@ fun AnimatedBarChart() {
         }
     }
 
-    Box(){
+    Box(modifier = modifier){
 
         Canvas(
             modifier = Modifier
@@ -208,6 +214,7 @@ fun AnimatedBarChart() {
 
             // Draw Bars
             barData.forEachIndexed { index, targetRelativeHeight ->
+                // BOLT: Reading progress inside DrawScope to defer state read and skip recomposition
                 val entranceProgress = mainProgress.value
 
                 // Calculate ambient offset using sine wave based on time (phase) and index
@@ -239,13 +246,15 @@ fun AnimatedBarChart() {
             }
 
             // Draw Overlays
-            if (overlayVisible.value > 0f) {
+            // BOLT: Reading progress inside DrawScope to defer state read and skip recomposition
+            if (isOverlayVisible) {
+                val overlayScale = overlayVisible.value
                 overlays.forEach { overlay ->
                     val image = images[overlay.res] ?: return@forEach
 
                     val barCenterX = (overlay.xIndex * (barWidth + spacing)) + (barWidth / 2)
                     val centerY = size.height - (size.height * overlay.yPercent)
-                    val scale = overlayVisible.value
+                    val scale = overlayScale
 
                     when (overlay) {
                         is ChartOverlay.Circle -> {
@@ -321,7 +330,7 @@ fun AnimatedBarChart() {
                      alpha = bubblesVisible.value
                 },
             icon = Icons.Default.Favorite,
-            count = (100 * mainProgress.value).toInt(),
+            count = { (100 * mainProgress.value).toInt() },
             color = Color(0xFFE84E66),
             shadowColor = Color(0xFFA62C41)
         )
@@ -337,7 +346,7 @@ fun AnimatedBarChart() {
                      alpha = bubblesVisible.value
                 },
             icon = Icons.Default.Person,
-            count = (250 * mainProgress.value).toInt(), // Different scale example
+            count = { (250 * mainProgress.value).toInt() }, // Different scale example
             color = Color(0xFF2DB3F9),
             shadowColor = Color(0xFFA62C41)
         )

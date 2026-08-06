@@ -30,7 +30,7 @@ import kotlin.math.sin
 @Composable
 fun AnimatedBarChart(
     barData: List<Float>,
-    entranceProgress: Float,
+    entranceProgress: () -> Float,
     barWidth: Dp,
     barSpacing: Dp,
     modifier: Modifier = Modifier
@@ -52,8 +52,9 @@ fun AnimatedBarChart(
         val spacingPx = barSpacing.toPx()
 
         barData.forEachIndexed { index, targetRelativeHeight ->
+            val progress = entranceProgress()
             // Calculate ambient offset using sine wave based on phase and index
-            val ambientOffset = if (entranceProgress > 0.95f) {
+            val ambientOffset = if (progress > 0.95f) {
                 sin(breathingPhase + index * 0.5f) * 0.03f
             } else {
                 0f
@@ -61,7 +62,7 @@ fun AnimatedBarChart(
 
             // Combine heights: Target × Entrance + Ambient
             val finalRelativeHeight =
-                (targetRelativeHeight * entranceProgress + ambientOffset).coerceAtLeast(0.01f)
+                (targetRelativeHeight * progress + ambientOffset).coerceAtLeast(0.01f)
 
             val barHeight = size.height * finalRelativeHeight
             val xOffset = index * (barWidthPx + spacingPx)
