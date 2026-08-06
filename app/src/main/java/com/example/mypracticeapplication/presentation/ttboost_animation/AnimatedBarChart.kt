@@ -51,7 +51,8 @@ fun AnimatedBarChart(
         val barWidthPx = barWidth.toPx()
         val spacingPx = barSpacing.toPx()
 
-        barData.forEachIndexed { index, targetRelativeHeight ->
+        for (index in barData.indices) {
+            val targetRelativeHeight = barData[index]
             // Calculate ambient offset using sine wave based on phase and index
             val ambientOffset = if (entranceProgress > 0.95f) {
                 sin(breathingPhase + index * 0.5f) * 0.03f
