@@ -135,8 +135,10 @@ fun AnimatedDonutChart(
             
             var currentStartAngle = startAngle
             
-            segments.forEachIndexed { index, segment ->
-                val sweepAngle = sweepAngles[index] * animationProgress.value
+            // Optimization: Use standard loop to avoid Iterator allocations per frame
+            for (i in 0 until segments.size) {
+                val segment = segments[i]
+                val sweepAngle = sweepAngles[i] * animationProgress.value
                 
                 drawArc(
                     color = segment.color,
@@ -154,9 +156,9 @@ fun AnimatedDonutChart(
                     val labelX = center.x + labelRadius * cos(Math.toRadians(labelAngle.toDouble())).toFloat()
                     val labelY = center.y + labelRadius * sin(Math.toRadians(labelAngle.toDouble())).toFloat()
                     
-                    val textLayoutResult = labelLayoutResults[index]
+                    val textLayoutResult = labelLayoutResults[i]
                     
-                    if (sweepAngles[index] > 15f) {
+                    if (sweepAngles[i] > 15f) {
                         drawText(
                             textLayoutResult = textLayoutResult,
                             topLeft = Offset(
@@ -308,6 +310,11 @@ fun AnimatedLineChart(
             } else null
         }
     }
+
+    // Optimization: Pre-allocate paths and Y-coordinate array to avoid per-frame allocations
+    val linePath = remember { Path() }
+    val fillPath = remember { Path() }
+    val yCoordinates = remember(dataPoints.size) { FloatArray(dataPoints.size) }
     
     Canvas(modifier = modifier) {
         val canvasWidth = size.width
@@ -318,53 +325,55 @@ fun AnimatedLineChart(
         
         val pointSpacing = (canvasWidth - chartPadding * 2) / (dataPoints.size - 1).coerceAtLeast(1)
         
-        // Calculate all points with vertical bounce applied
-        val baselineY = chartHeight / 2 // Center point for bounce reference
-        val points = dataPoints.mapIndexed { index, dataPoint ->
-            val x = chartPadding + index * pointSpacing
-            val normalizedValue = (dataPoint.value - minValue) / valueRange
+        // Calculate all Y coordinates with vertical bounce applied
+        // Optimization: Use primitive FloatArray and standard loop to avoid Offset boxing and Iterator overhead
+        val baselineY = chartHeight / 2
+        for (i in 0 until dataPoints.size) {
+            val normalizedValue = (dataPoints[i].value - minValue) / valueRange
             val rawY = chartHeight - (normalizedValue * (chartHeight - chartPadding * 2)) - chartPadding
             
             // Apply vertical bounce: points bounce from below
             val distanceFromBaseline = rawY - baselineY
-            val bouncedY = baselineY + (distanceFromBaseline * verticalBounce.value)
-            
-            Offset(x, bouncedY)
+            yCoordinates[i] = baselineY + (distanceFromBaseline * verticalBounce.value)
         }
         
-        if (points.size >= 2) {
-            // Create the FULL line path using smooth cubic bezier curves
-            val linePath = Path().apply {
-                moveTo(points.first().x, points.first().y)
+        if (dataPoints.size >= 2) {
+            // Optimization: Reset and reuse existing Path objects
+            linePath.reset()
+            linePath.moveTo(chartPadding, yCoordinates[0])
+
+            for (i in 1 until dataPoints.size) {
+                // Optimization: Calculate X values inline to avoid intermediate List<Offset>
+                val prevX = chartPadding + (i - 1) * pointSpacing
+                val currX = chartPadding + i * pointSpacing
+                val nextX = if (i < dataPoints.size - 1) chartPadding + (i + 1) * pointSpacing else currX
+                val prevPrevX = if (i > 1) chartPadding + (i - 2) * pointSpacing else prevX
                 
-                for (i in 1 until points.size) {
-                    val prev = points[i - 1]
-                    val curr = points[i]
-                    val next = if (i < points.size - 1) points[i + 1] else curr
-                    val prevPrev = if (i > 1) points[i - 2] else prev
-                    
-                    // Calculate control points for smooth cubic bezier
-                    val tension = 0.3f
-                    
-                    // Control point 1: based on previous segment direction
-                    val cp1x = prev.x + (curr.x - prevPrev.x) * tension
-                    val cp1y = prev.y + (curr.y - prevPrev.y) * tension
-                    
-                    // Control point 2: based on next segment direction
-                    val cp2x = curr.x - (next.x - prev.x) * tension
-                    val cp2y = curr.y - (next.y - prev.y) * tension
-                    
-                    cubicTo(cp1x, cp1y, cp2x, cp2y, curr.x, curr.y)
-                }
+                val prevY = yCoordinates[i - 1]
+                val currY = yCoordinates[i]
+                val nextY = if (i < dataPoints.size - 1) yCoordinates[i + 1] else currY
+                val prevPrevY = if (i > 1) yCoordinates[i - 2] else prevY
+
+                // Calculate control points for smooth cubic bezier
+                val tension = 0.3f
+
+                // Control point 1: based on previous segment direction
+                val cp1x = prevX + (currX - prevPrevX) * tension
+                val cp1y = prevY + (currY - prevPrevY) * tension
+
+                // Control point 2: based on next segment direction
+                val cp2x = currX - (nextX - prevX) * tension
+                val cp2y = currY - (nextY - prevY) * tension
+
+                linePath.cubicTo(cp1x, cp1y, cp2x, cp2y, currX, currY)
             }
             
             // Create the fill path (closed shape below the line)
-            val fillPath = Path().apply {
-                addPath(linePath)
-                lineTo(points.last().x, chartHeight)
-                lineTo(points.first().x, chartHeight)
-                close()
-            }
+            fillPath.reset()
+            fillPath.addPath(linePath)
+            fillPath.lineTo(chartPadding + (dataPoints.size - 1) * pointSpacing, chartHeight)
+            fillPath.lineTo(chartPadding, chartHeight)
+            fillPath.close()
             
             // Calculate the clip width based on animation progress
             val clipWidth = chartPadding + (canvasWidth - chartPadding) * animationProgress.value
@@ -397,16 +406,15 @@ fun AnimatedLineChart(
                 
                 // Draw data points with fade-in effect
                 if (showDataPoints) {
-                    points.forEachIndexed { index, point ->
-                        // Calculate when this point should appear
-                        val pointProgress = (index.toFloat() / (points.size - 1))
+                    // Optimization: Use standard loop to avoid Iterator allocations per frame
+                    for (i in 0 until dataPoints.size) {
+                        val pointProgress = (i.toFloat() / (dataPoints.size - 1))
                         if (animationProgress.value >= pointProgress) {
-                            // Fade in the point
                             val pointAlpha = ((animationProgress.value - pointProgress) * 5f).coerceIn(0f, 1f)
                             drawCircle(
                                 color = lineColor.copy(alpha = pointAlpha),
                                 radius = dataPointRadius.toPx() * pointAlpha,
-                                center = point
+                                center = Offset(chartPadding + i * pointSpacing, yCoordinates[i])
                             )
                         }
                     }
@@ -416,10 +424,11 @@ fun AnimatedLineChart(
         
         // Draw x-axis labels (outside clip rect so they're always visible)
         if (showLabels) {
-            dataPoints.forEachIndexed { index, dataPoint ->
-                val textLayoutResult = labelLayoutResults[index]
+            // Optimization: Use standard loop to avoid Iterator allocations per frame
+            for (i in 0 until dataPoints.size) {
+                val textLayoutResult = labelLayoutResults[i]
                 if (textLayoutResult != null) {
-                    val x = chartPadding + index * pointSpacing
+                    val x = chartPadding + i * pointSpacing
                     drawText(
                         textLayoutResult = textLayoutResult,
                         topLeft = Offset(
