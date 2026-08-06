@@ -20,9 +20,9 @@ import kotlin.math.sin
 
 /**
  * Animated bar chart with entrance animation and ambient breathing effect.
- * 
+ *
  * @param barData List of relative bar heights (0.0 to 1.0)
- * @param entranceProgress Animation progress for bar entrance (0.0 to 1.0)
+ * @param entranceProgressProvider Animation progress for bar entrance (0.0 to 1.0)
  * @param barWidth Width of each bar
  * @param barSpacing Spacing between bars
  * @param modifier Modifier for the canvas
@@ -30,7 +30,7 @@ import kotlin.math.sin
 @Composable
 fun AnimatedBarChart(
     barData: List<Float>,
-    entranceProgress: Float,
+    entranceProgressProvider: () -> Float,
     barWidth: Dp,
     barSpacing: Dp,
     modifier: Modifier = Modifier
@@ -47,9 +47,13 @@ fun AnimatedBarChart(
         label = "phase"
     )
 
+    // PERFORMANCE OPTIMIZATION: Defer animation state reading to the draw phase
+    // by using a lambda provider (entranceProgressProvider). This prevents
+    // AnimatedBarChart from recomposing every frame during the entrance animation.
     Canvas(modifier = modifier.fillMaxSize()) {
         val barWidthPx = barWidth.toPx()
         val spacingPx = barSpacing.toPx()
+        val entranceProgress = entranceProgressProvider()
 
         barData.forEachIndexed { index, targetRelativeHeight ->
             // Calculate ambient offset using sine wave based on phase and index
