@@ -44,7 +44,8 @@ import kotlinx.coroutines.delay
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HeavyComputationScreen(
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     // 1. Start with a Loading State
     var isLoaded by remember { mutableStateOf(false) }
@@ -60,6 +61,7 @@ fun HeavyComputationScreen(
     }
 
     Scaffold(
+        modifier = modifier,
         topBar = {
             TopAppBar(
                 title = { Text("Smooth Heavy Transition") },
@@ -111,7 +113,7 @@ private fun LoadingPlaceholder() {
 @Composable
 private fun HeavyContentList() {
     // Simulate a complex list with many items
-    val items = List(100) { "Complex Item #$it" }
+    val items = remember { List(100) { "Complex Item #$it" } }
     
     LazyColumn(
         contentPadding = PaddingValues(16.dp),
@@ -139,11 +141,21 @@ private fun HeavyContentList() {
 
 @Composable
 private fun HeavyListItem(text: String) {
+    val surfaceVariant = MaterialTheme.colorScheme.surfaceVariant
+    val primary = MaterialTheme.colorScheme.primary
+
+    val surfaceVariantWithAlpha = remember(surfaceVariant) {
+        surfaceVariant.copy(alpha = 0.5f)
+    }
+    val primaryWithAlpha = remember(primary) {
+        primary.copy(alpha = 0.2f)
+    }
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
-            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+            .background(surfaceVariantWithAlpha)
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -151,7 +163,7 @@ private fun HeavyListItem(text: String) {
             modifier = Modifier
                 .size(40.dp)
                 .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
+                .background(primaryWithAlpha)
         )
         Spacer(modifier = Modifier.size(16.dp))
         Text(text, style = MaterialTheme.typography.bodyMedium)

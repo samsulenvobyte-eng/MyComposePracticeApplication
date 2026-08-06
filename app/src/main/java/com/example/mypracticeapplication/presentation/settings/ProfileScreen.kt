@@ -98,17 +98,17 @@ sealed interface PremiumUiEvent {
 }
 
 @Composable
-
 fun PremiumScreen(
+    modifier: Modifier = Modifier,
     onClose: () -> Unit = {},
     onNavigateToTrial: () -> Unit = {}
 ) {
     var uiState by remember { mutableStateOf(PremiumUiState()) }
 
     StatusBarIcons(true)
-
     PremiumContent(
         state = uiState,
+        modifier = modifier,
         onEvent = { event ->
             when (event) {
                 is PremiumUiEvent.OnCloseClicked -> onClose()
@@ -124,9 +124,8 @@ fun PremiumScreen(
 @Composable
 fun PremiumContent(
     state: PremiumUiState,
-    modifier: Modifier = Modifier,
-    onEvent: (PremiumUiEvent) -> Unit
-
+    onEvent: (PremiumUiEvent) -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val scrollState = rememberScrollState()
 
@@ -183,13 +182,13 @@ private fun FeatureList() {
                 shape = RoundedCornerShape(bottomStart = 8.dp, bottomEnd = 8.dp),
             )
     ) {
-        FeatureRow(R.drawable.ic_compress, "Advanced Compression")
-        FeatureRow(R.drawable.ic_batch, "Batch Compression")
-        FeatureRow(R.drawable.ic_target_size, "Target File Size")
-        FeatureRow(R.drawable.ic_resize, "Batch Resize & Convert")
-        FeatureRow(R.drawable.ic_batch_crop, "Batch Crop & Fit Photo")
-        FeatureRow(R.drawable.ic_select_all, "Select All Photos at once")
-        FeatureRow(R.drawable.ic_ad, "Ad-free Experience", showDivider = false)
+        FeatureRow(icon = R.drawable.ic_compress, text = "Advanced Compression")
+        FeatureRow(icon = R.drawable.ic_batch, text = "Batch Compression")
+        FeatureRow(icon = R.drawable.ic_target_size, text = "Target File Size")
+        FeatureRow(icon = R.drawable.ic_resize, text = "Batch Resize & Convert")
+        FeatureRow(icon = R.drawable.ic_batch_crop, text = "Batch Crop & Fit Photo")
+        FeatureRow(icon = R.drawable.ic_select_all, text = "Select All Photos at once")
+        FeatureRow(icon = R.drawable.ic_ad, text = "Ad-free Experience", showDivider = false)
     }
 }
 
@@ -236,9 +235,11 @@ private fun PurchaseOptions(
 private fun Footer(onEvent: (PremiumUiEvent) -> Unit) {
 
 
-    val gradient = Brush.horizontalGradient(
-        colors = listOf(Color(0xFFF554FF), Color(0xFF434AFF))
-    )
+    val gradient = remember {
+        Brush.horizontalGradient(
+            colors = listOf(Color(0xFFF554FF), Color(0xFF434AFF))
+        )
+    }
 
     Column(
         modifier = Modifier.padding(horizontal = 16.dp),
@@ -288,14 +289,16 @@ private fun Footer(onEvent: (PremiumUiEvent) -> Unit) {
 @Composable
 fun PremiumHeaderSection(onClose: () -> Unit, modifier: Modifier = Modifier) {
 
-    val gradient45 = Brush.linearGradient(
-        colors = listOf(
-            Color(0xFFF554FF),
-            Color(0xFF434AFF)
-        ),
-        start = Offset(0f, 0f),
-        end = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)
-    )
+    val gradient45 = remember {
+        Brush.linearGradient(
+            colors = listOf(
+                Color(0xFFF554FF),
+                Color(0xFF434AFF)
+            ),
+            start = Offset(0f, 0f),
+            end = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)
+        )
+    }
 
     Box(
         modifier = modifier
@@ -519,9 +522,11 @@ fun FeatureRow(
     showDivider: Boolean = true
 ) {
 
-    val gradient = Brush.verticalGradient(
-        colors = listOf(Color(0xFFF554FF), Color(0xFF434AFF))
-    )
+    val gradient = remember {
+        Brush.verticalGradient(
+            colors = listOf(Color(0xFFF554FF), Color(0xFF434AFF))
+        )
+    }
     Column(
         modifier = modifier
             .padding(horizontal = 16.dp)
@@ -581,9 +586,11 @@ fun PlanCard(
     onClick: () -> Unit = {}
 ) {
 
-    val gradient = Brush.verticalGradient(
-        colors = listOf(Color(0xFFF554FF), Color(0xFF434AFF))
-    )
+    val gradient = remember {
+        Brush.verticalGradient(
+            colors = listOf(Color(0xFFF554FF), Color(0xFF434AFF))
+        )
+    }
     val borderColor = if (isSelected) BrandBlue else Color(0xFFE0E0E0) // Todo: why am I using if statement here?
     val borderWidth = if (isSelected) 2.dp else 1.dp
 
@@ -669,9 +676,11 @@ fun PlanCard(
 fun Badge60Percent(modifier: Modifier = Modifier, offPercent: String = "60% OFF") {
 
 
-    val gradient = Brush.verticalGradient(
-        colors = listOf(Color(0xFFF554FF), Color(0xFF434AFF))
-    )
+    val gradient = remember {
+        Brush.verticalGradient(
+            colors = listOf(Color(0xFFF554FF), Color(0xFF434AFF))
+        )
+    }
 
     Surface(
         color = Color.Transparent,
